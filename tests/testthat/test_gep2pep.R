@@ -1,11 +1,11 @@
 
-context("gep2pep")
+context("gep2mep")
 
-testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+testgep <- readRDS(system.file("testgep.RDS", package="gep2mep"))
 testgep <- testgep[rownames(testgep) != "NA",]
 testgep <- apply(testgep, 2, rank)
-testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
-dbfolder <- file.path(tempdir(), "gep2pepDB")
+testpws <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
+dbfolder <- file.path(tempdir(), "gep2mepDB")
 if(file.exists(dbfolder))
     unlink(dbfolder, T)
 rp <- buildEmptyDB(dbfolder, testpws)
@@ -21,7 +21,7 @@ test_that("new db creation", {
   expect_true(rp$has(paste0(expected_dbs[1], "_gmd")))
   expect_true(rp$has(paste0(expected_dbs[2], "_gmd")))
   expect_true(rp$has(paste0(expected_dbs[3], "_gmd")))
-  expect_true(rp$has("gep2pep database"))
+  expect_true(rp$has("gep2mep database"))
   expect_equal(length(rp$entries()), 4)
   expect_equal(length(rp$get(paste0(expected_dbs[1], "_gmd"))), 10)
   expect_equal(length(rp$get(paste0(expected_dbs[2], "_gmd"))), 10)

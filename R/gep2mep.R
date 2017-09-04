@@ -1,3 +1,13 @@
+#' gep2mep: working with Module Expression Profiles
+#'
+#' @details TODO
+#' 
+#' @docType package
+#' @name repo-package
+#' @author Francesco Napolitano \email{franapoli@@gmail.com}
+#' @aliases gep2mep
+NULL
+
 
 #'@import repo
 #'@import XML
@@ -161,7 +171,7 @@ say <- function(txt, stopping=F) {
 #'
 #' @param fname Path to an XML file downloaded from MsigDB
 #' @return A list of gene set entries (see details)
-#' @details The format required by gep2pep for a database of gene sets
+#' @details The format required by gep2mep for a database of gene sets
 #'     entries, provided by this function, is a list where each item
 #'     includes the following fields:
 #'
@@ -211,12 +221,12 @@ importMsigDB.xml <- function(fname) {
     return(msigDB)    
 }
 
-#' Converts Gene Expression Profiles (GEPs) to Pathway-EPs.
+#' Converts Gene Expression Profiles (GEPs) to Module-EPs.
 #' @param geps A matrix of ranks where each row corresponds to a gene
 #'     and each column to a perturbagen. Each column must include all
 #'     ranks from 1 to the number of rows. Row and column names must
 #'     be defined.
-#' @param pathw A database of gene sets. See \code{importMsigDB.xml}
+#' @param gmd A database of gene modules. See \code{importMsigDB.xml}
 #'     for the format.
 #' @param parallel If TRUE, gene sets will be processed in
 #'     parallel. Requires a parallel backend.
@@ -225,8 +235,9 @@ importMsigDB.xml <- function(fname) {
 #'     perturbagen j.
 #' @seealso buildPEPs
 #' @export
-gep2pep <- function(geps, pathw, parallel=F) {
-    
+gep2mep <- function(geps, gmd, parallel=F) {
+
+    pathw <- gmd
     genemat <- geps
     genes <- rownames(genemat)
 
@@ -282,9 +293,9 @@ getDBlist <- function(rp)
 #' @param path Path to an empty folder where the repository will be
 #'     created.
 #' @param gmd A list of gene modules (see \code{importMsigDB.xml}).
-#' @param name Name of the repository. Defaults to \code {NULL} (a
+#' @param name Name of the repository. Defaults to \code{NULL} (a
 #'     generic name will be given).
-#' @param description Description of the repository. Defaults to \code {NULL}
+#' @param description Description of the repository. Defaults to \code{NULL}
 #'     (a generic repository will be given).
 #' @return An object of class \code{repo}.
 #' @seealso buildPEPs
@@ -292,11 +303,11 @@ getDBlist <- function(rp)
 buildEmptyDB <- function(path, gmd, name=NULL, description=NULL)
 {
     if(is.null(name))
-        name <- "gep2pep database"
+        name <- "gep2mep database"
     if(is.null(description))
         description <- paste("This database contains pathway information",
                              "and pathway expression profiles created by",
-                             "the gep2pep package.")
+                             "the gep2mep package.")
     
     if(file.exists(path)) {
        say("Can not create DB in existing folder", T) 
@@ -314,7 +325,7 @@ buildEmptyDB <- function(path, gmd, name=NULL, description=NULL)
         rp$put(gmd[db_ids == dbi],
                paste0(subdbs[i], "_gmd"),
                paste("Pathway information for DB", subdbs[i]),
-               c("gep2pep", "gmd"))
+               c("gep2mep", "gmd"))
     }    
     
     ## rp$put(unique(db_ids), "DB list",
@@ -357,13 +368,13 @@ storePEPs <- function(rp, db_id, peps, existing) {
                   ". It contains 2 matrices: 1 for enrichement scores ",
                   "(signed Kolmogorov Smirnov statistic) and one for ",
                   "the corresponding p values."),
-           c("gep2pep", "pep"), replace=replace)
+           c("gep2mep", "pep"), replace=replace)
 
     curids <- getDBlist(rp)
     
     rp$put(colnames(peps[[1]]), "perturbagens",
            "Names of perturbagens inducing expression profiles",
-           c("gep2pep", "meta"), replace=T)
+           c("gep2mep", "meta"), replace=T)
 }
 
 
@@ -394,7 +405,7 @@ buildDBids <- function(pathdb) {
 }
 
 #' Build PEPs using an existing repository and stores them in it.
-#' @param rp A gep2pep repository (see \code{buildEmptyDB}).
+#' @param rp A gep2mep repository (see \code{buildEmptyDB}).
 #' @param geps A matrix of ranks where each row corresponds to a gene
 #'     and each column to a perturbagen. Each column must include all
 #'     ranks from 1 to the number of rows. Row and column names must
@@ -444,7 +455,7 @@ buildPEPs <- function(rp, geps, parallel=F, existing="stop")
             next
         
         thisdb <- rp$get(paste0(dbs[i], "_gmd"))
-        peps <- gep2pep(geps, thisdb, parallel)
+        peps <- gep2mep(geps, thisdb, parallel)
 
         storePEPs(rp, dbs[i], peps, existing)
 
@@ -453,6 +464,7 @@ buildPEPs <- function(rp, geps, parallel=F, existing="stop")
     
 }
 
+#' Shows repository statistics
 #' @param path Path to the root directory of an existing repository.
 #' @return Nothing, used for side effects.
 #' @export
@@ -694,7 +706,7 @@ if(F) {
     rp <- repo_open("PEPDB")
     pgset <- rp$get("perturbagens")[1:3]
     bgset <- "all"
-    peps <- gep2pep(testprl, testpws)
+    peps <- gep2mep(testprl, testpws)
     PGsea(rp, pgset)
 }
 
