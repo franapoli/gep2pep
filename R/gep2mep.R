@@ -3,151 +3,57 @@
 #' @details TODO
 #' 
 #' @docType package
-#' @name repo-package
+#' @name gep2mep-package
 #' @author Francesco Napolitano \email{franapoli@@gmail.com}
-#' @aliases gep2mep
+#' @aliases gep2mep-package
 NULL
 
 
 #'@import repo
-#'@import XML
+## XML is to import MSigDB data
+#'@import XML 
 #'@import foreach
+## utils is for txtProgressBar
+#'@import utils
+#'@import stats
 
 
-ks.test.2 <- function (x, y, signs=rep(1, length(x)+length(y)), ...,
-                       alternative = c("two.sided", "less", "greater"),
-                       exact = NULL, maxCombSize=10000, cumsum.return=F)
+ks.sign <- function (x, y)
 {
-    alternative <- match.arg(alternative)
-    DNAME <- deparse(substitute(x))
-    x <- x[!is.na(x)]
-    n <- length(x)
-    if (n < 1L) 
-        stop("not enough 'x' data")
-    PVAL <- NULL
-    if (is.numeric(y)) {
-        DNAME <- paste(DNAME, "and", deparse(substitute(y)))
-        y <- y[!is.na(y)]
-        n.x <- as.double(n)
-        n.y <- length(y)
-        if (n.y < 1L) 
-            stop("not enough 'y' data")
-        if (is.null(exact)) {
-            exact <- (n.x * n.y < maxCombSize)
-            if(!exact)
-                warning(paste("P-value not computed exactly because",
-                              "of combined sample size"))
-        }
-        METHOD <- "Two-sample Kolmogorov-Smirnov test"
-        TIES <- FALSE
-        n <- n.x * n.y/(n.x + n.y)
-        w <- c(x, y)
-        
-        z <- cumsum(ifelse((order(w) <= n.x)*signs, 1/n.x, -1/n.y))
-        if (length(unique(w)) < (n.x + n.y)) {
-            if (exact) {
-                warning("cannot compute exact p-value with ties")
-                exact <- FALSE
-            }
-            else warning("p-value will be approximate in the presence of ties")
-            z <- z[c(which(diff(sort(w)) != 0), n.x + n.y)]
-            TIES <- TRUE
-        }
-        STATISTIC <- switch(alternative, two.sided = max(abs(z)), 
-            greater = max(z), less = -min(z))
+    n.x <- as.double(length(x))
+    n.y <- length(y)
 
-        edge <- which.max(abs(z))
-        ES <- z[edge]
-        
-        nm_alternative <- switch(alternative, two.sided = "two-sided", 
-            less = "the CDF of x lies below that of y", greater = "the CDF of x lies above that of y")
-        if (exact && (alternative == "two.sided") && !TIES) 
-            PVAL <- 1 - .Call(stats:::C_pSmirnov2x, STATISTIC, n.x, n.y)
-    }
-    else {
-        stop("The case of is.character(y)=T has not been implemented")
-        if (is.character(y)) 
-            y <- get(y, mode = "function", envir = parent.frame())
-        if (!is.function(y)) 
-            stop("'y' must be numeric or a function or a string naming a valid function")
-        METHOD <- "One-sample Kolmogorov-Smirnov test"
-        TIES <- FALSE
-        if (length(unique(x)) < n) {
-            warning("ties should not be present for the Kolmogorov-Smirnov test")
-            TIES <- TRUE
-        }
-        if (is.null(exact)) 
-            exact <- (n < 100) && !TIES
-        x <- y(sort(x), ...) - (0:(n - 1))/n
-        STATISTIC <- switch(alternative, two.sided = max(c(x, 
-            1/n - x)), greater = max(1/n - x), less = max(x))
-        if (exact) {
-            PVAL <- 1 - if (alternative == "two.sided")
-                result = tryCatch({
-                .C(C_pkolmogorov2x, p = as.double(STATISTIC), 
-                  as.integer(n), PACKAGE = "stats")$p
-                }, warning = function(w) {
-                    warning(w)
-                }, error = function(e) {
-                    .Call(C_pKolmogorov2x, STATISTIC, n)
-                }, finally = {
-                })
+    w <- c(x, y)        
+    z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
 
-            else {
-                pkolmogorov1x <- function(x, n) {
-                  if (x <= 0) 
-                    return(0)
-                  if (x >= 1) 
-                    return(1)
-                  j <- seq.int(from = 0, to = floor(n * (1 - 
-                    x)))
-                  1 - x * sum(exp(lchoose(n, j) + (n - j) * log(1 - 
-                    x - j/n) + (j - 1) * log(x + j/n)))
-                }
-                pkolmogorov1x(STATISTIC, n)
-            }
-        }
-        nm_alternative <- switch(alternative, two.sided = "two-sided", 
-            less = "the CDF of x lies below the null hypothesis", 
-            greater = "the CDF of x lies above the null hypothesis")
-    }
-    names(STATISTIC) <- switch(alternative, two.sided = "D", 
-        greater = "D^+", less = "D^-")
-    if (is.null(PVAL)) {
-        pkstwo <- function(x, tol = 1e-06) {
-            if (is.numeric(x)) 
-                x <- as.double(x)
-            else stop("argument 'x' must be numeric")
-            p <- rep(0, length(x))
-            p[is.na(x)] <- NA
-            IND <- which(!is.na(x) & (x > 0))
-            if (length(IND))
-                p[IND] <- tryCatch({
-                    tryRes <- .C(stats:::C_pkstwo, length(x[IND]), p = x[IND], 
-                             as.double(tol), PACKAGE = "stats")$p
-                }, warning = function(w) {
-                    warning(w)
-                }, error = function(e) {
-                    tryRes <- .Call(stats:::C_pKS2, p = x[IND], tol)
-                }, finally = {
-                })
-            p
-        }
-        PVAL <- ifelse(alternative == "two.sided", 1 - pkstwo(sqrt(n) * 
-            STATISTIC), exp(-2 * n * STATISTIC^2))
-    }
-    PVAL <- min(1, max(0, PVAL))
-    RVAL <- list(statistic = STATISTIC, p.value = PVAL,
-                 alternative = nm_alternative, method = METHOD,
-                 data.name = DNAME, ES = ES, edge = edge)
-    if(cumsum.return)
-        csum = RVAL <- c(RVAL, list(csum = z))
-
-    class(RVAL) <- "htest"
-    return(RVAL)
+    return(sign(z[which.max(abs(z))]))
 }
 
 
+
+## S1 <- sample(1:100, 10);
+## S2 <- (1:100)[-S1];
+## system.time(for(i in 1:1000) {
+##                 x <- sign(ks.test.2(S1, S2)$ES);
+## }
+## )
+## system.time(for(i in 1:1000) {
+##                 x <- sign(ks.sign(S1, S2));
+## }
+## )
+
+## for(i in 1:10000) {
+## S1 <- sample(1:100, 10);
+## S2 <- (1:100)[-S1];
+##     if(sign(ks.sign(S1, S2))!=sign(ks.test.2(S1, S2)$ES))
+##         stop();
+## }
+
+ks.test.2 <- function(x, y, ...) {
+    ks <- ks.test(x, y, ...)
+    ks[["ES"]] <- unname(ks.sign(x, y)*ks$statistic)
+    return(ks)
+}
 
 
 repoExists <- function(path)
@@ -221,7 +127,7 @@ importMsigDB.xml <- function(fname) {
     return(msigDB)    
 }
 
-#' Converts Gene Expression Profiles (GEPs) to Module-EPs.
+#' Converts Gene Expression Profiles (GEPs) to Module-EPs (MEPs).
 #' @param geps A matrix of ranks where each row corresponds to a gene
 #'     and each column to a perturbagen. Each column must include all
 #'     ranks from 1 to the number of rows. Row and column names must
@@ -233,7 +139,7 @@ importMsigDB.xml <- function(fname) {
 #' @return A list of two matrices, one for Enrichment Scores and one
 #'     for p-values. Each entry (i,j) refers to gene set i and
 #'     perturbagen j.
-#' @seealso buildPEPs
+#' @seealso buildMEPs
 #' @export
 gep2mep <- function(geps, gmd, parallel=F) {
 
@@ -251,7 +157,7 @@ gep2mep <- function(geps, gmd, parallel=F) {
         genematj <- genemat[,j]
 
         '%dobest%' <- if (parallel) get('%dopar%') else get('%do%')
-        
+        set <- NULL ## to cope with R CMD check NOTE
         gres <- foreach(set = sets,
                         .export=c("gsea","ks.test.2")) %dobest%
         {
@@ -280,6 +186,11 @@ gep2mep <- function(geps, gmd, parallel=F) {
 }
 
 
+#' Returns the names of the module databases in a repository.
+#' @param rp A repository created by \code{buildEmptyDB}.
+#' @return Vector of names.
+#' @details The names are obtained from the repository entries that
+#'     are tagged with "gmd" and removing the "_gmd" suffix.
 #' @export
 getDBlist <- function(rp)
 {    
@@ -298,7 +209,7 @@ getDBlist <- function(rp)
 #' @param description Description of the repository. Defaults to \code{NULL}
 #'     (a generic repository will be given).
 #' @return An object of class \code{repo}.
-#' @seealso buildPEPs
+#' @seealso buildMEPs, buildDBIDs
 #' @export
 buildEmptyDB <- function(path, gmd, name=NULL, description=NULL)
 {
@@ -330,13 +241,13 @@ buildEmptyDB <- function(path, gmd, name=NULL, description=NULL)
     
     ## rp$put(unique(db_ids), "DB list",
     ##        "IDs of pathway sub-databases included in this repository",
-    ##        c("gep2pep", "meta"))
+    ##        c("gep2mep", "meta"))
         
     return(rp)
 }
 
 
-storePEPs <- function(rp, db_id, peps, existing) {
+storeMEPs <- function(rp, db_id, peps, existing) {
 
     okargs <- c("overwrite", "append", "stop")
     if(length(existing)>1 || (! existing %in% okargs))
@@ -348,10 +259,10 @@ storePEPs <- function(rp, db_id, peps, existing) {
     if(rp$has(db_id)) {
 
         if(existing == "stop")
-            say("PEP already exists", T)
+            say("MEP already exists", T)
 
         if(existing == "append") {
-            say("Merging peps...")
+            say("Merging MEPs...")
             curpep <- rp$get(db_id)
             peps[["ES"]] <- cbind(curpep[["ES"]], peps[["ES"]])
             peps[["PV"]] <- cbind(curpep[["PV"]], peps[["PV"]])
@@ -368,43 +279,34 @@ storePEPs <- function(rp, db_id, peps, existing) {
                   ". It contains 2 matrices: 1 for enrichement scores ",
                   "(signed Kolmogorov Smirnov statistic) and one for ",
                   "the corresponding p values."),
-           c("gep2mep", "pep"), replace=replace)
+           c("gep2mep", "mep"), replace=replace)
 
     curids <- getDBlist(rp)
     
     rp$put(colnames(peps[[1]]), "perturbagens",
            "Names of perturbagens inducing expression profiles",
            c("gep2mep", "meta"), replace=T)
+
+    say("Done.")
 }
 
 
-## addFromGEPs <- function(geps, parallel=F, path="PEPDB")
-## {    
-##     rp <- repo_open(path)
-##     dbs <- rp$get("DB list")
-##     for(i in 1:length(dbs)) {
-##         say(paste0("Working on DB: ", dbs[i], " (", i, "/", length(dbs), ")" ))
-##         thisdb <- rp$get(paste0(dbs[i], "_gmd"))
-##         peps <- gep2pep(geps, thisdb, parallel)
-##         curpep <- rp$get(dbs[i])
-##         rp$set(dbs[i], obj=list(ESmat=cbind(curpep[["ESmat"]], peps[["ESmat"]]),
-##                                 PVmat=cbind(curpep[["PVmat"]], peps[["PVmat"]])))
-##     }
-##     rp$set("perturbagens",
-##            obj=c(rp$get("perturbagens"),
-##                  colnames(peps[[1]])))
-## }
 
+#' Creates unique identifiers for gene module databases.
+#' @param gmds A gene module database in the same format created by
+#'     \code{importMsigDB.xml}.
+#' @return A vector of identifiers created as "DB_SUBDB".
+#' @seealso importMsigDB.xml
 #' @export
-buildDBids <- function(pathdb) {
-    dbs <- sapply(pathdb, get, x="db")
-    subdbs <- sapply(pathdb, get, x="subdb")
+buildDBids <- function(gmds) {
+    dbs <- sapply(gmds, get, x="db")
+    subdbs <- sapply(gmds, get, x="subdb")
     subdbs[subdbs==""] <- dbs[subdbs==""]
     db_ids <- paste(dbs, subdbs, sep="_")
     return(db_ids)
 }
 
-#' Build PEPs using an existing repository and stores them in it.
+#' Build MEPs using an existing repository and stores them in it.
 #' @param rp A gep2mep repository (see \code{buildEmptyDB}).
 #' @param geps A matrix of ranks where each row corresponds to a gene
 #'     and each column to a perturbagen. Each column must include all
@@ -412,26 +314,26 @@ buildDBids <- function(pathdb) {
 #'     be defined.
 #' @param parallel If TRUE, gene sets will be processed in
 #'     parallel. Requires a parallel backend.
-#' @param existing What to do if PEPs for a given DB of gene sets are
+#' @param existing What to do if MEPs for a given DB of gene sets are
 #'     already present. Can be one of:
 #'
 #' + stop: the default, throws an error. This is the safest approach.
 #'
 #' + skip: the existing DB will be skipped. This is especially useful
 #' to build a repository incrementally by repeatedly using the same
-#' call to \code{buildPEPs}.
+#' call to \code{buildMEPs}.
 #'
-#' + overwrite: all the existing PEPs for the DB will be replaced by
-#' new PEPs.
+#' + overwrite: all the existing MEPs for the DB will be replaced by
+#' new MEPs.
 #'
-#' + append: the new PEPs will be appended to the existing
+#' + append: the new MEPs will be appended to the existing
 #' ones. Useful to update the repository.
 #'
-#' @return Nothing. The computed PEPs will be available in the
+#' @return Nothing. The computed MEPs will be available in the
 #'     repository.
-#' @seealso buildPEPs
+#' @seealso buildMEPs
 #' @export
-buildPEPs <- function(rp, geps, parallel=F, existing="stop")
+buildMEPs <- function(rp, geps, parallel=F, existing="stop")
 {
     okargs <- c("stop", "overwrite", "skip", "append")
     
@@ -457,7 +359,7 @@ buildPEPs <- function(rp, geps, parallel=F, existing="stop")
         thisdb <- rp$get(paste0(dbs[i], "_gmd"))
         peps <- gep2mep(geps, thisdb, parallel)
 
-        storePEPs(rp, dbs[i], peps, existing)
+        storeMEPs(rp, dbs[i], peps, existing)
 
         cat("\n")        
     }
@@ -468,7 +370,7 @@ buildPEPs <- function(rp, geps, parallel=F, existing="stop")
 #' @param path Path to the root directory of an existing repository.
 #' @return Nothing, used for side effects.
 #' @export
-dbStats <- function(path="PEPDB") {
+dbStats <- function(path="MEPDB") {
     rp <- repo_open(path)
     pert <- length(rp$get("perturbagens"))
     dbs <- getDBlist(rp)
@@ -480,7 +382,7 @@ dbStats <- function(path="PEPDB") {
 }
 
 
-## newPEPs <- function(rp, geps, gmd, id, parallel=F, overwrite=F)
+## newMEPs <- function(rp, geps, gmd, id, parallel=F, overwrite=F)
 ## {
 ##     n <- length(subdbs)
 ##     peps <- gep2pep(geps, thisdb, parallel)
@@ -529,8 +431,9 @@ dbStats <- function(path="PEPDB") {
 ##     }
     
 ## }
-#' @export
-rankPEPsByCols <- function(peps, rankingset="all")
+
+
+rankMEPsByCols <- function(peps, rankingset="all")
 {
     rankPEP <- function(PVs, ESs)
     {
@@ -552,8 +455,8 @@ rankPEPsByCols <- function(peps, rankingset="all")
     return(x)
 }
 
-#' @export
-rankPEPsByRows <- function(peps, rankingset="all")
+
+rankMEPsByRows <- function(peps, rankingset="all")
 {
     if(length(rankingset) == 1 && rankingset == "all")
         rankingset <- 1:ncol(peps[["ES"]])
@@ -563,8 +466,44 @@ rankPEPsByRows <- function(peps, rankingset="all")
     return(x)
 }
 
+
+#' Export PertSEA results to XLS format
+#' @param rp A repository created by \code{buildEmptyDB}.
+#' @param results The output of \code{PertSEA}.
+#' @param outname Name of the XLS file to be created.
+#' @return Nothing.
 #@' @export
-PertSEA <- function(rp, pgset, bgset="all")
+exportPertSEA <- function(rp, results, outname="PertSEA.xls")
+{
+        if (requireNamespace("WriteXLS", quietly = TRUE)) {
+            sheets <- attachModInfo(rp, results)
+            names(sheets) <- gsub(":","_",names(sheets))
+            WriteXLS::WriteXLS(sheets, outname, AutoFilter=T, BoldHeaderRow=T, FreezeRow=1)
+        } else {
+            stop("The suggested package WriteXLS is not installed.")
+        }              
+}
+
+attachModInfo <- function(rp, results)
+{
+    dbs <- names(results[["PertSEA"]])
+    newres <- list()
+    for(i in 1:length(results[["PertSEA"]])) {
+        db <- rp$get(paste0(dbs[i], "_gmd"))
+        modnms <- rownames(results[["PertSEA"]][[i]])
+        newres[[i]] <- cbind(
+          Module = sapply(db[modnms], get, x="setname"),
+          Description = sapply(db[modnms], get, x="desc"),
+          results[["PertSEA"]][[i]],
+          results[["details"]][[i]]
+        )
+    }
+    names(newres) <- names(results[["PertSEA"]])
+    return(newres)
+}
+
+#@' @export
+PertSEA <- function(rp, pgset, bgset="all", details=T)
 {
     dbs <- getDBlist(rp)
     if(length(bgset) == 1 && bgset=="all")
@@ -575,19 +514,36 @@ PertSEA <- function(rp, pgset, bgset="all")
     }
     rankingset <- c(bgset, pgset)
 
+    if(details)
+        thedetails <- list() else thedetails <- NULL
+    
     res <- list()
     for(i in 1:length(dbs)) {
         say(paste0("Working on DB: ", dbs[i]))
         say(paste0("Row-ranking DB..."))
-        ranked <- rankPEPsByRows(rp$get(dbs[i]), rankingset)
+        ranked <- rankMEPsByRows(rp$get(dbs[i]), rankingset)
         say(paste0("Computing enrichments..."))
-        ks <- apply(ranked, 1, function(row) ks.test.2(row[pgset], row[bgset]))
-        res[[dbs[i]]]$ES <- sapply(ks, get, x="ES")
-        res[[dbs[i]]]$PV <- sapply(ks, get, x="p.value")
+        
+        ks <- apply(ranked, 1, function(row) {
+          inset <- row[pgset]
+          inset <- inset[!is.na(inset)]
+          outset <- row[bgset]
+          outset <- outset[!is.na(outset)]
+          if(length(inset)>1 && length(outset)>1) {
+            res <- ks.test.2(row[pgset], row[bgset], maxCombSize=10^10)            
+          } else res <- list(ES=NA, p.value=NA)
+          return(res)
+        })
+        PVs <- sapply(ks, get, x="p.value")
+        sorter <- order(PVs)
+        res[[dbs[i]]] <- data.frame(ES = sapply(ks, get, x="ES"),
+                                   PV = PVs)[sorter, ]
+        if(details)
+          thedetails[[dbs[i]]] <- ranked[sorter, pgset]
         say("done.")
     }
-    
-    return(res)
+
+    return(list(PertSEA=res, details=thedetails))
 }
 
 #@' @export
@@ -621,7 +577,7 @@ ModSEA <- function(rp, gmds, bgsets="all")
                        paste(notok, collapse=", ")), T)
         
         say(paste0("Col-ranking DB..."))
-        ranked <- rankPEPsByCols(peps, rankingset)
+        ranked <- rankMEPsByCols(peps, rankingset)
         say(paste0("Computing enrichments..."))
         
         ks <- apply(ranked, 2, function(col) ks.test.2(col[gmd], col[bgset]))
@@ -634,8 +590,8 @@ ModSEA <- function(rp, gmds, bgsets="all")
 }
 
 
-gsea <- function(S, ranks_list, check=F, alternative = "two.sided",
-                 leadedge = F)
+gsea <- function(S, ranks_list, check=F, alternative = "two.sided")
+#                ,leadedge = F)
 {
     S <- S[!(is.na(S))]
     S1 <- ranks_list[S]
@@ -646,69 +602,15 @@ gsea <- function(S, ranks_list, check=F, alternative = "two.sided",
 
     ks <- ks.test.2(S1, S2, alternative=alternative, maxCombSize=10^10)
 
-    lead=NA
-    if(leadedge){
-        sSm <- sort(Sm)
-        if(ks$ES > 0)
-            lead=sSm[sSm<=ks$edge] else lead=sSm[sSm>=ks$edge]
-    }
+    ## lead=NA
+    ## if(leadedge){
+    ##     sSm <- sort(Sm)
+    ##     if(ks$ES > 0)
+    ##         lead=sSm[sSm<=ks$edge] else lead=sSm[sSm>=ks$edge]
+    ## }
 
-    return(list(ES=ks$ES, p=ks$"p.value", edge=ks$edge, lead=lead));
+ # return(list(ES=ks$ES, p=ks$"p.value", edge=ks$edge, lead=lead));
+    return(list(ES=ks$ES, p=ks$"p.value", edge=ks$edge));
 }
-
-
-if(F) {
-## real data
-    source("PEP.R")
-    db <- importMsigDB.xml("data/in/msigdb_v6.0.xml")
-    library(repo)
-    rp <- repo_open()
-    prls <- rp$get("Gmantra_PRL")
-    library(doParallel)
-    registerDoParallel(22)
-    library(pbarETA)
-    library(foreach)
-
-    ## system("rm -r PEPDB")
-    rp <- buildEmptyDB("PEPDB", db)
-    buildPEPs(rp, prls, parallel=T, existing="stop")
-}
-
-if(F) {
-## test data   
-    source("PEP.R")
-    
-    library(foreach)
-    system("rm -r TEST")
-    testpws <- readRDS("testpws.RDS")    
-    rp <- buildEmptyDB("TEST", testpws)
-    testprl <- readRDS("testprl.RDS")
-    buildPEPs(rp, testprl, parallel=F, existing="stop")
-    
-    ## CODE TO RESTART FROM A DB
-    rp2 <- repo_open("PEPDB")
-    dbids <- buildDBids(db)
-    todo <- setdiff(unique(dbids), getDBlist(rp2))
-    buildRepoDB(prls, db[dbids %in% todo], T, overwrite=T)
-
-    testprl <- prls[1:500, 1:5]
-    subdbs <- sapply(db, get, x="subdb")
-    dbs <- sapply(db, get, x="db")
-    subdbs[subdbs==""] <- dbs[subdbs==""]
-    testpws <- do.call(c, lapply(unique(subdbs)[1:3], function(x) db[subdbs==x][1:10]))
-
-    saveRDS(testprl, "testprl.RDS")
-    saveRDS(testpws, "testpws.RDS")
-
-
-    buildRepoDB(testprl[,1:3], testpws, T, overwrite=T)
-    addGeps(testprl[,4:5], T)
-    rp <- repo_open("PEPDB")
-    pgset <- rp$get("perturbagens")[1:3]
-    bgset <- "all"
-    peps <- gep2mep(testprl, testpws)
-    PGsea(rp, pgset)
-}
-
 
 

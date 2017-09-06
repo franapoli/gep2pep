@@ -28,7 +28,7 @@ test_that("new db creation", {
   expect_equal(length(rp$get(paste0(expected_dbs[3], "_gmd"))), 10)
 })
 
-buildPEPs(rp, testgep)
+buildMEPs(rp, testgep)
 
 test_that("build first PEPs", {
   expect_equal(length(rp$entries()), 8)
@@ -90,8 +90,8 @@ peps3 <- rp$get(expected_dbs[3])
 
 es1 <- peps1$ES
 es3 <- peps3$ES
-RowRanked1 <- rankPEPsByRows(peps1)
-RowRanked3 <- rankPEPsByRows(peps3)
+RowRanked1 <- rankMEPsByRows(peps1)
+RowRanked3 <- rankMEPsByRows(peps3)
 
 test_that("Row ranking", {
     expect_true(all(apply(RowRanked1, 1, setequal, 1:5)))
@@ -102,8 +102,8 @@ test_that("Row ranking", {
     expect_equal(RowRanked3[8,3], 1)
 })
 
-ColRanked1 <- rankPEPsByCols(peps1)
-ColRanked3 <- rankPEPsByCols(peps3)
+ColRanked1 <- rankMEPsByCols(peps1)
+ColRanked3 <- rankMEPsByCols(peps3)
 
 randj <- sample(ncol(ColRanked3),1)
 PVs <- peps1$PV[,randj]
@@ -132,15 +132,15 @@ res <- PertSEA(rp, pgset)
 randi <- sample(1:length(testpws), 1)
 pwsid <- testpws[[randi]]$setid
 randDB <- dbs[randi]
-ranked <- rankPEPsByRows(rp$get(randDB))
+ranked <- rankMEPsByRows(rp$get(randDB))
 inset <- ranked[pwsid, pgset]
 outset <- ranked[pwsid, setdiff(colnames(ranked), pgset)]
 ks <- ks.test.2(inset, outset)
 
 test_that("PertSEA", {
-    expect_equal(unname(res[[randDB]]$ES[pwsid]),
+    expect_equal(unname(res[["PertSEA"]][[randDB]][pwsid, "ES"]),
                  ks$ES)
-    expect_equal(unname(res[[randDB]]$PV[pwsid]),
+    expect_equal(unname(res[["PertSEA"]][[randDB]][pwsid, "PV"]),
                  ks$p.value)
 })
 
@@ -155,14 +155,14 @@ names(subpws) <- c(db1, db3)
 res <- ModSEA(rp, subpws)
 
 randj1 <- sample(1:ncol(testgep), 1)
-ranked <- rankPEPsByCols(rp$get(db1))
+ranked <- rankMEPsByCols(rp$get(db1))
 peps <- rp$get(db1)
 inset <- ranked[pws1, randj1]
 outset <- ranked[setdiff(rownames(ranked), pws1), randj1]
 ks1 <- ks.test.2(inset, outset)
 
 randj3 <- sample(1:ncol(testgep), 1)
-ranked <- rankPEPsByCols(rp$get(db3))
+ranked <- rankMEPsByCols(rp$get(db3))
 peps <- rp$get(db3)
 inset <- ranked[pws3, randj3]
 outset <- ranked[setdiff(rownames(ranked), pws3), randj3]

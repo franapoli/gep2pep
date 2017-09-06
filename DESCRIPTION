@@ -1,15 +1,22 @@
 Package: gep2mep
 Type: Package
-Title: What the package does (short line)
+Title: Creation and analysis of gene-module expression profiles (MEPs)
 Version: 1.0
 Date: 2017-08-31
-Author: Francesco Napolitano
+Author: Francesco Napolitano <franapoli@gmail.com>
 Maintainer: Francesco Napolitano <franapoli@gmail.com>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Description: Gene-module expression profiles (MEPs) are based on the
+    expression of gene modules (sets of genes) as opposed to
+    individual genes. This package converts gene expression profiles
+    to MEPs and performs enrichment analysis of modules or
+    perturbagens.
+License: GPL-3
 Imports:
     repo,
     XML,
     foreach
+Suggests:
+    WriteXLS,
+    testthat
 RoxygenNote: 6.0.1
-Suggests: testthat
+
