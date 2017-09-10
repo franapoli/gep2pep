@@ -1,14 +1,14 @@
-Package: gep2mep
+Package: gep2pep
 Type: Package
-Title: Creation and analysis of gene-module expression profiles (MEPs)
+Title: Creation and analysis of Pathway Expression Profiles (PEPs)
 Version: 1.0.0
 Date: 2017-08-31
 Author: Francesco Napolitano <franapoli@gmail.com>
 Maintainer: Francesco Napolitano <franapoli@gmail.com>
-Description: Gene-module expression profiles (MEPs) are based on the
-    expression of gene modules (sets of genes) as opposed to
+Description: Pathway Expression Profiles (PEPs) are based on the
+    expression of pathways (defined as sets of genes) as opposed to
     individual genes. This package converts gene expression profiles
-    to MEPs and performs enrichment analysis of modules or
+    to PEPs and performs enrichment analysis of modules or
     perturbagens.
 License: GPL-3
 Imports:

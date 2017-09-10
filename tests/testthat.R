@@ -1,4 +1,4 @@
 library(testthat)
-library(gep2mep)
+library(gep2pep)
 
-test_check("gep2mep")
+test_check("gep2pep")

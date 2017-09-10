@@ -1,17 +1,17 @@
 
-context("gep2mep")
+context("gep2pep")
 
-testgep <- readRDS(system.file("testgep.RDS", package="gep2mep"))
+testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
 testgep <- testgep[rownames(testgep) != "NA",]
 testgep <- apply(testgep, 2, rank)
-testpws <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
-dbfolder <- file.path(tempdir(), "gep2mepDB")
+testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+dbfolder <- file.path(tempdir(), "gep2pepDB")
 if(file.exists(dbfolder))
     unlink(dbfolder, T)
 rp <- createRepository(dbfolder, testpws)
 
 
-dbs <- buildDBids(testpws)
+dbs <- makeCollectionIDs(testpws)
 expected_dbs <- c("C3_TFT", "C3_MIR", "C4_CGN")
 
 test_that("new db creation", {
@@ -21,14 +21,14 @@ test_that("new db creation", {
   expect_true(rp$has(paste0(expected_dbs[1], "_gmd")))
   expect_true(rp$has(paste0(expected_dbs[2], "_gmd")))
   expect_true(rp$has(paste0(expected_dbs[3], "_gmd")))
-  expect_true(rp$has("gep2mep database"))
+  expect_true(rp$has("gep2pep database"))
   expect_equal(length(rp$entries()), 4)
   expect_equal(length(rp$get(paste0(expected_dbs[1], "_gmd"))), 10)
   expect_equal(length(rp$get(paste0(expected_dbs[2], "_gmd"))), 10)
   expect_equal(length(rp$get(paste0(expected_dbs[3], "_gmd"))), 10)
 })
 
-buildMEPs(rp, testgep)
+buildPEPs(rp, testgep)
 
 test_that("build first PEPs", {
   expect_equal(length(rp$entries()), 8)
@@ -90,8 +90,8 @@ peps3 <- rp$get(expected_dbs[3])
 
 es1 <- peps1$ES
 es3 <- peps3$ES
-RowRanked1 <- rankMEPsByRows(peps1)
-RowRanked3 <- rankMEPsByRows(peps3)
+RowRanked1 <- rankPEPsByRows(peps1)
+RowRanked3 <- rankPEPsByRows(peps3)
 
 test_that("Row ranking", {
     expect_true(all(apply(RowRanked1, 1, setequal, 1:5)))
@@ -102,8 +102,8 @@ test_that("Row ranking", {
     expect_equal(RowRanked3[8,3], 1)
 })
 
-ColRanked1 <- rankMEPsByCols(peps1)
-ColRanked3 <- rankMEPsByCols(peps3)
+ColRanked1 <- rankPEPsByCols(peps1)
+ColRanked3 <- rankPEPsByCols(peps3)
 
 randj <- sample(ncol(ColRanked3),1)
 PVs <- peps1$PV[,randj]
@@ -132,7 +132,7 @@ res <- PertSEA(rp, pgset)
 randi <- sample(1:length(testpws), 1)
 pwsid <- testpws[[randi]]$id
 randDB <- dbs[randi]
-ranked <- rankMEPsByRows(rp$get(randDB))
+ranked <- rankPEPsByRows(rp$get(randDB))
 inset <- ranked[pwsid, pgset]
 outset <- ranked[pwsid, setdiff(colnames(ranked), pgset)]
 ks <- ks.test.2(inset, outset)
@@ -152,17 +152,17 @@ pws1 <- names(rp$get(paste0(db1, "_gmd")))[c(2,5,6,9)]
 pws3 <- names(rp$get(paste0(db3, "_gmd")))[c(1,3,10)]
 subpws <- list(pws1, pws3)
 names(subpws) <- c(db1, db3)
-res <- ModSEA(rp, subpws)
+res <- PathSEA(rp, subpws)
 
 randj1 <- sample(1:ncol(testgep), 1)
-ranked <- rankMEPsByCols(rp$get(db1))
+ranked <- rankPEPsByCols(rp$get(db1))
 peps <- rp$get(db1)
 inset <- ranked[pws1, randj1]
 outset <- ranked[setdiff(rownames(ranked), pws1), randj1]
 ks1 <- ks.test.2(inset, outset)
 
 randj3 <- sample(1:ncol(testgep), 1)
-ranked <- rankMEPsByCols(rp$get(db3))
+ranked <- rankPEPsByCols(rp$get(db3))
 peps <- rp$get(db3)
 inset <- ranked[pws3, randj3]
 outset <- ranked[setdiff(rownames(ranked), pws3), randj3]
@@ -171,15 +171,15 @@ ks3 <- ks.test.2(inset, outset)
 name1 <- colnames(testgep)[randj1]
 name3 <- colnames(testgep)[randj3]
 
-test_that("ModSEA", {
-    expect_equal(unname(res[["ModSEA"]][[db1]][name1, "ES"]),
+test_that("PathSEA", {
+    expect_equal(unname(res[["PathSEA"]][[db1]][name1, "ES"]),
                  ks1$ES)
-    expect_equal(unname(res[["ModSEA"]][[db1]][name1, "PV"]),
+    expect_equal(unname(res[["PathSEA"]][[db1]][name1, "PV"]),
                  ks1$p.value)
 
-    expect_equal(unname(res[["ModSEA"]][[db3]][name3, "ES"]),
+    expect_equal(unname(res[["PathSEA"]][[db3]][name3, "ES"]),
                  ks3$ES)
-    expect_equal(unname(res[["ModSEA"]][[db3]][name3, "PV"]),
+    expect_equal(unname(res[["PathSEA"]][[db3]][name3, "PV"]),
                  ks3$p.value)    
 })
 
