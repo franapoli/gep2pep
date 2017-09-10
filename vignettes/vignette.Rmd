@@ -37,6 +37,12 @@ consistently dysregulate a set of pathways. This is the
 pathway-based version of the Gene Set Enrichment Analysis (GSEA). See
 PathSEA.
 
+In order to use the package, it must be loaded as follows:
+
+```{r}
+library(gep2pep)
+```
+
 
 ## Creating a repository of pathways.
 
