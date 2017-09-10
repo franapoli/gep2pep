@@ -2,17 +2,18 @@
 % Please edit documentation in R/gep2mep.R
 \name{buildMEPs}
 \alias{buildMEPs}
-\title{Build MEPs using an existing repository and stores them in it.}
+\title{Build MEPs from GEPs and stores them in the repository.}
 \usage{
-buildMEPs(rp, geps, parallel = F, existing = "stop")
+buildMEPs(rp, geps, parallel = FALSE, existing = "stop")
 }
 \arguments{
-\item{rp}{A gep2mep repository (see \code{buildEmptyDB}).}
+\item{rp}{A repository created by \code{\link{createRepository}}.}
 
 \item{geps}{A matrix of ranks where each row corresponds to a gene
 and each column to a perturbagen. Each column must include all
 ranks from 1 to the number of rows. Row and column names must
-be defined.}
+be defined. Row names must match names used in gene modules
+(unrecognized names will not be used).}
 
 \item{parallel}{If TRUE, gene sets will be processed in
 parallel. Requires a parallel backend.}
@@ -20,24 +21,68 @@ parallel. Requires a parallel backend.}
 \item{existing}{What to do if MEPs for a given DB of gene sets are
     already present. Can be one of:
 
-+ stop: the default, throws an error. This is the safest approach.
+\itemize{
 
-+ skip: the existing DB will be skipped. This is especially useful
-to build a repository incrementally by repeatedly using the same
-call to \code{buildMEPs}.
+  \item{stop: }{the default, throws an error. This is the safest
+  approach.}
 
-+ overwrite: all the existing MEPs for the DB will be replaced by
-new MEPs.
+  \item{skip: }{the existing DB will be skipped. This is especially
+  useful to build a repository incrementally by repeatedly using
+  the same call to \code{buildMEPs}}.
 
-+ append: the new MEPs will be appended to the existing
-ones. Useful to update the repository.}
+  \item{overwrite: }{all the existing MEPs for the DB will be replaced by
+  new MEPs.}
+
+  \item{append: }{the new MEPs will be appended to the existing
+  ones. Useful to update the repository.}
+
+}}
 }
 \value{
 Nothing. The computed MEPs will be available in the
     repository.
 }
 \description{
-Build MEPs using an existing repository and stores them in it.
+Build MEPs from GEPs and stores them in the repository.
+}
+\examples{
+db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
+repo_path <- file.path(tempdir(), "gep2mepTemp")
+
+rp <- createRepository(repo_path, db)
+## Repo root created.
+## Repo created.
+## [15:45:06] Storing pathway data for DB: C3_TFT
+## [15:45:06] Storing pathway data for DB: C3_MIR
+## [15:45:06] Storing pathway data for DB: C4_CGN
+
+rp
+##         ID Dims     Size
+## C3_TFT_gmd   10 18.16 kB
+## C3_MIR_gmd   10 17.25 kB
+## C4_CGN_gmd   10   6.9 kB
+
+## Loading sample gene expression profiles
+geps <- readRDS(system.file("testgep.RDS", package="gep2mep"))
+
+geps[1:3,1:3]
+##       (+)_chelidonine (+)_isoprenaline (+/_)_catechin
+## AKT3               88              117            417
+## MED6              357              410             34
+## NR2E3             383              121            453
+
+buildMEPs(rp, geps)
+
+rp
+##           ID Dims     Size
+##   C3_TFT_gmd   10 18.16 kB
+##   C3_MIR_gmd   10 17.25 kB
+##   C4_CGN_gmd   10   6.9 kB
+##       C3_TFT    2  1.07 kB
+##       C3_MIR    2  1.07 kB
+##       C4_CGN    2  1.04 kB
+unlink(repo_path, TRUE)
+
 }
 \seealso{
 buildMEPs

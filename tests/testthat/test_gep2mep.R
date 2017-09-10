@@ -8,7 +8,7 @@ testpws <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
 dbfolder <- file.path(tempdir(), "gep2mepDB")
 if(file.exists(dbfolder))
     unlink(dbfolder, T)
-rp <- buildEmptyDB(dbfolder, testpws)
+rp <- createRepository(dbfolder, testpws)
 
 
 dbs <- buildDBids(testpws)
@@ -17,7 +17,7 @@ expected_dbs <- c("C3_TFT", "C3_MIR", "C4_CGN")
 test_that("new db creation", {
   expect_equal(length(dbs), length(testpws))
   expect_true(setequal(unique(dbs), expected_dbs))
-  expect_true(setequal(getDBlist(rp), expected_dbs))
+  expect_true(setequal(getCollections(rp), expected_dbs))
   expect_true(rp$has(paste0(expected_dbs[1], "_gmd")))
   expect_true(rp$has(paste0(expected_dbs[2], "_gmd")))
   expect_true(rp$has(paste0(expected_dbs[3], "_gmd")))
@@ -58,29 +58,29 @@ for(i in 1:3) {
   testi <- sample(1:length(testpws),1)
   testj <- sample(1:ncol(testgep),1)
   set <- testpws[[testi]]$set
-  setid <- testpws[[testi]]$setid
+  id <- testpws[[testi]]$id
   tomatch <- intersect(rownames(testgep), set)
   inset <- testgep[match(tomatch, rownames(testgep)), testj]
   ks <- ks.test.2(inset, (1:nrow(testgep))[-inset], maxCombSize=10^10)
   dbi <- dbs[testi]
-  res[[i]] <- list(setid=setid, testj=testj, ks=ks, dbi=dbi)
+  res[[i]] <- list(id=id, testj=testj, ks=ks, dbi=dbi)
 }
 
 test_that("KS statistics", {
   i <- 1
-  setid <- res[[i]]$setid; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(rp$get(dbi)$ES[setid, testj], ks$ES)
-  expect_equal(rp$get(dbi)$PV[setid, testj], ks$p.value)
+  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
+  expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
+  expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
 
   i <- 2
-  setid <- res[[i]]$setid; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(rp$get(dbi)$ES[setid, testj], ks$ES)
-  expect_equal(rp$get(dbi)$PV[setid, testj], ks$p.value)
+  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
+  expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
+  expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
 
   i <- 3
-  setid <- res[[i]]$setid; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(rp$get(dbi)$ES[setid, testj], ks$ES)
-  expect_equal(rp$get(dbi)$PV[setid, testj], ks$p.value)
+  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
+  expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
+  expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
 })
 
 
@@ -130,7 +130,7 @@ test_that("Row ranking", {
 pgset <- c("(+)_chelidonine",  "(+/_)_catechin")
 res <- PertSEA(rp, pgset)
 randi <- sample(1:length(testpws), 1)
-pwsid <- testpws[[randi]]$setid
+pwsid <- testpws[[randi]]$id
 randDB <- dbs[randi]
 ranked <- rankMEPsByRows(rp$get(randDB))
 inset <- ranked[pwsid, pgset]
@@ -168,14 +168,18 @@ inset <- ranked[pws3, randj3]
 outset <- ranked[setdiff(rownames(ranked), pws3), randj3]
 ks3 <- ks.test.2(inset, outset)
 
+name1 <- colnames(testgep)[randj1]
+name3 <- colnames(testgep)[randj3]
+
 test_that("ModSEA", {
-    expect_equal(unname(res[[db1]]$ES[randj1]),
+    expect_equal(unname(res[["ModSEA"]][[db1]][name1, "ES"]),
                  ks1$ES)
-    expect_equal(unname(res[[db1]]$PV[randj1]),
+    expect_equal(unname(res[["ModSEA"]][[db1]][name1, "PV"]),
                  ks1$p.value)
 
-    expect_equal(unname(res[[db3]]$ES[randj3]),
+    expect_equal(unname(res[["ModSEA"]][[db3]][name3, "ES"]),
                  ks3$ES)
-    expect_equal(unname(res[[db3]]$PV[randj3]),
+    expect_equal(unname(res[["ModSEA"]][[db3]][name3, "PV"]),
                  ks3$p.value)    
 })
+

@@ -1,15 +1,17 @@
+
 #' gep2mep: creation and analysis of Module Expression Profiles
 #'
 #' @details
-#' Gene-module expression profiles (MEPs) are based on the expression
+#' Gene-Module expression profiles (MEPs) are based on the expression
 #' of gene modules (sets of genes) as opposed to individual
-#' genes. This package converts gene expression profiles to MEPs and
-#' performs enrichment analysis of modules or perturbagens.
-#' \code{gep2mep} creates a local repository of gene modules, which
-#' can also be imported from the MSigDB database. The local repository
-#' is in the \code{repo} format. When a gene expression profile (GEP)
-#' is passed to \code{\link{buildMEPs}}, it refers to the existing
-#' gene sets to convert the GEP to a MEP.
+#' genes. \code{gep2mep} supports the convertion of gene expression
+#' profiles (GEPs) to MEPs and performs enrichment analysis of modules
+#' or perturbagens. \code{gep2mep} creates a local repository of gene
+#' modules, which can also be imported from the MSigDB database. The
+#' local repository is in the \code{repo} format. When a GEP is passed
+#' to \code{\link{buildMEPs}}, it refers to the stored database of
+#' modules to convert the GEP to a MEP and permanently store the
+#' latter. 
 #'
 #' One type of analysis that can be performed on MEPs and that is
 #' directly supported by \code{gep2mep} is the Drug-Set Enrichment
@@ -25,9 +27,32 @@
 #' module-based version of the Gene Set Enrichment Analysis
 #' (GSEA). See \code{\link{ModSEA}}.
 #'
+#' Naming conventions:
+#'
+#' \itemize{
+#'
+#'   \item{gene module: }{a set of gene identifiers.}
+#'
+#'   \item{module collection: }{a set of gene modules.}
+#'
+#'   \item{module database: }{a set of module collections, like the
+#'   MSigDB.}
+#'
+#'   \item{Module Expression Profile (MEP): }{a ranked list of
+#'   modules, as converted from a gene expression profile (GEP)
+#'   according to a module collection.}
+#'
+#'   \item{perturbagen }{any condition related to a GEP and therefore
+#'   a MEP.}
+#'
+#'   \item{gep2mep repository: }{a module database and possibly a
+#'   related database of MEPs as created by the \code{gep2mep}
+#'   package. It is implemented in \code{repo} format.}
+#'
+#' }
 #' @references Napolitano F. et al, Drug-set enrichment analysis: a
 #'     novel tool to investigate drug mode of action. Bioinformatics
-#'     32, 235–241 (2016).
+#'     32, 235-241 (2016).
 #' 
 #' @docType package
 #' @name gep2mep-package
@@ -35,98 +60,53 @@
 #' @aliases gep2mep
 NULL
 
+
 ## repo is for storage of repositories
-#'@import repo
+#' @import repo
 ## XML is to import MSigDB data
-#'@import XML
+#' @import XML
 ## foreach is for easy parallelization support
-#'@import foreach
+#' @import foreach
 ## utils is for txtProgressBar
-#'@import utils
+#' @import utils
 ## stats is for ks.test
-#'@import stats
-
-
+#' @import stats
+NULL
 
 
 #' Dummy function for parameter inheritance
-#' @param rp A repository created by \code{buildEmptyDB}.
-#' @param rp_meps A repository created with \code{buildEmptyDB}, and
-#'     containing MEPs created with \code{buildMEPs}.
+#' @param rp A repository created by \code{\link{createRepository}}.
+#' @param rp_meps A repository created with
+#'     \code{\link{createRepository}}, and containing MEPs created with
+#'     \code{\link{buildMEPs}}.
+#' @param dbs A set of module collection names as returned by
+#'     \code{getCollections}. If set to "all" (default), all the collections
+#'     in \code{rp} will be used.
+#' @param collections The set of collections to use. If set to "all",
+#'     all collections in the repository will be used.
 #' @return Nothing
-dummyFunction <- function(rp) {}
+dummyFunction <- function(rp, rp_meps, dbs, collections) {}
 
 
-say <- function(txt, stopping=FALSE) {
-    msg <- paste0("[",
-                  format(Sys.time(), format="%H:%M:%S"),
-                  "] ",
-                  txt)
-    
-    if(stopping)
-        stop(msg, call.=FALSE) else message(msg)
-}
-
-ks.sign <- function (x, y)
-{
-    n.x <- as.double(length(x))
-    n.y <- length(y)
-
-    w <- c(x, y)        
-    z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
-
-    return(sign(z[which.max(abs(z))]))
-}
-
-
-ks.test.2 <- function(x, y, ...) {
-    ks <- ks.test(x, y, ...)
-    ks[["ES"]] <- unname(ks.sign(x, y)*ks$statistic)
-    return(ks)
-}
-
-
-#' Imports gene set information from an MsigDB XML file.
+#' Imports gene modules data from an MsigDB XML file.
 #'
-#' @param fname Path to an XML file downloaded from MsigDB
-#' @return A list of gene set entries (see details)
-#' @details The format required by gep2mep for a database of gene sets
-#'     entries, provided by this function, is a list where each item
-#'     includes the following fields:
-#' \itemize{
-#' \item{setid: }{a unique identifier of the gene set}
-#'
-#' \item{setname: }{a descriptive name of the gene set}
-#'
-#' \item{db: }{an ID for the database this gene set belongs to (for
-#' example "GO")}
-#'
-#' \item{subdb: }{an ID for the sub-database this gene set belongs to
-#' (for example "BP")}
-#'
-#' \item{organism: }{name of the organism (for example "homo sapiens")}
-#'
-#' \item{desc: }{text description of the gene set (typically one short
-#' sentence)}
-#'
-#' \item{desc_full: }{a long, detailed description of the gene set}
-#'
-#' \item{set: }{genes in the set, as a vector of (typically) gene
-#' symbols}
-#' }
+#' @param fname Path to an XML file downloaded from MsigDB.
+#' @return A list of gene module entries (see
+#'     \code{link{createRepository}}).
 #'
 #' @examples
 #' \dontrun{
 #' 
 #' ## To run this example, first obtain the MSigDB database in XML
 #' ## format (see
-#' ## http://software.broadinstitute.org/gsea/downloads.jsp). It
-#' ## assumed that this file is available as "msigdb_v6.0.xml".
+#' ## http://software.broadinstitute.org/gsea/downloads.jsp). It is
+#' ## assumed that the database is locally available as the file
+#' ## "msigdb_v6.0.xml".
 #' 
-#' db <- importMsigDB.xml("msigdb_v6.0.xml")
+#' db <- importMSigDB.xml("msigdb_v6.0.xml")
 #'
-#' ## The db is now in an acceptable format to create a local
-#' ## repository using buildEmptyDB
+#' ## The database is now in an acceptable format to create a local
+#' ## repository using createRepository
 #'
 #' length(db)
 #' ## [1] 18643
@@ -136,8 +116,8 @@ ks.test.2 <- function(x, y, ...) {
 #'
 #' str(db[[1]], nchar.max=20)
 #' ## List of 8
-#' ##  $ setid    : chr "M3128"
-#' ##  $ setname  : chr "AAANWWTGC_UNKNOWN"
+#' ##  $ id       : chr "M3128"
+#' ##  $ name     : chr "AAANWWTGC_UNKNOWN"
 #' ##  $ db       : chr "C3"
 #' ##  $ subdb    : chr "TFT"
 #' ##  $ organism : chr "Homo sapiens"
@@ -148,15 +128,15 @@ ks.test.2 <- function(x, y, ...) {
 #' }
 #'
 #' @export
-importMsigDB.xml <- function(fname) {
+importMSigDB.xml <- function(fname) {
 
     xml <- xmlTreeParse(fname, useInternalNodes=TRUE)
     sets <- xml["/MSIGDB/GENESET"]
 
     ids <- sapply(sets, function(x) xmlAttrs(x)[["SYSTEMATIC_NAME"]])
     msigDB <- data.frame(
-        setid = ids,
-        setname = sapply(sets, function(x) xmlAttrs(x)[["STANDARD_NAME"]]),
+        id = ids,
+        name = sapply(sets, function(x) xmlAttrs(x)[["STANDARD_NAME"]]),
         db = sapply(sets, function(x) xmlAttrs(x)[["CATEGORY_CODE"]]),
         subdb = sapply(sets, function(x) xmlAttrs(x)[["SUB_CATEGORY_CODE"]]),
         organism = sapply(sets, function(x) xmlAttrs(x)[["ORGANISM"]]),
@@ -175,89 +155,35 @@ importMsigDB.xml <- function(fname) {
     return(msigDB)    
 }
 
-## #' Converts Gene Expression Profiles (GEPs) to Module-EPs (MEPs).
-## #' @param geps A matrix of ranks where each row corresponds to a gene
-## #'     and each column to a perturbagen. Each column must include all
-## #'     ranks from 1 to the number of rows. Row and column names must
-## #'     be defined.
-## #' @param gmd A database of gene modules. See \code{importMsigDB.xml}
-## #'     for the format.
-## #' @param parallel If TRUE, gene sets will be processed in
-## #'     parallel. Requires a parallel backend.
-## #' @return A list of two matrices, one for Enrichment Scores and one
-## #'     for p-values. Each entry (i,j) refers to gene set i and
-## #'     perturbagen j.
-## #' @seealso buildMEPs
-## #' @export
-gep2mep <- function(geps, gmd, parallel=FALSE) {
-
-    pathw <- gmd
-    genemat <- geps
-    genes <- rownames(genemat)
-
-    x <- list()
-    sets <- sapply(unname(pathw), get, x="set")
-    
-    pb <- txtProgressBar()
-    for(j in 1:ncol(genemat))
-    {
-        setTxtProgressBar(pb, (j-1)/ncol(genemat))
-        genematj <- genemat[,j]
-
-        '%dobest%' <- if (parallel) get('%dopar%') else get('%do%')
-        set <- NULL ## to cope with R CMD check NOTE
-        gres <- foreach(set = sets,
-                        .export=c("gsea","ks.test.2")) %dobest%
-        {
-            where <- match(set, genes)
-            where <- where[!is.na(where)]
-            gsea(where, genematj, FALSE)
-        }
-        x[[j]] <- gres
-    }
-    setTxtProgressBar(pb, 1)
-    close(pb)
-
-    ES <- matrix(NA, length(pathw), ncol(genemat))
-    PV <- matrix(NA, length(pathw), ncol(genemat))
-    
-    for(i in 1:ncol(genemat)){
-        PV[,i] <- sapply(x[[i]], "get", x="p")
-        ES[,i] <- sapply(x[[i]], "get", x="ES")
-    }
-
-    rownames(ES) <- rownames(PV) <-
-        sapply(pathw, "get", x="setid")
-    colnames(ES) <- colnames(PV) <- colnames(genemat)
-    
-    return(list(ES=ES, PV=PV))
-}
 
 
-#' Returns the names of the module databases in a repository.
+#' Returns the names of the module collections in a repository.
 #' @inheritParams dummyFunction
-#' @return Vector of names.
-#' @details The names are obtained from the repository entries that
-#'     are tagged with "gmd", and removing the "_gmd" suffix.
+#' @return Vector of collection names (see details).
+#' @details Each collection in a database has a "db" name and a
+#'     "subdb" name assigned, which are used to build the collection
+#'     identifier as "db_subdb". This function obtains the identifiers
+#'     by looking at data stored in the repository \code{rp} (entries
+#'     that are tagged with "gmd").
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
 #' repo_path <- file.path(tempdir(), "gep2mepTemp")
 #'
-#' rp <- buildEmptyDB(repo_path, db)
+#' rp <- createRepository(repo_path, db)
 #' ## Repo root created.
 #' ## Repo created.
 #' ## [15:45:06] Storing pathway data for DB: C3_TFT
 #' ## [15:45:06] Storing pathway data for DB: C3_MIR
 #' ## [15:45:06] Storing pathway data for DB: C4_CGN
 #'
-#' getDBlist(rp)
+#' getCollections(rp)
 #' ## [1] "C3_TFT" "C3_MIR" "C4_CGN"
 #'
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-getDBlist <- function(rp)
+getCollections <- function(rp)
 {    
     w <- sapply(lapply(rp$entries(), get, x="tags"), `%in%`, x="gmd")
     res <- gsub("_gmd", "", names(w[w]))
@@ -265,22 +191,49 @@ getDBlist <- function(rp)
 }
 
 
-#' Creates an empty DB of gene sets for converting GEPs.
-#' @param path Path to an empty folder where the repository will be
-#'     created.
-#' @param gmd A list of gene modules (see \code{importMsigDB.xml}).
+#' Creates a repository of gene module collections.
+#' @param path Path to an empty or yet non-existing folder where the
+#'     repository will be created.
+#' @param gmd A database of gene modules, see details.
 #' @param name Name of the repository. Defaults to \code{NULL} (a
 #'     generic name will be given).
-#' @param description Description of the repository. Defaults to \code{NULL}
-#'     (a generic repository will be given).
+#' @param description Description of the repository. Defaults to
+#'     \code{NULL} (a generic repository will be given).
 #' @return An object of class \code{repo}.
-#' @seealso buildMEPs, buildDBIDs
+#' @details \code{gmd} must be in the same format as output by
+#'     \code{\link{importMSigDB.xml}}. It is a list where each
+#'     item includes the following fields:
+#'
+#' \itemize{
+#'
+#'   \item{id: }{a unique identifier of the gene set}
+#'
+#'   \item{name: }{a descriptive name of the gene set}
+#'
+#'   \item{db: }{an ID for the database this gene set belongs to (for
+#'   example "GO")}
+#'
+#'   \item{subdb: }{an ID for the sub-database this gene set belongs
+#'   to (for example "BP")}
+#'
+#'   \item{organism: }{name of the organism (for example
+#'   "homo sapiens")}
+#'
+#'   \item{desc: }{text description of the gene set (typically one
+#'   short sentence)}
+#'
+#'   \item{desc_full: }{a long, detailed description of the gene set}
+#'
+#'   \item{set: }{genes in the set, as a vector of (typically) gene
+#'   symbols}
+#' }
+#' @seealso buildMEPs
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
 #' repo_path <- file.path(tempdir(), "gep2mepTemp")
 #'
-#' rp <- buildEmptyDB(repo_path, db)
+#' rp <- createRepository(repo_path, db)
 #' ## Repo root created.
 #' ## Repo created.
 #' ## [15:45:06] Storing pathway data for DB: C3_TFT
@@ -295,7 +248,7 @@ getDBlist <- function(rp)
 #'
 #' unlink(repo_path, TRUE)
 #' @export
-buildEmptyDB <- function(path, gmd, name=NULL, description=NULL)
+createRepository <- function(path, gmd, name=NULL, description=NULL)
 {
     if(is.null(name))
         name <- "gep2mep database"
@@ -323,74 +276,30 @@ buildEmptyDB <- function(path, gmd, name=NULL, description=NULL)
                c("gep2mep", "gmd"))
     }    
     
-    ## rp$put(unique(db_ids), "DB list",
-    ##        "IDs of pathway sub-databases included in this repository",
-    ##        c("gep2mep", "meta"))
-    
     return(rp)
 }
 
 
-storeMEPs <- function(rp, db_id, peps, existing) {
 
-    okargs <- c("overwrite", "append", "stop")
-    if(length(existing)>1 || (! existing %in% okargs))
-        say(paste0("existing must be one of: ",
-                   paste(okargs, collapse=", ")), TRUE)
-    
-    replace <- FALSE
-    
-    if(rp$has(db_id)) {
-
-        if(existing == "stop")
-            say("MEP already exists", TRUE)
-
-        if(existing == "append") {
-            say("Merging MEPs...")
-            curpep <- rp$get(db_id)
-            peps[["ES"]] <- cbind(curpep[["ES"]], peps[["ES"]])
-            peps[["PV"]] <- cbind(curpep[["PV"]], peps[["PV"]])
-            replace <- TRUE
-        }
-        
-        if(existing == "overwrite")
-            replace <- TRUE
-    }
-    
-    say("Storing pathway expression profiles...")        
-    rp$put(peps, db_id,
-           paste0("Pathway data for DB ", db_id,
-                  ". It contains 2 matrices: 1 for enrichement scores ",
-                  "(signed Kolmogorov Smirnov statistic) and one for ",
-                  "the corresponding p values."),
-           c("gep2mep", "mep"), replace=replace)
-
-    curids <- getDBlist(rp)
-    
-    rp$put(colnames(peps[[1]]), "perturbagens",
-           "Names of perturbagens inducing expression profiles",
-           c("gep2mep", "meta"), replace=TRUE)
-
-    say("Done.")
-}
-
-
-
-#' Creates unique identifiers for gene module databases.
-#' @param gmds A gene module database in the same format created by
-#'     \code{importMsigDB.xml}.
+#' Creates a vector of collection labels for each gene module.
+#' @param gmds A gene module database in the same format as created by
+#'     \code{importMSigDB.xml}.
 #' @return A vector of identifiers, one per gene module, with the
 #'     format: "db_subdb".
-#' @seealso importMsigDB.xml
+#' @details This function is useful to subset a database of gene
+#'     modules by collections.
+#' @seealso importMSigDB.xml
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
 #' ids <- buildDBids(db)
 #'
-#' length(ids)
-#' ## [1] 30
-#'
 #' unique(ids)
 #' ## [1] "C3_TFT" "C3_MIR" "C4_CGN"
+#'
+#' db <- db[ids=="C3_MIR"]
+#'
+#' length(db)
+#' ## [1] 10
 #'
 #' @export
 buildDBids <- function(gmds) {
@@ -401,28 +310,35 @@ buildDBids <- function(gmds) {
     return(db_ids)
 }
 
-#' Build MEPs using an existing repository and stores them in it.
+
+#' Build MEPs from GEPs and stores them in the repository.
 #' @inheritParams dummyFunction
 #' @param geps A matrix of ranks where each row corresponds to a gene
 #'     and each column to a perturbagen. Each column must include all
 #'     ranks from 1 to the number of rows. Row and column names must
-#'     be defined.
+#'     be defined. Row names must match names used in gene modules
+#'     (unrecognized names will not be used).
 #' @param parallel If TRUE, gene sets will be processed in
 #'     parallel. Requires a parallel backend.
 #' @param existing What to do if MEPs for a given DB of gene sets are
 #'     already present. Can be one of:
 #'
-#' + stop: the default, throws an error. This is the safest approach.
+#' \itemize{
 #'
-#' + skip: the existing DB will be skipped. This is especially useful
-#' to build a repository incrementally by repeatedly using the same
-#' call to \code{buildMEPs}.
+#'   \item{stop: }{the default, throws an error. This is the safest
+#'   approach.}
 #'
-#' + overwrite: all the existing MEPs for the DB will be replaced by
-#' new MEPs.
+#'   \item{skip: }{the existing DB will be skipped. This is especially
+#'   useful to build a repository incrementally by repeatedly using
+#'   the same call to \code{buildMEPs}}.
 #'
-#' + append: the new MEPs will be appended to the existing
-#' ones. Useful to update the repository.
+#'   \item{overwrite: }{all the existing MEPs for the DB will be replaced by
+#'   new MEPs.}
+#'
+#'   \item{append: }{the new MEPs will be appended to the existing
+#'   ones. Useful to update the repository.}
+#'
+#' }
 #'
 #' @return Nothing. The computed MEPs will be available in the
 #'     repository.
@@ -431,7 +347,7 @@ buildDBids <- function(gmds) {
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
 #' repo_path <- file.path(tempdir(), "gep2mepTemp")
 #'
-#' rp <- buildEmptyDB(repo_path, db)
+#' rp <- createRepository(repo_path, db)
 #' ## Repo root created.
 #' ## Repo created.
 #' ## [15:45:06] Storing pathway data for DB: C3_TFT
@@ -449,9 +365,9 @@ buildDBids <- function(gmds) {
 #'
 #' geps[1:3,1:3]
 #' ##       (+)_chelidonine (+)_isoprenaline (+/_)_catechin
-#' ## AKT3             2050             2703          10435
-#' ## MED6             8495            10020            984
-#' ## NR2E3            9021             2769          11127
+#' ## AKT3               88              117            417
+#' ## MED6              357              410             34
+#' ## NR2E3             383              121            453
 #'
 #' buildMEPs(rp, geps)
 #'
@@ -461,7 +377,6 @@ buildDBids <- function(gmds) {
 #' ##   C3_MIR_gmd   10 17.25 kB
 #' ##   C4_CGN_gmd   10   6.9 kB
 #' ##       C3_TFT    2  1.07 kB
-#' ## perturbagens    5    114 B
 #' ##       C3_MIR    2  1.07 kB
 #' ##       C4_CGN    2  1.04 kB
 #' unlink(repo_path, TRUE)
@@ -475,7 +390,7 @@ buildMEPs <- function(rp, geps, parallel=FALSE, existing="stop")
         say(paste0("existing must be one of: ",
                    paste(okargs, collapse=", ")), TRUE)
     
-    dbs <- getDBlist(rp)
+    dbs <- getCollections(rp)
 
     for(i in 1:length(dbs))
     {        
@@ -503,123 +418,6 @@ buildMEPs <- function(rp, geps, parallel=FALSE, existing="stop")
     
 }
 
-## #' Shows repository statistics
-## #' @param rp A gep2mep repository repository.
-## #' @return Nothing.
-## #' @examples
-## #'
-## #' db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
-## #' repo_path <- file.path(tempdir(), "gep2mepTemp")
-## #'
-## #' rp <- buildEmptyDB(repo_path, db)
-## #'
-## #' dbStats(rp)
-## #' ## Number of perturbagens: 5
-## #' ## Databases and their sizes:
-## #' ##    C3_TFT:    10
-## #' ##    C3_MIR:    10
-## #' ##    C4_CGN:    10
-## #'
-## #' unlink(repo_path, TRUE)
-## #'
-## #' @export
-## dbStats <- function(rp) {
-##     pert <- length(rp$get("perturbagens"))
-##     dbs <- getDBlist(rp)
-
-##     message(paste("Number of perturbagens:", pert))
-##     message("Databases and their sizes:")
-##     for(i in 1:length(dbs))
-##         message(paste0("   ", dbs[i], ":\t",
-##                    length(rp$get(paste0(dbs[i], "_gmd")))))
-## }
-
-
-## newMEPs <- function(rp, geps, gmd, id, parallel=F, overwrite=F)
-## {
-##     n <- length(subdbs)
-##     peps <- gep2pep(geps, thisdb, parallel)
-##     addDBtoRepo(rp, id, peps, gmd)
-## }
-
-
-
-## mergeRepoDBs <- function(path1, path2, path3, overwrite=F)
-## {
-##     quitDiffDBs <- function()
-##         say("The 2 DBs must have the same sub-DBs and pathways", T)
-
-##     if(!file.exists(path1))
-##         say(paste("Path does not exist:", path1), T)
-##     rp1 <- repo_open(path1)
-##     if(!file.exists(path2))
-##         say(paste("Path does not exist:", path2), T)
-##     rp2 <- repo_open(path2)
-##     rp3 <- buildEmptyRepoDB(path3, overwrite)
-
-##     dbs1 <- rp1$get("DB list")
-##     dbs2 <- rp2$get("DB list")
-##     if(!setequal(dbs1, dbs2))
-##         quitDiffDBs()
-
-##     pert1 <- rp1$get("perturbagens")
-##     pert2 <- rp2$get("perturbagens")
-
-##     say(paste("Found", length(pert1), "perturbagens in", path1))
-##     say(paste("Found", length(pert2), "perturbagens in", path2))
-##     say(paste("Found", length(intersect(pert1, pert2)),
-##                   "perturbagens in common, which will be",
-##                   "treated as different."))
-
-##     for(i in 1:length(dbs))
-##     {
-##         say(paste("Merging sub-DB:", dbs[i]))
-##         prl1 <- rp1$get(dbs[i])
-##         pw1 <- rp1$get(paste0(dbs[i], "_gmd"))
-##         prl2 <- rp2$get(dbs[i])
-##         pw2 <- rp2$get(paste0(dbs[i], "_gmd"))
-##         if(!identical(pw1, pw2))
-##             quitDiffDBs()
-##         prl3 <- cbind(prl1, prl2)
-##         addDBtoRepo(rp, dbs[i], cbind(prl1, prl2), pw1)        
-##     }
-
-## }
-
-
-rankMEPsByCols <- function(peps, rankingset="all")
-{
-    rankPEP <- function(PVs, ESs)
-    {
-        sorter <- abs(1-PVs)
-        pos <- ESs > 0
-        pos[is.na(pos)] <- FALSE
-        sorter[pos] = -sorter[pos]        
-        return(rank(sorter, ties.method = "random", na.last="keep"))
-    }
-
-    if(length(rankingset) == 1 && rankingset == "all")
-        rankingset <- 1:nrow(peps[["ES"]])
-    
-    PVs <- peps[["PV"]][rankingset, ]
-    ESs <- peps[["ES"]][rankingset, ]
-    x <- sapply(1:ncol(PVs), function(i) rankPEP(PVs[,i], ESs[,i]))
-    colnames(x) <- colnames(PVs)
-    rownames(x) <- rownames(PVs)
-    return(x)
-}
-
-
-rankMEPsByRows <- function(peps, rankingset="all")
-{
-    if(length(rankingset) == 1 && rankingset == "all")
-        rankingset <- 1:ncol(peps[["ES"]])
-
-    ESs <- peps[["ES"]][, rankingset]
-    x <- t(apply(-ESs, 1, rank, ties.method = "random", na.last="keep"))
-    return(x)
-}
-
 
 #' Export PertSEA or ModSEA results to XLS format
 #' @inheritParams dummyFunction
@@ -632,7 +430,7 @@ rankMEPsByRows <- function(peps, rankingset="all")
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
 #' repo_path <- file.path(tempdir(), "gep2mepTemp")
 #'
-#' rp <- buildEmptyDB(repo_path, db)
+#' rp <- createRepository(repo_path, db)
 #' geps <- readRDS(system.file("testgep.RDS", package="gep2mep"))
 #' buildMEPs(rp, geps)
 #'
@@ -663,59 +461,15 @@ exportSEA <- function(rp, results, outname=NULL)
     }              
 }
 
-attachInfo <- function(rp, results)
-{
-    type <- names(results)[[1]]
-    dbs <- names(results[[type]])
-    newres <- list()
-    for(i in 1:length(results[[type]])) {
-        db <- rp$get(paste0(dbs[i], "_gmd"))
-        resmat <- results[[type]][[i]]
-
-        if(type == "PertSEA") {
-            modIDs <- rownames(resmat)
-            newres[[i]] <- cbind(
-                Module = sapply(db[modIDs], get, x="setname"),
-                Description = sapply(db[modIDs], get, x="desc"),
-                results[[type]][[i]],
-                results[["details"]][[i]]
-            )
-        } else {
-            res <- cbind(
-                Perturbagen = rownames(results[[type]][[i]]),
-                results[[type]][[i]]
-                )
-            
-            if(!is.null(results[["details"]])) {
-                modIDs <- rownames(results[["details"]][[i]])
-                modnames <- sapply(db[modIDs], get, x="setname")
-                details <- t(results[["details"]][[i]])
-
-                colnames(details) <- paste0(modnames, " (",
-                                            rownames(res$details[[i]]),
-                                            ")")
-                newres[[i]] <- cbind(res, details)
-            } else {
-                newres[[i]] <- res
-            }
-        }
-
-    }
-    names(newres) <- names(results[[type]])
-    return(newres)
-}
-
-#' Performs Perturbagen Set Enrichment Analysis
+#' Performs Perturbagen Set Enrichment Analysis (PSEA)
 #' @inheritParams dummyFunction
 #' @param pgset A vector of names of perturbagens. Corresponding MEPs
-#'     must exist in all the gene module databases currently in
+#'     must exist in all the gene module collections currently in
 #'     \code{rp}.
 #' @param bgset The background against which to compare
 #'     \code{pgset}. If set to \code{all} (default), all the remaining
-#'     MEPs will be used.
-#' @param dbs A subset of database names as returned by
-#'     \code{getDBlist}. If set to "all" (default), all of them will
-#'     be used.
+#'     MEPs will be used. Corresponding MEPs must exist in all the
+#'     gene module collections currently in \code{rp}.
 #' @param details If TRUE (default) details will be reported for each
 #'     perturbagen in \code{pgset}.
 #' @return A list of 2, by names "PertSEA" and "details". The
@@ -731,12 +485,15 @@ attachInfo <- function(rp, results)
 #'     the ranks assigned to perturbagens in \code{bgset}. A positive
 #'     (negative) Enrichment Score (ES) is also computed to indicate
 #'     if each gene module is UP- (DOWN-) regulated by \code{pgset} as
-#'     compared to \code{bgset}.
+#'     compared to \code{bgset}. See reference.
+#' @references Napolitano F. et al, Drug-set enrichment analysis: a
+#'     novel tool to investigate drug mode of action. Bioinformatics
+#'     32, 235-241 (2016).
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
 #' repo_path <- file.path(tempdir(), "gep2mepTemp")
 #'
-#' rp <- buildEmptyDB(repo_path, db)
+#' rp <- createRepository(repo_path, db)
 #' geps <- readRDS(system.file("testgep.RDS", package="gep2mep"))
 #' buildMEPs(rp, geps)
 #'
@@ -772,33 +529,45 @@ attachInfo <- function(rp, results)
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-PertSEA <- function(rp_meps, pgset, bgset="all", dbs="all", details=TRUE)
+PertSEA <- function(rp_meps, pgset, bgset="all", collections="all", details=TRUE)
 {
+    dbs <- collections
     if(length(dbs) == 1 && dbs=="all") {
-        dbs <- getDBlist(rp_meps)
+        dbs <- getCollections(rp_meps)
     } else {
-        off <- setdiff(dbs, getDBlist)
+        off <- setdiff(dbs, getCollections)
         if(length(off)>0)
             say(paste0("The following DBs could not be found: ",
                        paste(off, collapse=", ")), TRUE)
     }
 
-    if(length(bgset) == 1 && bgset=="all")
-        bgset <- rp_meps$get("perturbagens")
-    if(length(intersect(pgset, bgset))>0) {
-        bgset <- setdiff(bgset, pgset)
-        say("Common perturbagens removed from bgset.")
-    }
-    rankingset <- c(bgset, pgset)
-
     if(details)
         thedetails <- list() else thedetails <- NULL
     
     res <- list()
-    for(i in 1:length(dbs)) {
+    for(i in 1:length(dbs)) {        
         say(paste0("Working on DB: ", dbs[i]))
+
+        meps <- rp_meps$get(dbs[i])
+
+        if(length(bgset) == 1 && bgset=="all")
+            bgset <- colnames(meps[[1]])
+        
+        if(length(intersect(pgset, bgset))>0) {
+            bgset <- setdiff(bgset, pgset)
+            say("Common perturbagens removed from bgset.")
+        }
+        
+        rankingset <- c(bgset, pgset)
+
+        if(!all(rankingset %in% colnames(meps$ES)))
+            say(paste("The following perturbagens could not be found:",
+                      paste(
+                          setdiff(rankingset, colnames(meps)),
+                          collapse = ", ")), TRUE)                      
+                
         say(paste0("Row-ranking DB..."))
-        ranked <- rankMEPsByRows(rp_meps$get(dbs[i]), rankingset)
+        ranked <- rankMEPsByRows(meps, rankingset)
         say(paste0("Computing enrichments..."))
         
         ks <- apply(ranked, 1, function(row) {
@@ -824,34 +593,17 @@ PertSEA <- function(rp_meps, pgset, bgset="all", dbs="all", details=TRUE)
 }
 
 
-findGeneModules <- function(rp, gene)
-{
-    ## testing
-    ## gene <- intersect(intersect(db[[3]]$set, db[[4]]$set), db[[7]]$set)[1]
-    
-    dbs <- getDBlist(rp)
-    mods <- list()
-    for(i in 1:length(dbs)) {
-        db <- rp$get(paste0(dbs[i], "_gmd"))
-        w <- sapply(db, function(x) gene %in% x$set)
-        mods[[dbs[i]]] <- db[w]
-    }
-
-    return(mods)        
-}
-
-
-
-#' Performs Module Set Enrichment Analysis
+#' Performs Module Set Enrichment Analysis (MSEA)
 #'
 #' @inheritParams dummyFunction
-#' @param modsets A list. Each entry must be a vector of module IDs
-#'     and must be named like a module database. MSEA will be
+#' @param modsets A list where each entry must be a vector of module
+#'     IDs and must be named like a module database. MSEA will be
 #'     performed for each database separately.
-#' @param bgsets A list with the same format as \code{modsets},
-#'     representing the statistical background for each database. If
-#'     set to "all" (the default), all modules not in \code{modsets}
-#'     will be used.
+#' @param bgsets Another list like \code{modsets}, representing the
+#'     statistical background for each database. If set to "all" (the
+#'     default), all modules not in \code{modsets} will be used.
+#' @param details If TRUE (default) details will be reported for each
+#'     perturbagen in \code{pgset}.
 #' @return A list of 2, by names "ModSEA" and "details". The "ModSEA"
 #'     entry is a 2-columns matrix including ESs and p-values for each
 #'     collection and perturbagen. The "details" entry reports the
@@ -862,7 +614,7 @@ findGeneModules <- function(rp, gene)
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
 #' repo_path <- file.path(tempdir(), "gep2mepTemp")
 #'
-#' rp <- buildEmptyDB(repo_path, db)
+#' rp <- createRepository(repo_path, db)
 #' geps <- readRDS(system.file("testgep.RDS", package="gep2mep"))
 #' buildMEPs(rp, geps)
 #'
@@ -892,10 +644,18 @@ findGeneModules <- function(rp, gene)
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-ModSEA <- function(rp_meps, modsets, bgsets="all", details=T)
+ModSEA <- function(rp_meps, modsets, bgsets="all", collections="all", details=T)
 {
+    dbs <- collections
+    if(length(dbs) == 1 && dbs=="all") {
+        dbs <- getCollections(rp_meps)
+    } else {
+        off <- setdiff(dbs, getCollections)
+        if(length(off)>0)
+            say(paste0("The following DBs could not be found: ",
+                       paste(off, collapse=", ")), TRUE)
+    }
     
-    dbs <- getDBlist(rp_meps)
     if(! all(names(modsets) %in% dbs))
         say("Names of modsets should match gene module DB names.", T)
 
@@ -947,8 +707,52 @@ ModSEA <- function(rp_meps, modsets, bgsets="all", details=T)
 }
 
 
+gep2mep <- function(geps, gmd, parallel=FALSE) {
+
+    pathw <- gmd
+    genemat <- geps
+    genes <- rownames(genemat)
+
+    x <- list()
+    sets <- sapply(unname(pathw), get, x="set")
+    
+    pb <- txtProgressBar()
+    for(j in 1:ncol(genemat))
+    {
+        setTxtProgressBar(pb, (j-1)/ncol(genemat))
+        genematj <- genemat[,j]
+
+        '%dobest%' <- if (parallel) get('%dopar%') else get('%do%')
+        set <- NULL ## to cope with R CMD check NOTE
+        gres <- foreach(set = sets,
+                        .export=c("gsea","ks.test.2")) %dobest%
+        {
+            where <- match(set, genes)
+            where <- where[!is.na(where)]
+            gsea(where, genematj, FALSE)
+        }
+        x[[j]] <- gres
+    }
+    setTxtProgressBar(pb, 1)
+    close(pb)
+
+    ES <- matrix(NA, length(pathw), ncol(genemat))
+    PV <- matrix(NA, length(pathw), ncol(genemat))
+    
+    for(i in 1:ncol(genemat)){
+        PV[,i] <- sapply(x[[i]], "get", x="p")
+        ES[,i] <- sapply(x[[i]], "get", x="ES")
+    }
+
+    rownames(ES) <- rownames(PV) <-
+        sapply(pathw, "get", x="id")
+    colnames(ES) <- colnames(PV) <- colnames(genemat)
+    
+    return(list(ES=ES, PV=PV))
+}
+
+
 gsea <- function(S, ranks_list, check=FALSE, alternative = "two.sided")
-                                        #                ,leadedge = FALSE)
 {
     S <- S[!(is.na(S))]
     S1 <- ranks_list[S]
@@ -959,15 +763,169 @@ gsea <- function(S, ranks_list, check=FALSE, alternative = "two.sided")
 
     ks <- ks.test.2(S1, S2, alternative=alternative, maxCombSize=10^10)
 
-    ## lead=NA
-    ## if(leadedge){
-    ##     sSm <- sort(Sm)
-    ##     if(ks$ES > 0)
-    ##         lead=sSm[sSm<=ks$edge] else lead=sSm[sSm>=ks$edge]
-    ## }
-
-    ## return(list(ES=ks$ES, p=ks$"p.value", edge=ks$edge, lead=lead));
     return(list(ES=ks$ES, p=ks$"p.value", edge=ks$edge));
 }
 
 
+storeMEPs <- function(rp, db_id, peps, existing) {
+
+    okargs <- c("overwrite", "append", "stop")
+    if(length(existing)>1 || (! existing %in% okargs))
+        say(paste0("existing must be one of: ",
+                   paste(okargs, collapse=", ")), TRUE)
+    
+    replace <- FALSE
+    
+    if(rp$has(db_id)) {
+
+        if(existing == "stop")
+            say("MEP already exists", TRUE)
+
+        if(existing == "append") {
+            say("Merging MEPs...")
+            curpep <- rp$get(db_id)
+            peps[["ES"]] <- cbind(curpep[["ES"]], peps[["ES"]])
+            peps[["PV"]] <- cbind(curpep[["PV"]], peps[["PV"]])
+            replace <- TRUE
+        }
+        
+        if(existing == "overwrite")
+            replace <- TRUE
+    }
+    
+    say("Storing pathway expression profiles...")        
+    rp$put(peps, db_id,
+           paste0("Pathway data for DB ", db_id,
+                  ". It contains 2 matrices: 1 for enrichement scores ",
+                  "(signed Kolmogorov Smirnov statistic) and one for ",
+                  "the corresponding p values."),
+           c("gep2mep", "mep"), replace=replace)
+
+    curids <- getCollections(rp)
+    
+    rp$put(colnames(peps[[1]]), "perturbagens",
+           "Names of perturbagens inducing expression profiles",
+           c("gep2mep", "meta"), replace=TRUE)
+
+    say("Done.")
+}
+
+say <- function(txt, stopping=FALSE) {
+    msg <- paste0("[",
+                  format(Sys.time(), format="%H:%M:%S"),
+                  "] ",
+                  txt)
+    
+    if(stopping)
+        stop(msg, call.=FALSE) else message(msg)
+}
+
+ks.sign <- function (x, y)
+{
+    n.x <- as.double(length(x))
+    n.y <- length(y)
+
+    w <- c(x, y)        
+    z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
+
+    return(sign(z[which.max(abs(z))]))
+}
+
+
+ks.test.2 <- function(x, y, ...) {
+    ks <- ks.test(x, y, ...)
+    ks[["ES"]] <- unname(ks.sign(x, y)*ks$statistic)
+    return(ks)
+}
+
+
+rankMEPsByCols <- function(peps, rankingset="all")
+{
+    rankPEP <- function(PVs, ESs)
+    {
+        sorter <- abs(1-PVs)
+        pos <- ESs > 0
+        pos[is.na(pos)] <- FALSE
+        sorter[pos] = -sorter[pos]        
+        return(rank(sorter, ties.method = "random", na.last="keep"))
+    }
+
+    if(length(rankingset) == 1 && rankingset == "all")
+        rankingset <- 1:nrow(peps[["ES"]])
+    
+    PVs <- peps[["PV"]][rankingset, ]
+    ESs <- peps[["ES"]][rankingset, ]
+    x <- sapply(1:ncol(PVs), function(i) rankPEP(PVs[,i], ESs[,i]))
+    colnames(x) <- colnames(PVs)
+    rownames(x) <- rownames(PVs)
+    return(x)
+}
+
+
+rankMEPsByRows <- function(peps, rankingset="all")
+{
+    if(length(rankingset) == 1 && rankingset == "all")
+        rankingset <- 1:ncol(peps[["ES"]])
+
+    ESs <- peps[["ES"]][, rankingset]
+    x <- t(apply(-ESs, 1, rank, ties.method = "random", na.last="keep"))
+    return(x)
+}
+
+attachInfo <- function(rp, results)
+{
+    type <- names(results)[[1]]
+    dbs <- names(results[[type]])
+    newres <- list()
+    for(i in 1:length(results[[type]])) {
+        db <- rp$get(paste0(dbs[i], "_gmd"))
+        resmat <- results[[type]][[i]]
+
+        if(type == "PertSEA") {
+            modIDs <- rownames(resmat)
+            newres[[i]] <- cbind(
+                Module = sapply(db[modIDs], get, x="name"),
+                Description = sapply(db[modIDs], get, x="desc"),
+                results[[type]][[i]],
+                results[["details"]][[i]]
+            )
+        } else {
+            res <- cbind(
+                Perturbagen = rownames(results[[type]][[i]]),
+                results[[type]][[i]]
+                )
+            
+            if(!is.null(results[["details"]])) {
+                modIDs <- rownames(results[["details"]][[i]])
+                modnames <- sapply(db[modIDs], get, x="name")
+                details <- t(results[["details"]][[i]])
+
+                colnames(details) <- paste0(modnames, " (",
+                                            rownames(res$details[[i]]),
+                                            ")")
+                newres[[i]] <- cbind(res, details)
+            } else {
+                newres[[i]] <- res
+            }
+        }
+
+    }
+    names(newres) <- names(results[[type]])
+    return(newres)
+}
+
+
+findGeneModules <- function(rp, gene)
+{
+    ## gene <- intersect(intersect(db[[3]]$set, db[[4]]$set), db[[7]]$set)[1]
+    
+    dbs <- getCollections(rp)
+    mods <- list()
+    for(i in 1:length(dbs)) {
+        db <- rp$get(paste0(dbs[i], "_gmd"))
+        w <- sapply(db, function(x) gene %in% x$set)
+        mods[[dbs[i]]] <- db[w]
+    }
+
+    return(mods)        
+}

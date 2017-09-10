@@ -1,0 +1,9 @@
+\name{NEWS}
+\title{News for Package \pkg{gep2mep}}
+
+\section{Changes in version 1.0.1 (2017-10-10)}{
+  \itemize{
+    \item First release.
+  }
+}
+

@@ -1,7 +1,7 @@
 Package: gep2mep
 Type: Package
 Title: Creation and analysis of gene-module expression profiles (MEPs)
-Version: 1.0
+Version: 1.0.0
 Date: 2017-08-31
 Author: Francesco Napolitano <franapoli@gmail.com>
 Maintainer: Francesco Napolitano <franapoli@gmail.com>
@@ -14,9 +14,18 @@ License: GPL-3
 Imports:
     repo,
     XML,
-    foreach
+    foreach,
+    stats,
+    utils
 Suggests:
     WriteXLS,
-    testthat
+    testthat,
+    knitr,
+    rmarkdown
 RoxygenNote: 6.0.1
-
+VignetteBuilder: knitr
+biocViews:
+    GeneExpression,
+    DifferentialExpression,
+    GeneSetEnrichment,
+    DimensionReduction

@@ -2,20 +2,38 @@
 % Please edit documentation in R/gep2mep.R
 \name{buildDBids}
 \alias{buildDBids}
-\title{Creates unique identifiers for gene module databases.}
+\title{Creates a vector of collection labels for each gene module.}
 \usage{
 buildDBids(gmds)
 }
 \arguments{
-\item{gmds}{A gene module database in the same format created by
-\code{importMsigDB.xml}.}
+\item{gmds}{A gene module database in the same format as created by
+\code{importMSigDB.xml}.}
 }
 \value{
-A vector of identifiers created as "DB_SUBDB".
+A vector of identifiers, one per gene module, with the
+    format: "db_subdb".
 }
 \description{
-Creates unique identifiers for gene module databases.
+Creates a vector of collection labels for each gene module.
+}
+\details{
+This function is useful to subset a database of gene
+    modules by collections.
+}
+\examples{
+db <- readRDS(system.file("testgmd.RDS", package="gep2mep"))
+ids <- buildDBids(db)
+
+unique(ids)
+## [1] "C3_TFT" "C3_MIR" "C4_CGN"
+
+db <- db[ids=="C3_MIR"]
+
+length(db)
+## [1] 10
+
 }
 \seealso{
-importMsigDB.xml
+importMSigDB.xml
 }
