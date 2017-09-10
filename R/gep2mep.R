@@ -192,8 +192,8 @@ getCollections <- function(rp)
 
 
 #' Creates a repository of gene module collections.
-#' @param path Path to an empty or yet non-existing folder where the
-#'     repository will be created.
+#' @param path Path to a non-existing directory where the repository
+#'     will be created.
 #' @param gmd A database of gene modules, see details.
 #' @param name Name of the repository. Defaults to \code{NULL} (a
 #'     generic name will be given).
@@ -201,8 +201,8 @@ getCollections <- function(rp)
 #'     \code{NULL} (a generic repository will be given).
 #' @return An object of class \code{repo}.
 #' @details \code{gmd} must be in the same format as output by
-#'     \code{\link{importMSigDB.xml}}. It is a list where each
-#'     item includes the following fields:
+#'     \code{\link{importMSigDB.xml}}. It is a list where each item
+#'     includes the following fields:
 #'
 #' \itemize{
 #'
@@ -258,7 +258,7 @@ createRepository <- function(path, gmd, name=NULL, description=NULL)
                              "the gep2mep package.")
     
     if(file.exists(path)) {
-        say("Can not create DB in existing folder", TRUE) 
+        say("Can not create repository in existing folder", TRUE) 
     } else rp <- repo_open(path, TRUE)
     
     rp$project(name, description)
@@ -437,7 +437,9 @@ buildMEPs <- function(rp, geps, parallel=FALSE, existing="stop")
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 #' psea <- PertSEA(rp, pgset)
 #'
+#' \dontrun{
 #' exportSEA(rp, psea)
+#' }
 #'
 #' unlink(repo_path, TRUE)
 #'
