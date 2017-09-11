@@ -128,6 +128,21 @@ dummyFunction <- function(rp, rp_peps, dbs, collections) {}
 #'
 #' }
 #'
+#' ## A small sample of the MSigDB as imported by importMSigDB.xml is
+#' ## included in gep2pep:
+#'
+#' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#'
+#' str(db_sample[[1]], nchar.max=20)
+#' ## List of 8
+#' ##  $ id       : chr "M3128"
+#' ##  $ name     : chr "AAANWWTGC_UNKNOWN"
+#' ##  $ db       : chr "C3"
+#' ##  $ subdb    : chr "TFT"
+#' ##  $ organism : chr "Homo sapiens"
+#' ##  $ desc     : chr "Genes having at lea"| __truncated__
+#' ##  $ desc_full: chr "Comprehensive ident"| __truncated__
+#' ##  $ set      : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
 #' @export
 importMSigDB.xml <- function(fname) {
 
@@ -165,7 +180,7 @@ importMSigDB.xml <- function(fname) {
 #'     "subdb" name assigned, which are used to build the collection
 #'     identifier as "db_subdb". This function obtains the identifiers
 #'     by looking at data stored in the repository \code{rp} (entries
-#'     that are tagged with "gmd").
+#'     that are tagged with "sets").
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -186,8 +201,8 @@ importMSigDB.xml <- function(fname) {
 #' @export
 getCollections <- function(rp)
 {    
-    w <- sapply(lapply(rp$entries(), get, x="tags"), `%in%`, x="gmd")
-    res <- gsub("_gmd", "", names(w[w]))
+    w <- sapply(lapply(rp$entries(), get, x="tags"), `%in%`, x="sets")
+    res <- gsub("_sets", "", names(w[w]))
     return(res)
 }
 
@@ -195,13 +210,13 @@ getCollections <- function(rp)
 #' Creates a repository of pathway collections.
 #' @param path Path to a non-existing directory where the repository
 #'     will be created.
-#' @param gmd A database of pathways, see details.
+#' @param sets A database of pathways, see details.
 #' @param name Name of the repository. Defaults to \code{NULL} (a
 #'     generic name will be given).
 #' @param description Description of the repository. Defaults to
 #'     \code{NULL} (a generic repository will be given).
 #' @return An object of class \code{repo}.
-#' @details \code{gmd} must be in the same format as output by
+#' @details \code{sets} must be in the same format as output by
 #'     \code{\link{importMSigDB.xml}}. It is a list where each item
 #'     includes the following fields:
 #'
@@ -242,14 +257,14 @@ getCollections <- function(rp)
 #' ## [15:45:06] Storing pathway data for DB: C4_CGN
 #'
 #' rp
-#' ##         ID Dims     Size
-#' ## C3_TFT_gmd   10 18.16 kB
-#' ## C3_MIR_gmd   10 17.25 kB
-#' ## C4_CGN_gmd   10   6.9 kB
+#' ##         ID    Dims     Size
+#' ## C3_TFT_sets   10 18.16 kB
+#' ## C3_MIR_sets   10 17.25 kB
+#' ## C4_CGN_sets   10   6.9 kB
 #'
 #' unlink(repo_path, TRUE)
 #' @export
-createRepository <- function(path, gmd, name=NULL, description=NULL)
+createRepository <- function(path, sets, name=NULL, description=NULL)
 {
     if(is.null(name))
         name <- "gep2pep database"
@@ -264,17 +279,17 @@ createRepository <- function(path, gmd, name=NULL, description=NULL)
     
     rp$project(name, description)
     
-    db_ids <- makeCollectionIDs(gmd)
+    db_ids <- makeCollectionIDs(sets)
     subdbs <- unique(db_ids)
 
     for(i in 1:length(subdbs))
     {
         dbi <- subdbs[i]
         say(paste("Storing pathway data for DB:", dbi))
-        rp$put(gmd[db_ids == dbi],
-               paste0(subdbs[i], "_gmd"),
+        rp$put(sets[db_ids == dbi],
+               paste0(subdbs[i], "_sets"),
                paste("Pathway information for DB", subdbs[i]),
-               c("gep2pep", "gmd"))
+               c("gep2pep", "sets"))
     }    
     
     return(rp)
@@ -283,7 +298,7 @@ createRepository <- function(path, gmd, name=NULL, description=NULL)
 
 
 #' Creates a vector of collection labels for each pathway.
-#' @param gmds A pathway database in the same format as created by
+#' @param sets A pathway database in the same format as created by
 #'     \code{importMSigDB.xml}.
 #' @return A vector of identifiers, one per pathway, with the format:
 #'     "db_subdb".
@@ -303,9 +318,9 @@ createRepository <- function(path, gmd, name=NULL, description=NULL)
 #' ## [1] 10
 #'
 #' @export
-makeCollectionIDs <- function(gmds) {
-    dbs <- sapply(gmds, get, x="db")
-    subdbs <- sapply(gmds, get, x="subdb")
+makeCollectionIDs <- function(sets) {
+    dbs <- sapply(sets, get, x="db")
+    subdbs <- sapply(sets, get, x="subdb")
     subdbs[subdbs==""] <- dbs[subdbs==""]
     db_ids <- paste(dbs, subdbs, sep="_")
     return(db_ids)
@@ -356,10 +371,10 @@ makeCollectionIDs <- function(gmds) {
 #' ## [15:45:06] Storing pathway data for DB: C4_CGN
 #'
 #' rp
-#' ##         ID Dims     Size
-#' ## C3_TFT_gmd   10 18.16 kB
-#' ## C3_MIR_gmd   10 17.25 kB
-#' ## C4_CGN_gmd   10   6.9 kB
+#' ##          ID   Dims     Size
+#' ## C3_TFT_sets   10   18.16 kB
+#' ## C3_MIR_sets   10   17.25 kB
+#' ## C4_CGN_sets   10     6.9 kB
 #'
 #' ## Loading sample gene expression profiles
 #' geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
@@ -373,13 +388,13 @@ makeCollectionIDs <- function(gmds) {
 #' buildPEPs(rp, geps)
 #'
 #' rp
-#' ##           ID Dims     Size
-#' ##   C3_TFT_gmd   10 18.16 kB
-#' ##   C3_MIR_gmd   10 17.25 kB
-#' ##   C4_CGN_gmd   10   6.9 kB
-#' ##       C3_TFT    2  1.07 kB
-#' ##       C3_MIR    2  1.07 kB
-#' ##       C4_CGN    2  1.04 kB
+#' ##           ID  Dims     Size
+#' ##   C3_TFT_sets   10 18.16 kB
+#' ##   C3_MIR_sets   10 17.25 kB
+#' ##   C4_CGN_sets   10   6.9 kB
+#' ##        C3_TFT    2  1.07 kB
+#' ##        C3_MIR    2  1.07 kB
+#' ##        C4_CGN    2  1.04 kB
 #' unlink(repo_path, TRUE)
 #'
 #' @export
@@ -409,7 +424,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, existing="stop")
         if(rp$has(dbs[i]) && existing == "skip")
             next
         
-        thisdb <- rp$get(paste0(dbs[i], "_gmd"))
+        thisdb <- rp$get(paste0(dbs[i], "_sets"))
         peps <- gep2pep(geps, thisdb, parallel)
 
         storePEPs(rp, dbs[i], peps, existing)
@@ -449,7 +464,7 @@ exportSEA <- function(rp, results, outname=NULL)
 {
     type <- names(results)[[1]]
     if(! tolower(type) %in% c("pertsea", "modsea"))
-        say("type must be on of: PertSEA, PathSEA", T)
+        say("type must be on of: PertSEA, PathSEA", TRUE)
 
     if(is.null(outname))
         outname <- paste0(type, ".xls")
@@ -532,7 +547,8 @@ exportSEA <- function(rp, results, outname=NULL)
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-PertSEA <- function(rp_peps, pgset, bgset="all", collections="all", details=TRUE)
+PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
+                    details=TRUE)
 {
     dbs <- collections
     if(length(dbs) == 1 && dbs=="all") {
@@ -568,7 +584,7 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all", details=TRUE
                       paste(
                           setdiff(rankingset, colnames(peps)),
                           collapse = ", ")), TRUE)                      
-                
+        
         say(paste0("Row-ranking DB..."))
         ranked <- rankPEPsByRows(peps, rankingset)
         say(paste0("Computing enrichments..."))
@@ -647,7 +663,8 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all", details=TRUE
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-PathSEA <- function(rp_peps, modsets, bgsets="all", collections="all", details=T)
+PathSEA <- function(rp_peps, modsets, bgsets="all", collections="all",
+                    details=TRUE)
 {
     dbs <- collections
     if(length(dbs) == 1 && dbs=="all") {
@@ -660,7 +677,7 @@ PathSEA <- function(rp_peps, modsets, bgsets="all", collections="all", details=T
     }
     
     if(! all(names(modsets) %in% dbs))
-        say("Names of modsets should match pathway DB names.", T)
+        say("Names of modsets should match pathway DB names.", TRUE)
 
     if(details)
         thedetails <- list() else thedetails <- NULL     
@@ -673,7 +690,7 @@ PathSEA <- function(rp_peps, modsets, bgsets="all", collections="all", details=T
         gmd <- modsets[[dbs[i]]]
 
         if(length(bgsets) == 1 && bgsets=="all") {
-            bgset <- names(rp_peps$get(paste0(dbs[i], "_gmd")))
+            bgset <- names(rp_peps$get(paste0(dbs[i], "_sets")))
         } else bgset <- bgsets[[i]]
 
         if(length(intersect(gmd, bgset)) > 0) {
@@ -686,7 +703,7 @@ PathSEA <- function(rp_peps, modsets, bgsets="all", collections="all", details=T
         notok <- rankingset[rankingset %in% rownames(peps)]
         if(length(notok)>0)
             say(paste0("Pathway set ids not found in ", dbs[i], ": ",
-                       paste(notok, collapse=", ")), T)
+                       paste(notok, collapse=", ")), TRUE)
 
         say(paste0("Col-ranking DB..."))
         ranked <- rankPEPsByCols(peps, rankingset)
@@ -710,9 +727,9 @@ PathSEA <- function(rp_peps, modsets, bgsets="all", collections="all", details=T
 }
 
 
-gep2pep <- function(geps, gmd, parallel=FALSE) {
+gep2pep <- function(geps, sets, parallel=FALSE) {
 
-    pathw <- gmd
+    pathw <- sets
     genemat <- geps
     genes <- rownames(genemat)
 
@@ -881,7 +898,7 @@ attachInfo <- function(rp, results)
     dbs <- names(results[[type]])
     newres <- list()
     for(i in 1:length(results[[type]])) {
-        db <- rp$get(paste0(dbs[i], "_gmd"))
+        db <- rp$get(paste0(dbs[i], "_sets"))
         resmat <- results[[type]][[i]]
 
         if(type == "PertSEA") {
@@ -896,7 +913,7 @@ attachInfo <- function(rp, results)
             res <- cbind(
                 Perturbagen = rownames(results[[type]][[i]]),
                 results[[type]][[i]]
-                )
+            )
             
             if(!is.null(results[["details"]])) {
                 modIDs <- rownames(results[["details"]][[i]])
@@ -925,7 +942,7 @@ findGenePathways <- function(rp, gene)
     dbs <- getCollections(rp)
     mods <- list()
     for(i in 1:length(dbs)) {
-        db <- rp$get(paste0(dbs[i], "_gmd"))
+        db <- rp$get(paste0(dbs[i], "_sets"))
         w <- sapply(db, function(x) gene %in% x$set)
         mods[[dbs[i]]] <- db[w]
     }

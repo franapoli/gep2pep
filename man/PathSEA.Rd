@@ -5,7 +5,7 @@
 \title{Performs Pathway Set Enrichment Analysis (PSEA)}
 \usage{
 PathSEA(rp_peps, modsets, bgsets = "all", collections = "all",
-  details = T)
+  details = TRUE)
 }
 \arguments{
 \item{rp_peps}{A repository created with

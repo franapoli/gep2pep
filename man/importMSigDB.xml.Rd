@@ -49,4 +49,19 @@ str(db[[1]], nchar.max=20)
 
 }
 
+## A small sample of the MSigDB as imported by importMSigDB.xml is
+## included in gep2pep:
+
+db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+
+str(db_sample[[1]], nchar.max=20)
+## List of 8
+##  $ id       : chr "M3128"
+##  $ name     : chr "AAANWWTGC_UNKNOWN"
+##  $ db       : chr "C3"
+##  $ subdb    : chr "TFT"
+##  $ organism : chr "Homo sapiens"
+##  $ desc     : chr "Genes having at lea"| __truncated__
+##  $ desc_full: chr "Comprehensive ident"| __truncated__
+##  $ set      : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
 }

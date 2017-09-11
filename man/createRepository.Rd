@@ -4,13 +4,13 @@
 \alias{createRepository}
 \title{Creates a repository of pathway collections.}
 \usage{
-createRepository(path, gmd, name = NULL, description = NULL)
+createRepository(path, sets, name = NULL, description = NULL)
 }
 \arguments{
 \item{path}{Path to a non-existing directory where the repository
 will be created.}
 
-\item{gmd}{A database of pathways, see details.}
+\item{sets}{A database of pathways, see details.}
 
 \item{name}{Name of the repository. Defaults to \code{NULL} (a
 generic name will be given).}
@@ -25,7 +25,7 @@ An object of class \code{repo}.
 Creates a repository of pathway collections.
 }
 \details{
-\code{gmd} must be in the same format as output by
+\code{sets} must be in the same format as output by
     \code{\link{importMSigDB.xml}}. It is a list where each item
     includes the following fields:
 
@@ -66,10 +66,10 @@ rp <- createRepository(repo_path, db)
 ## [15:45:06] Storing pathway data for DB: C4_CGN
 
 rp
-##         ID Dims     Size
-## C3_TFT_gmd   10 18.16 kB
-## C3_MIR_gmd   10 17.25 kB
-## C4_CGN_gmd   10   6.9 kB
+##         ID    Dims     Size
+## C3_TFT_sets   10 18.16 kB
+## C3_MIR_sets   10 17.25 kB
+## C4_CGN_sets   10   6.9 kB
 
 unlink(repo_path, TRUE)
 }

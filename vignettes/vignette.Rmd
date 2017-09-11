@@ -86,11 +86,11 @@ rp <- createRepository(repoRoot, db)
 The repository is in *repo* format, see the *repo* package help to use
 the data directly. However, knowing *repo* is not necessary to use
 *gep2pep*. The following lists the contents of the repository. Items
-containing pathways are assigned the name "DB_SUBDB_gmd".
+containing pathways are assigned the name "DB_SUBDB_sets".
 
 ```{r}
 rp
-rp$get("C3_TFT_gmd")$M5067$desc
+rp$get("C3_TFT_sets")$M5067$desc
 ```
 
 
@@ -164,9 +164,9 @@ UP-regulated by the chosen set of two drugs is M5012, while the most
 DOWN-regulated is M18759. They are respectively described as:
 
 ```{r}
-gmds <- rp$get("C3_MIR_gmd")
-gmds$M5012$desc
-gmds$M18759$desc
+sets <- rp$get("C3_MIR_sets")
+sets$M5012$desc
+sets$M18759$desc
 ```
 
 The analysis can be exported in XLS format as follows:

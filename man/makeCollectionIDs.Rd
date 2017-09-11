@@ -4,10 +4,10 @@
 \alias{makeCollectionIDs}
 \title{Creates a vector of collection labels for each pathway.}
 \usage{
-makeCollectionIDs(gmds)
+makeCollectionIDs(sets)
 }
 \arguments{
-\item{gmds}{A pathway database in the same format as created by
+\item{sets}{A pathway database in the same format as created by
 \code{importMSigDB.xml}.}
 }
 \value{

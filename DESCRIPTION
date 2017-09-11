@@ -28,4 +28,5 @@ biocViews:
     GeneExpression,
     DifferentialExpression,
     GeneSetEnrichment,
-    DimensionReduction
+    DimensionReduction,
+    Pathways

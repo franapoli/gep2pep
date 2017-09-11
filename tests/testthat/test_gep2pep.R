@@ -18,14 +18,14 @@ test_that("new db creation", {
   expect_equal(length(dbs), length(testpws))
   expect_true(setequal(unique(dbs), expected_dbs))
   expect_true(setequal(getCollections(rp), expected_dbs))
-  expect_true(rp$has(paste0(expected_dbs[1], "_gmd")))
-  expect_true(rp$has(paste0(expected_dbs[2], "_gmd")))
-  expect_true(rp$has(paste0(expected_dbs[3], "_gmd")))
+  expect_true(rp$has(paste0(expected_dbs[1], "_sets")))
+  expect_true(rp$has(paste0(expected_dbs[2], "_sets")))
+  expect_true(rp$has(paste0(expected_dbs[3], "_sets")))
   expect_true(rp$has("gep2pep database"))
   expect_equal(length(rp$entries()), 4)
-  expect_equal(length(rp$get(paste0(expected_dbs[1], "_gmd"))), 10)
-  expect_equal(length(rp$get(paste0(expected_dbs[2], "_gmd"))), 10)
-  expect_equal(length(rp$get(paste0(expected_dbs[3], "_gmd"))), 10)
+  expect_equal(length(rp$get(paste0(expected_dbs[1], "_sets"))), 10)
+  expect_equal(length(rp$get(paste0(expected_dbs[2], "_sets"))), 10)
+  expect_equal(length(rp$get(paste0(expected_dbs[3], "_sets"))), 10)
 })
 
 buildPEPs(rp, testgep)
@@ -148,8 +148,8 @@ test_that("PertSEA", {
 
 db1 <- expected_dbs[1];
 db3 <- expected_dbs[3]
-pws1 <- names(rp$get(paste0(db1, "_gmd")))[c(2,5,6,9)]
-pws3 <- names(rp$get(paste0(db3, "_gmd")))[c(1,3,10)]
+pws1 <- names(rp$get(paste0(db1, "_sets")))[c(2,5,6,9)]
+pws3 <- names(rp$get(paste0(db3, "_sets")))[c(1,3,10)]
 subpws <- list(pws1, pws3)
 names(subpws) <- c(db1, db3)
 res <- PathSEA(rp, subpws)

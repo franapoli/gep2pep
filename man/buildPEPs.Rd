@@ -57,10 +57,10 @@ rp <- createRepository(repo_path, db)
 ## [15:45:06] Storing pathway data for DB: C4_CGN
 
 rp
-##         ID Dims     Size
-## C3_TFT_gmd   10 18.16 kB
-## C3_MIR_gmd   10 17.25 kB
-## C4_CGN_gmd   10   6.9 kB
+##          ID   Dims     Size
+## C3_TFT_sets   10   18.16 kB
+## C3_MIR_sets   10   17.25 kB
+## C4_CGN_sets   10     6.9 kB
 
 ## Loading sample gene expression profiles
 geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
@@ -74,13 +74,13 @@ geps[1:3,1:3]
 buildPEPs(rp, geps)
 
 rp
-##           ID Dims     Size
-##   C3_TFT_gmd   10 18.16 kB
-##   C3_MIR_gmd   10 17.25 kB
-##   C4_CGN_gmd   10   6.9 kB
-##       C3_TFT    2  1.07 kB
-##       C3_MIR    2  1.07 kB
-##       C4_CGN    2  1.04 kB
+##           ID  Dims     Size
+##   C3_TFT_sets   10 18.16 kB
+##   C3_MIR_sets   10 17.25 kB
+##   C4_CGN_sets   10   6.9 kB
+##        C3_TFT    2  1.07 kB
+##        C3_MIR    2  1.07 kB
+##        C4_CGN    2  1.04 kB
 unlink(repo_path, TRUE)
 
 }
