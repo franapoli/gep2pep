@@ -243,4 +243,5 @@ rp$info()
 unlink(repoRoot, TRUE)
 ```
 
-<hr/><small><i>Based on `gep2pep` version  `r packageVersion("gep2pep")`</i></small>
+<hr/><small><i>Based on `gep2pep` version `r
+packageVersion("gep2pep")`</i></small>

@@ -289,8 +289,8 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
         name <- "gep2pep repository"
     if(is.null(description))
         description <- paste("This repository contains pathway information",
-                             "and possibly Pathway Expression Profiles created with",
-                             "the gep2pep package.")    
+                             "and possibly Pathway Expression Profiles", 
+                             "created with the gep2pep package.")    
     
     if(file.exists(path)) {
         say("Can not create repository in existing folder", TRUE) 
