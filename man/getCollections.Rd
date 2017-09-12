@@ -13,7 +13,9 @@ getCollections(rp)
 Vector of collection names (see details).
 }
 \description{
-Returns the names of the pathway collections in a repository.
+Given a \code{gep2pep} repository, returns the names of the
+stored collections by looking at appropriate repository item
+names.
 }
 \details{
 Each collection in a database has a "db" name and a
@@ -30,9 +32,9 @@ repo_path <- file.path(tempdir(), "gep2pepTemp")
 rp <- createRepository(repo_path, db)
 ## Repo root created.
 ## Repo created.
-## [15:45:06] Storing pathway data for DB: C3_TFT
-## [15:45:06] Storing pathway data for DB: C3_MIR
-## [15:45:06] Storing pathway data for DB: C4_CGN
+## [15:45:06] Storing pathway data for collection: C3_TFT
+## [15:45:06] Storing pathway data for collection: C3_MIR
+## [15:45:06] Storing pathway data for collection: C4_CGN
 
 getCollections(rp)
 ## [1] "C3_TFT" "C3_MIR" "C4_CGN"

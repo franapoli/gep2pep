@@ -6,23 +6,23 @@
 \alias{gep2pep}
 \title{gep2pep: creation and analysis of Pathway Expression Profiles}
 \description{
-gep2pep: creation and analysis of Pathway Expression Profiles
+Pathway Expression Profiles (PEPs) are based on the collective
+expression of genes belonging to a collection of pathways (or
+generic gene sets) as opposed to individual genes. \code{gep2pep}
+supports the conversion of gene expression profiles (GEPs) to PEPs
+and performs enrichment analysis of pathways or perturbagens.
 }
 \details{
-Pathway Expression Profiles (PEPs) are based on the expression of
-pathways (defined as sets of genes) as opposed to individual
-genes. \code{gep2pep} supports the convertion of gene expression
-profiles (GEPs) to PEPs and performs enrichment analysis of
-pathways or perturbagens. \code{gep2pep} creates a local repository
-of gene sets, which can also be imported from the MSigDB
-database. The local repository is in the \code{repo} format. When a
-GEP is passed to \code{\link{buildPEPs}}, it refers to the stored
-database of pathways to convert the GEP to a PEP and permanently
-store the latter.
+\code{gep2pep} creates a local repository of gene sets, which can
+also be imported from the MSigDB database. The local repository is
+in the \code{repo} format. When a GEP, defined as a ranked list of
+genes, is passed to \code{\link{buildPEPs}}, the stored database of
+pathways is used to convert the GEP to a PEP and permanently store
+the latter.
 
 One type of analysis that can be performed on PEPs and that is
 directly supported by \code{gep2pep} is the Drug-Set Enrichment
-Analysis (DSEA, see reference below). It finds pathways that
+Analysis (DSEA, see reference section). It finds pathways that
 are consistently dysregulated by a set of drugs, as opposed to a
 background of other drugs. Of course PEPs may refer to
 non-pharmacological perturbagens (genetic perturbations, disease
@@ -46,12 +46,18 @@ Naming conventions:
   \item{pathway database: }{a set of pathway collections, like the
   MSigDB.}
 
-  \item{Pathway Expression Profile (PEP): }{a ranked list of
-  pathways, as converted from a gene expression profile (GEP)
-  according to a pathway collection.}
+  \item{Gene Expression Profile (GEP): }{a named vector where names
+  are gene identifiers of the same type as those in the pathway
+  database and elements are ranks ranging from 1 to the number of
+  genes.}
 
-  \item{perturbagen }{any condition inducing a GEP and therefore a
-  PEP.}
+  \item{Pathway Expression Profile (PEP): }{a ranked list of
+  pathways, as converted from a GEP according to a pathway
+  collection.}
+
+  \item{perturbagen: }{any experimental condition (drug, gene
+  knock-out, disease state, cell type, etc.) characterized by an
+  induced GEP and therefore a PEP.}
 
   \item{gep2pep repository: }{a pathway database and possibly a
   related database of PEPs as created by the \code{gep2pep}

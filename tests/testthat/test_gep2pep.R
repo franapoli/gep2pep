@@ -1,9 +1,21 @@
 
 context("gep2pep")
 
+randmat <- matrix(runif(9), 3)
+nm_randmat <- randmat
+rownames(nm_randmat) <- colnames(nm_randmat) <- 1:3
+okmat <- apply(nm_randmat,2,rank)
+okmatNA <- okmat; okmatNA[1,2] <- NA
+okmatRep <- okmat; okmatRep[2:3, 1] <- 1
+test_that("check geps", {
+    expect_error(checkGEPsFormat(randmat))
+    expect_error(checkGEPsFormat(nm_randmat))
+    expect_error(checkGEPsFormat(okmatNA))
+    expect_error(checkGEPsFormat(okmatRep))
+    expect_silent(checkGEPsFormat(okmat))
+})
+
 testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
-testgep <- testgep[rownames(testgep) != "NA",]
-testgep <- apply(testgep, 2, rank)
 testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 dbfolder <- file.path(tempdir(), "gep2pepDB")
 if(file.exists(dbfolder))
@@ -31,12 +43,11 @@ test_that("new db creation", {
 buildPEPs(rp, testgep)
 
 test_that("build first PEPs", {
-  expect_equal(length(rp$entries()), 8)
+  expect_equal(length(rp$entries()), 7)
   expect_equal(length(dbs), length(testpws))
   expect_true(rp$has(expected_dbs[1]))
   expect_true(rp$has(expected_dbs[2]))
   expect_true(rp$has(expected_dbs[3]))
-  expect_true(rp$has("perturbagens"))
 
   expect_equal(names(rp$get(expected_dbs[1])), c("ES", "PV"))
   expect_equal(names(rp$get(expected_dbs[3])), c("ES", "PV"))
@@ -84,6 +95,25 @@ test_that("KS statistics", {
 })
 
 
+oldTFT <- rp$get("C3_TFT")
+buildPEPs(rp, testgep[, 1:3])
+untouchedTFT <- rp$get("C3_TFT")
+
+subs <- c(2,4,5)
+smallTFT <- list(ES=oldTFT$ES[, subs],
+                 PV=oldTFT$PV[, subs])
+rp$set("C3_TFT", smallTFT)
+
+buildPEPs(rp, testgep[, 1:3])
+
+rebuiltTFT <- rp$get("C3_TFT")
+test_that("Adding PEPs", {
+    expect_equal(untouchedTFT, oldTFT)
+    expect_equal(rebuiltTFT$ES, oldTFT$ES[,colnames(rebuiltTFT$ES)])
+    expect_equal(rebuiltTFT$PV, oldTFT$PV[,colnames(rebuiltTFT$PV)])
+})
+
+rp$set("C3_TFT", oldTFT)
 
 peps1 <- rp$get(expected_dbs[1])
 peps3 <- rp$get(expected_dbs[3])
@@ -113,7 +143,7 @@ if(any(ESs<0)) {
     lastid <- which.min(PVs)
 } else lastid <- which.max(PVs)
 
-test_that("Row ranking", {
+test_that("Column ranking", {
     expect_true(all(apply(ColRanked1, 2, setequal, 1:10)))
     expect_true(all(apply(ColRanked3, 2, setequal, 1:10)))
 
@@ -182,4 +212,3 @@ test_that("PathSEA", {
     expect_equal(unname(res[["PathSEA"]][[db3]][name3, "PV"]),
                  ks3$p.value)    
 })
-

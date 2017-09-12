@@ -2,15 +2,15 @@
 % Please edit documentation in R/gep2pep.R
 \name{PertSEA}
 \alias{PertSEA}
-\title{Performs Perturbagen Set Enrichment Analysis (PSEA)}
+\title{Performs Perturbagen Set Enrichment Analysis}
 \usage{
 PertSEA(rp_peps, pgset, bgset = "all", collections = "all",
   details = TRUE)
 }
 \arguments{
 \item{rp_peps}{A repository created with
-\code{\link{createRepository}}, and containing PEPs created with
-\code{\link{buildPEPs}}.}
+\code{\link{createRepository}}, and containing PEPs created
+with \code{\link{buildPEPs}}.}
 
 \item{pgset}{A vector of names of perturbagens. Corresponding PEPs
 must exist in all the pathway collections currently in
@@ -18,14 +18,15 @@ must exist in all the pathway collections currently in
 
 \item{bgset}{The background against which to compare
 \code{pgset}. If set to \code{all} (default), all the remaining
-PEPs will be used. Corresponding PEPs must exist in all the
-pathway collections currently in \code{rp}.}
+PEPs will be used. If provided, the corresponding PEPs must
+exist in all the pathway collections currently in \code{rp}.}
 
-\item{collections}{The set of collections to use. If set to "all",
-all collections in the repository will be used.}
+\item{collections}{A subset of the collection names returned by
+\code{getCollections}. If set to "all" (default), all the
+collections in \code{rp} will be used.}
 
-\item{details}{If TRUE (default) details will be reported for each
-perturbagen in \code{pgset}.}
+\item{details}{If TRUE (default) rank details will be reported for
+each perturbagen in \code{pgset}.}
 }
 \value{
 A list of 2, by names "PertSEA" and "details". The
@@ -35,18 +36,23 @@ A list of 2, by names "PertSEA" and "details". The
     perturbagen in \code{pgset} for each pathway.
 }
 \description{
-Performs Perturbagen Set Enrichment Analysis (PSEA)
+Perturbagen Set Enrichment Analysis (PertSEA) can be seen as a
+Gene-SEA performed over rows (as opposed to columns) of a matrix of
+GEPs. It tells how much a pathway is consistently dysregulated by a
+set of perturbagens when compared to a statistical background of
+perturbagens.
 }
 \details{
-Perturbagen Set Enrichment Analysis (PSEA) can be seen as
-    a Gene-SEA performed over rows (as opposed to columns) of a
-    profile matrix. For each pathway, all perturbagens are
-    ranked and the p-value of a Kolmogorov-Smirnov test is computed
-    for the ranks assigned to perturbagens in \code{pgset} against
-    the ranks assigned to perturbagens in \code{bgset}. A positive
-    (negative) Enrichment Score (ES) is also computed to indicate
-    if each pathway is UP- (DOWN-) regulated by \code{pgset} as
-    compared to \code{bgset}. See reference.
+For each pathway, all perturbagens are ranked by how much
+    they dysregulate it (from the most UP-regulating to the most
+    DOWN-regulating). Then, a Kolmogorov-Smirnov (KS) test is
+    performed to compare the ranks assigned to perturbagens in
+    \code{pgset} against the ranks assigned to perturbagens in
+    \code{bgset}. A positive (negative) Enrichment Score (ES) of
+    the KS test indicates whether each pathway is UP- (DOWN-)
+    regulated by \code{pgset} as compared to \code{bgset}. A
+    p-value is associated to the ES. See reference for further
+    details.
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -59,16 +65,16 @@ buildPEPs(rp, geps)
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 psea <- PertSEA(rp, pgset)
 ## [16:26:58] Common perturbagens removed from bgset.
-## [16:26:58] Working on DB: C3_TFT
-## [16:26:58] Row-ranking DB...
+## [16:26:58] Working on collection: C3_TFT
+## [16:26:58] Row-ranking collection...
 ## [16:26:58] Computing enrichments...
 ## [16:26:58] done.
-## [16:26:58] Working on DB: C3_MIR
-## [16:26:58] Row-ranking DB...
+## [16:26:58] Working on collection: C3_MIR
+## [16:26:58] Row-ranking collection...
 ## [16:26:58] Computing enrichments...
 ## [16:26:58] done.
-## [16:26:58] Working on DB: C4_CGN
-## [16:26:58] Row-ranking DB...
+## [16:26:58] Working on collection: C4_CGN
+## [16:26:58] Row-ranking collection...
 ## [16:26:58] Computing enrichments...
 ## [16:26:58] done.
 
@@ -78,11 +84,11 @@ psea$PertSEA$C3_TFT
 ## M2501   1.0000000 0.2
 ## M3128  -0.6666667 0.6
 ## M11607  0.6666667 0.6
-## M10817 -0.6666667 0.6
 ## M16694 -0.6666667 0.6
 ## M14463  0.6666667 0.6
 ## M14686 -0.6666667 0.6
 ## M12599  0.5000000 0.9
+## M10817 -0.5000000 0.9
 ## M4831   0.3333333 1.0
 
 unlink(repo_path, TRUE)

@@ -15,14 +15,15 @@ will be created.}
 \item{name}{Name of the repository. Defaults to \code{NULL} (a
 generic name will be given).}
 
-\item{description}{Description of the repository. Defaults to
-\code{NULL} (a generic repository will be given).}
+\item{description}{Description of the repository. If NULL
+(default), a generic description will be given.}
 }
 \value{
 An object of class \code{repo}.
 }
 \description{
-Creates a repository of pathway collections.
+Given a database of collections, stores them in a local repository
+to be used by \code{gep2pep} functions.
 }
 \details{
 \code{sets} must be in the same format as output by
@@ -61,9 +62,9 @@ repo_path <- file.path(tempdir(), "gep2pepTemp")
 rp <- createRepository(repo_path, db)
 ## Repo root created.
 ## Repo created.
-## [15:45:06] Storing pathway data for DB: C3_TFT
-## [15:45:06] Storing pathway data for DB: C3_MIR
-## [15:45:06] Storing pathway data for DB: C4_CGN
+## [15:45:06] Storing pathway data for collection: C3_TFT
+## [15:45:06] Storing pathway data for collection: C3_MIR
+## [15:45:06] Storing pathway data for collection: C4_CGN
 
 rp
 ##         ID    Dims     Size

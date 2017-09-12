@@ -2,12 +2,12 @@
 % Please edit documentation in R/gep2pep.R
 \name{makeCollectionIDs}
 \alias{makeCollectionIDs}
-\title{Creates a vector of collection labels for each pathway.}
+\title{Creates a collection label for each pathway.}
 \usage{
 makeCollectionIDs(sets)
 }
 \arguments{
-\item{sets}{A pathway database in the same format as created by
+\item{sets}{A pathway database in the same format as output by
 \code{importMSigDB.xml}.}
 }
 \value{
@@ -15,11 +15,9 @@ A vector of identifiers, one per pathway, with the format:
     "db_subdb".
 }
 \description{
-Creates a vector of collection labels for each pathway.
-}
-\details{
-This function is useful to subset a database of pathway by
-    collections.
+Given a database, uses "db" and "subdb" entries to create a vector
+of collection identifiers. Useful to extract a collection from a
+database.
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))

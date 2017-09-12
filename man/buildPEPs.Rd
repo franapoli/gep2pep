@@ -4,7 +4,8 @@
 \alias{buildPEPs}
 \title{Build PEPs from GEPs and stores them in the repository.}
 \usage{
-buildPEPs(rp, geps, parallel = FALSE, existing = "stop")
+buildPEPs(rp, geps, parallel = FALSE, collections = "all",
+  replace_existing = FALSE)
 }
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
@@ -12,38 +13,31 @@ buildPEPs(rp, geps, parallel = FALSE, existing = "stop")
 \item{geps}{A matrix of ranks where each row corresponds to a gene
 and each column to a perturbagen. Each column must include all
 ranks from 1 to the number of rows. Row and column names must
-be defined. Row names must match names used in pathways
-(unrecognized names will not be used).}
+be defined. Row names will be matched against gene identifiers
+in the pathways collections, and unrecognized gene names will
+not be used.}
 
 \item{parallel}{If TRUE, gene sets will be processed in
 parallel. Requires a parallel backend.}
 
-\item{existing}{What to do if PEPs for a given DB of gene sets are
-    already present. Can be one of:
+\item{collections}{A subset of the collection names returned by
+\code{getCollections}. If set to "all" (default), all the
+collections in \code{rp} will be used.}
 
-\itemize{
-
-  \item{stop: }{the default, throws an error. This is the safest
-  approach.}
-
-  \item{skip: }{the existing DB will be skipped. This is especially
-  useful to build a repository incrementally by repeatedly using
-  the same call to \code{buildPEPs}}.
-
-  \item{overwrite: }{all the existing PEPs for the DB will be replaced by
-  new PEPs.}
-
-  \item{append: }{the new PEPs will be appended to the existing
-  ones. Useful to update the repository.}
-
-}}
+\item{replace_existing}{What to do if PEPs, identified by column
+names of \code{geps} are already present in the repository. If
+set to TRUE, they will be replaced, otherwise they will be
+skipped and only PEPs of new perturbagens will be computed and
+added.}
 }
 \value{
 Nothing. The computed PEPs will be available in the
     repository.
 }
 \description{
-Build PEPs from GEPs and stores them in the repository.
+Given a matrix of ranked lists of genes (GEPs) and a \code{gep2pep}
+repository, converts GEPs to PEPs and stores the latter in the
+repository.
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -52,9 +46,9 @@ repo_path <- file.path(tempdir(), "gep2pepTemp")
 rp <- createRepository(repo_path, db)
 ## Repo root created.
 ## Repo created.
-## [15:45:06] Storing pathway data for DB: C3_TFT
-## [15:45:06] Storing pathway data for DB: C3_MIR
-## [15:45:06] Storing pathway data for DB: C4_CGN
+## [15:45:06] Storing pathway data for collection: C3_TFT
+## [15:45:06] Storing pathway data for collection: C3_MIR
+## [15:45:06] Storing pathway data for collection: C4_CGN
 
 rp
 ##          ID   Dims     Size
@@ -81,6 +75,7 @@ rp
 ##        C3_TFT    2  1.07 kB
 ##        C3_MIR    2  1.07 kB
 ##        C4_CGN    2  1.04 kB
+
 unlink(repo_path, TRUE)
 
 }

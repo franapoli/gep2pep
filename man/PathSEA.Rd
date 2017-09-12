@@ -4,40 +4,53 @@
 \alias{PathSEA}
 \title{Performs Pathway Set Enrichment Analysis (PSEA)}
 \usage{
-PathSEA(rp_peps, modsets, bgsets = "all", collections = "all",
+PathSEA(rp_peps, pathways, bgsets = "all", collections = "all",
   details = TRUE)
 }
 \arguments{
 \item{rp_peps}{A repository created with
-\code{\link{createRepository}}, and containing PEPs created with
-\code{\link{buildPEPs}}.}
+\code{\link{createRepository}}, and containing PEPs created
+with \code{\link{buildPEPs}}.}
 
-\item{modsets}{A list where each entry must be a vector of pathway
+\item{pathways}{A list where each entry must be a vector of pathway
 IDs and must be named like a pathway database. PSEA will be
 performed for each database separately.}
 
-\item{bgsets}{Another list like \code{modsets}, representing the
+\item{bgsets}{Another list like \code{pathways}, representing the
 statistical background for each database. If set to "all" (the
-default), all pathways not in \code{modsets} will be used.}
+default), all pathways not in \code{pathways} will be used.}
 
-\item{collections}{The set of collections to use. If set to "all",
-all collections in the repository will be used.}
+\item{collections}{A subset of the collection names returned by
+\code{getCollections}. If set to "all" (default), all the
+collections in \code{rp} will be used.}
 
 \item{details}{If TRUE (default) details will be reported for each
 perturbagen in \code{pgset}.}
 }
 \value{
-A list of 2, by names "PathSEA" and "details". The "PathSEA"
-    entry is a 2-columns matrix including ESs and p-values for each
-    collection and perturbagen. The "details" entry reports the
-    rank of each pathway in \code{modsets} for each perturbagen.
+A list of 2, by names "PathSEA" and "details". The
+    "PathSEA" entry is a 2-columns matrix including ESs and
+    p-values for each collection and perturbagen. The "details"
+    entry reports the rank of each pathway in \code{pathways} for
+    each perturbagen.
 }
 \description{
-Performs Pathway Set Enrichment Analysis (PSEA)
+PathSEA is analogous to the Gene Set Enrichment Analysis (GSEA),
+but for pathways instead of single genes. It can therefore be used
+to look for perturbagens that consistently UP- or DOWN-regulate a
+set of pathways.
 }
 \details{
-PathSEA is the analogous of Gene Set Enrichment Analysis
-    (GSEA), but for pathways instead of single genes.
+For each perturbagen, all pathways are ranked by how much
+    they are dysregulated by it (from the most UP-regulated to the
+    most DOWN-regulatied, according to the corresponding
+    p-values). Then, a Kolmogorov-Smirnov (KS) test is performed to
+    compare the ranks assigned to pathways in \code{pathways} against
+    the ranks assigned to pathways in \code{bgsets}. A positive
+    (negative) Enrichment Score (ES) of the KS test indicates
+    whether each pathway is UP- (DOWN-) regulated by \code{pgset}
+    as compared to \code{bgset}. A p-value is associated to the
+    ES.
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -47,18 +60,18 @@ rp <- createRepository(repo_path, db)
 geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
 buildPEPs(rp, geps)
 
-modsets <- list(C3_TFT = c("M11607", "M10817", "M16694"),
+pathways <- list(C3_TFT = c("M11607", "M10817", "M16694"),
                 C4_CGN = c("M19723", "M5038", "M13419", "M1094"))
 
-psea <- PathSEA(rp, modsets)
-## [15:35:29] Working on DB: C3_TFT
+psea <- PathSEA(rp, pathways)
+## [15:35:29] Working on collection: C3_TFT
 ## [15:35:29] Common pathway sets removed from bgset.
-## [15:35:29] Col-ranking DB...
+## [15:35:29] Col-ranking collection...
 ## [15:35:29] Computing enrichments...
 ## [15:35:29] done.
-## [15:35:29] Working on DB: C4_CGN
+## [15:35:29] Working on collection: C4_CGN
 ## [15:35:29] Common pathway sets removed from bgset.
-## [15:35:29] Col-ranking DB...
+## [15:35:29] Col-ranking collection...
 ## [15:35:29] Computing enrichments...
 ## [15:35:29] done.
 
@@ -68,7 +81,7 @@ psea$PathSEA$C3_TFT
 ## (_)_atenolol     0.7142857 0.1666667
 ## (+)_isoprenaline 0.5714286 0.4000000
 ## (+/_)_catechin   0.5714286 0.4000000
-## (+)_chelidonine  0.3809524 0.8500000
+## (+)_chelidonine  0.3333333 0.9333333
 
 unlink(repo_path, TRUE)
 

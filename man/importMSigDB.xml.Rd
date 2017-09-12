@@ -2,19 +2,20 @@
 % Please edit documentation in R/gep2pep.R
 \name{importMSigDB.xml}
 \alias{importMSigDB.xml}
-\title{Imports pathways data from an MsigDB XML file.}
+\title{Imports pathways data from an MSigDB XML file.}
 \usage{
 importMSigDB.xml(fname)
 }
 \arguments{
-\item{fname}{Path to an XML file downloaded from MsigDB.}
+\item{fname}{Path to an XML file downloaded from MSigDB.}
 }
 \value{
 A list of pathway entries (see
-    \code{link{createRepository}}).
+    \code{\link{createRepository}}).
 }
 \description{
-Imports pathways data from an MsigDB XML file.
+Creates a \code{gep2mep} repository of pathway data using the XML
+distribution of the MSigDB (see references).
 }
 \examples{
 \dontrun{
@@ -64,4 +65,7 @@ str(db_sample[[1]], nchar.max=20)
 ##  $ desc     : chr "Genes having at lea"| __truncated__
 ##  $ desc_full: chr "Comprehensive ident"| __truncated__
 ##  $ set      : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
+}
+\references{
+\url{http://software.broadinstitute.org/gsea/downloads.jsp}
 }

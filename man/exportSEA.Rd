@@ -17,7 +17,8 @@ exportSEA(rp, results, outname = NULL)
 Nothing.
 }
 \description{
-Export PertSEA or PathSEA results to XLS format
+The XLS output includes the full PertSEA or PathSEA results,
+together with additional gene set information for the PertSEA.
 }
 \examples{
 

@@ -4,21 +4,18 @@
 \alias{dummyFunction}
 \title{Dummy function for parameter inheritance}
 \usage{
-dummyFunction(rp, rp_peps, dbs, collections)
+dummyFunction(rp, rp_peps, collections)
 }
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
 
 \item{rp_peps}{A repository created with
-\code{\link{createRepository}}, and containing PEPs created with
-\code{\link{buildPEPs}}.}
+\code{\link{createRepository}}, and containing PEPs created
+with \code{\link{buildPEPs}}.}
 
-\item{dbs}{A set of pathway collection names as returned by
-\code{getCollections}. If set to "all" (default), all the collections
-in \code{rp} will be used.}
-
-\item{collections}{The set of collections to use. If set to "all",
-all collections in the repository will be used.}
+\item{collections}{A subset of the collection names returned by
+\code{getCollections}. If set to "all" (default), all the
+collections in \code{rp} will be used.}
 }
 \value{
 Nothing
