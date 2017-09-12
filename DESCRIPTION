@@ -1,6 +1,6 @@
 Package: gep2pep
 Type: Package
-Title: Creation and analysis of Pathway Expression Profiles (PEPs)
+Title: Creation and Analysis of Pathway Expression Profiles (PEPs)
 Version: 1.0.0
 Date: 2017-08-31
 Author: Francesco Napolitano <franapoli@gmail.com>
@@ -22,10 +22,9 @@ Suggests:
     testthat,
     knitr,
     rmarkdown
-RoxygenNote: 6.0.1
+RoxygenNote: 5.0.1
 VignetteBuilder: knitr
-biocViews:
-    GeneExpression,
+biocViews: GeneExpression,
     DifferentialExpression,
     GeneSetEnrichment,
     DimensionReduction,

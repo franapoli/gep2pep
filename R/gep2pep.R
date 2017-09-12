@@ -286,17 +286,24 @@ getCollections <- function(rp)
 createRepository <- function(path, sets, name=NULL, description=NULL)
 {
     if(is.null(name))
-        name <- "gep2pep database"
+        name <- "gep2pep repository"
     if(is.null(description))
-        description <- paste("This database contains pathway information",
-                             "and pathway expression profiles created by",
-                             "the gep2pep package.")
+        description <- paste("This repository contains pathway information",
+                             "and possibly Pathway Expression Profiles created with",
+                             "the gep2pep package.")    
     
     if(file.exists(path)) {
         say("Can not create repository in existing folder", TRUE) 
     } else rp <- repo_open(path, TRUE)
     
     rp$project(name, description)
+
+    ## un-hiding the project item
+    ## silencing warning because of a bug in repo
+    curwarn <- options()$warn
+    options(warn=-1)
+    rp$untag(name, "hide")
+    options(warn=curwarn)
     
     db_ids <- makeCollectionIDs(sets)
     subdbs <- unique(db_ids)
@@ -308,7 +315,8 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
         rp$put(sets[db_ids == dbi],
                paste0(subdbs[i], "_sets"),
                paste("Pathway information for collection", subdbs[i]),
-               c("gep2pep", "sets"))
+               c("gep2pep", "sets"),
+               prj = name)
     }    
     
     return(rp)
@@ -833,10 +841,11 @@ gsea <- function(S, ranks_list, check=FALSE, alternative = "two.sided")
 
 
 storePEPs <- function(rp, db_id, peps) {
-        
+    
     if(rp$has(db_id)) {
         curmat <- rp$get(db_id)
-        
+
+        ## checking what's new and what's old
         curpeps <- colnames(curmat$ES)
         newpeps <- setdiff(colnames(peps$ES), curpeps)
         oldpeps <- intersect(colnames(peps$ES), curpeps)
@@ -849,6 +858,7 @@ storePEPs <- function(rp, db_id, peps) {
         peps$ES <- cbind(curmat$ES, peps$ES[, newpeps])
         peps$PV <- cbind(curmat$PV, peps$PV[, newpeps])        
     }
+
     
     say("Storing pathway expression profiles...")        
     rp$put(peps, db_id,
@@ -857,7 +867,8 @@ storePEPs <- function(rp, db_id, peps) {
                   "(signed Kolmogorov Smirnov statistic) and one for ",
                   "the corresponding p-values."),
            c("gep2pep", "pep"), replace=TRUE,
-           depends = paste0("db_id", "_sets"))
+           depends = paste0(db_id, "_sets"),
+           prj = get_repo_prjname(rp))
 
     say("Done.")
 }
@@ -1017,4 +1028,11 @@ checkGEPsFormat <- function(geps)
                   "that each column is made of numbers from 1",
                   "to the number of rows."), TRUE)
         
+}
+
+get_repo_prjname <- function(rp) {
+    prjname <- names(
+        rp$entries()[sapply(lapply(rp$entries(), get, x="tags"),
+                            `%in%`, x="#project")]
+    )[[1]] ## take the first for robustness, should be only 1
 }

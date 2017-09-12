@@ -1,8 +1,10 @@
 ---
 title: "Introduction to gep2pep"
-date:
+date: 
 author: "Francesco Napolitano"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    toc: true
 vignette: >
   %\VignetteIndexEntry{Introduction to gep2pep}
   %\VignetteEngine{knitr::rmarkdown}
@@ -12,30 +14,29 @@ vignette: >
 
 ## About gep2pep
 
-Pathway Expression Profiles (PEPs) are based on the expression of
-pathways (sets of genes) as opposed to individual genes. *gep2pep*
-supports the convertion of gene expression profiles (GEPs) to PEPs and
-can perform enrichment analysis of both pathways and
-perturbagens.
+Pathway Expression Profiles (PEPs) are based on the collective
+expression of genes belonging to a collection of pathways (or generic
+gene sets) as opposed to individual genes. \code{gep2pep} supports the
+conversion of gene expression profiles (GEPs) to PEPs and performs
+enrichment analysis of pathways or perturbagens.
 
-*gep2pep* creates a local repository of pathways, which can also
-be imported from the MSigDB database. The local repository is in the
-*repo* format. When a GEP is passed to the function *buildPEPs*, it
-refers to the stored database of pathways to convert the GEP to a PEP
-and permanently store the latter.
+`gep2pep` creates a local repository of gene sets, which can also be
+imported from the MSigDB database. The local repository is in the
+`repo` format. When a GEP, defined as a ranked list of genes, is
+passed to `buildPEPs`, the stored database of pathways is used to
+convert the GEP to a PEP and permanently store the latter.
 
 One type of analysis that can be performed on PEPs and that is
-directly supported by *gep2pep* is the Drug-Set Enrichment Analysis
-(DSEA, see reference below). It finds pathways that are
-consistently dysregulated by a set of drugs, as opposed to a
-background of other drugs. Of course PEPs may refer to
-non-pharmacological perturbagens (genetic perturbations, disease
-states, etc.) for analogous analyses. See the *PertSEA* function
+directly supported by `gep2pep` is the Drug-Set Enrichment Analysis
+(DSEA, see reference below). It finds pathways that are consistently
+dysregulated by a set of drugs, as opposed to a background of other
+drugs. Of course PEPs may refer to non-pharmacological perturbagens
+(genetic perturbations, disease states, etc.) for analogous
+analyses. See the `PertSEA` function.
 
 A complementary approach is that of finding perturbagens that
-consistently dysregulate a set of pathways. This is the
-pathway-based version of the Gene Set Enrichment Analysis (GSEA). See
-PathSEA.
+consistently dysregulate a set of pathways. This is the pathway-based
+version of the Gene Set Enrichment Analysis (GSEA). See `PathSEA`.
 
 In order to use the package, it must be loaded as follows:
 
@@ -44,11 +45,11 @@ library(gep2pep)
 ```
 
 
-## Creating a repository of pathways.
+## Creating a repository of pathways
 
 The [MSigDB](http://software.broadinstitute.org/gsea/msigdb) is a
 curated database of gene set collections. The entire database can be
-downloaded as a single XML file and used by *gep2pep*. The following
+downloaded as a single XML file and used by `gep2pep`. The following
 commented code would import the database once downloaded:
 
 ```{r}
@@ -63,8 +64,8 @@ db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 
 The database includes 30 pathways, each of which is included in
 one of 3 different collections. Each collection is identified by a
-"db" and "subdb" name, which *gep2pep* puts together into a single
-collection name using *makeCollectionIDs*.
+"db" and "subdb" name, which `gep2pep` puts together into a single
+collection name using `makeCollectionIDs`.
 
 
 ```{r}
@@ -75,18 +76,19 @@ print(subdbs)
 makeCollectionIDs(db)
 ```
 
-In order to build a local *gep2pep* repository containing pathway
-data, *createRepository* is used:
+In order to build a local `gep2pep` repository containing pathway
+data, `createRepository` is used:
 
 ```{r}
 repoRoot <- file.path(tempdir(), "gep2pep_data")
 rp <- createRepository(repoRoot, db)
 ```
 
-The repository is in *repo* format, see the *repo* package help to use
-the data directly. However, knowing *repo* is not necessary to use
-*gep2pep*. The following lists the contents of the repository. Items
-containing pathways are assigned the name "DB_SUBDB_sets".
+The repository is in `repo` format (see later in this document how to
+access the repository directly). However, knowing `repo` is not
+necessary to use `gep2pep`. The following lists the contents of the
+repository and loads the description of the pathway "M5067" from the
+collection "C3_TFT":
 
 ```{r}
 rp
@@ -94,7 +96,7 @@ rp$get("C3_TFT_sets")$M5067$desc
 ```
 
 
-## Adding Pathway Expression Profiles
+## Creating Pathway Expression Profiles
 
 Pathway Expression Profiles (PEPs) are created from Gene Expression
 Profiles (GEPs) using pathway information from the
@@ -108,7 +110,7 @@ of rows of the matrix).
 
 One well known database that can be obtained in this format is for
 example the Connectivty Map. A small excerpt (after further
-processing) is included with the *gep2pep*. The excerpt must be
+processing) is included with the `gep2pep`. The excerpt must be
 considered as a dummy example, as it only includes 500 genes for 5
 perturbagens. It can be loaded as follows:
 
@@ -118,29 +120,35 @@ dim(geps)
 geps[1:5, 1:3]
 ```
 
-The GEPs can be converted to PEPs using the *buildPEPs* function. They
-are stored as repository items by the names "DB_SUBDB". Each PEP is
-composed of an Enrichment Score (ES) -- p-value (PV) pair associated
-to each pathway. ESs and PVs are stored in two separated matrices. For
-each perturbagen, the p-value reports wether a pathway is
-significantly dysregulated and the sign of the corresponding ES
-indicates the direction (UP- or DOWN-regulation).
+The GEPs can be converted to PEPs using the `buildPEPs` function. They
+are stored as repository items by the names "DB_SUBDB".
 
 ```{r}
 buildPEPs(rp, geps)
-rp$get("C3_TFT")
 ```
+
+Each PEP is composed of an Enrichment Score (ES) -- p-value (PV) pair
+associated to each pathway. ESs and PVs are stored in two separated
+matrices. For each perturbagen, the p-value reports wether a pathway
+is significantly dysregulated and the sign of the corresponding ES
+indicates the direction (UP- or DOWN-regulation).
+
+```{r}
+rp$get("C3_TFT")$ES[1:3, 1:3]
+rp$get("C3_TFT")$PV[1:3, 1:3]
+```
+
 
 ## Performing Perturbagen-Set Enrichment Analysis.
 
 Suppose the stored PEPs correspond to pharmacological
-perturbations. Then *gep2pep* can perform Drug-Set Enrichment Analysis
+perturbations. Then `gep2pep` can perform Drug-Set Enrichment Analysis
 (DSEA, see Napolitano et al., 2016, Bioinformatics). It finds pathways
 that are consistently dysregulated by a set of drugs, as opposed to a
 background of other drugs. Of course PEPs may refer to
 non-pharmacological conditions (genetic perturbations, disease states,
 etc.) for analogous analyses (Perturbagen-Set Enrichment Analysis,
-PertSEA). Given a set *dset* of drugs of interest, PertSEA (which in
+PertSEA). Given a set `pgset` of drugs of interest, PertSEA (which in
 this case is a DSEA) is performed as follows:
 
 ```{r}
@@ -189,12 +197,50 @@ specified to run the analysis in each of them.
 pathsets <- list(C3_TFT = c("M11607", "M10817", "M16694"),
                 C4_CGN = c("M19723", "M5038", "M13419", "M1094"))
 psea <- PathSEA(rp, pathsets)
-psea$C3_TFT
+psea$PathSEA$C3_TFT
 ```
 
 PathSEA results are analogous to those of PertSEA, but
 perturbagen-wise.
 
+
+## Accessing the repository directly
+
+`gep2pep` users don't need to understand how to interact with a
+`gep2pep` repository, however it can be useful in some
+
+situations. `gep2pep` repositories are in the `repo` format (see the
+`repo` package), so they can be accessed as any other `repo`
+repository. However item tags should not be changed, as they are used
+by `gep2pep` to identify data types. Each `gep2pep` repository always
+contains a special *project* item including repository and session
+information, which can be shown as follows:
+
+```{r}
+rp$info("gep2pep repository")
+```
+
+Poject name and description can be provided when creating the
+repository (`createRepository`), or edited with `rp$set("gep2pep
+repository", newname="my project name", description="my project
+description")`. The repository will also contain an item for each
+pathway collection, and possibly an item for each corresponding PEP
+collection, as in this example:
+
+```{r}
+rp
+```
+
+In order to look at the space that the repository is using, the
+following command can be used:
+
+```{r}
+rp$info()
+```
+
+
 ```{r include=FALSE}
 unlink(repoRoot, TRUE)
 ```
+
+<hr/><small><i>Based on `gep2pep` version  `r packageVersion("gep2pep")`</i></small>
