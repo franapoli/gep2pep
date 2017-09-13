@@ -12,13 +12,14 @@ PathSEA(rp_peps, pathways, bgsets = "all", collections = "all",
 \code{\link{createRepository}}, and containing PEPs created
 with \code{\link{buildPEPs}}.}
 
-\item{pathways}{A list where each entry must be a vector of pathway
-IDs and must be named like a pathway database. PSEA will be
-performed for each database separately.}
+\item{pathways}{A database of pathways in the same format as input
+to \code{\link{createRepository}}. PSEA will be performed for
+each database separately.}
 
 \item{bgsets}{Another list like \code{pathways}, representing the
 statistical background for each database. If set to "all" (the
-default), all pathways not in \code{pathways} will be used.}
+default), all pathways that are in the repository and not in
+\code{pathways} will be used.}
 
 \item{collections}{A subset of the collection names returned by
 \code{getCollections}. If set to "all" (default), all the
@@ -45,12 +46,12 @@ For each perturbagen, all pathways are ranked by how much
     they are dysregulated by it (from the most UP-regulated to the
     most DOWN-regulatied, according to the corresponding
     p-values). Then, a Kolmogorov-Smirnov (KS) test is performed to
-    compare the ranks assigned to pathways in \code{pathways} against
-    the ranks assigned to pathways in \code{bgsets}. A positive
-    (negative) Enrichment Score (ES) of the KS test indicates
-    whether each pathway is UP- (DOWN-) regulated by \code{pgset}
-    as compared to \code{bgset}. A p-value is associated to the
-    ES.
+    compare the ranks assigned to pathways in \code{pathways}
+    against the ranks assigned to pathways in \code{bgsets}. A
+    positive (negative) Enrichment Score (ES) of the KS test
+    indicates whether each pathway is UP- (DOWN-) regulated by
+    \code{pgset} as compared to \code{bgset}. A p-value is
+    associated to the ES.
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -60,10 +61,11 @@ rp <- createRepository(repo_path, db)
 geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
 buildPEPs(rp, geps)
 
-pathways <- list(C3_TFT = c("M11607", "M10817", "M16694"),
-                C4_CGN = c("M19723", "M5038", "M13419", "M1094"))
+pathways <- c("M11607", "M10817", "M16694",         ## from C3_TFT
+              "M19723", "M5038", "M13419", "M1094") ## from C4_CGN
+subdb <- db[pathways]
 
-psea <- PathSEA(rp, pathways)
+psea <- PathSEA(rp, subdb)
 ## [15:35:29] Working on collection: C3_TFT
 ## [15:35:29] Common pathway sets removed from bgset.
 ## [15:35:29] Col-ranking collection...
@@ -86,4 +88,3 @@ psea$PathSEA$C3_TFT
 unlink(repo_path, TRUE)
 
 }
-

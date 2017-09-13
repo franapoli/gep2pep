@@ -2,8 +2,8 @@
 % Please edit documentation in R/gep2pep.R
 \docType{package}
 \name{gep2pep-package}
-\alias{gep2pep}
 \alias{gep2pep-package}
+\alias{gep2pep}
 \title{gep2pep: creation and analysis of Pathway Expression Profiles}
 \description{
 Pathway Expression Profiles (PEPs) are based on the collective
@@ -65,12 +65,11 @@ Naming conventions:
 
 }
 }
-\author{
-Francesco Napolitano \email{franapoli@gmail.com}
-}
 \references{
 Napolitano F. et al, Drug-set enrichment analysis: a
     novel tool to investigate drug mode of action. Bioinformatics
     32, 235-241 (2016).
 }
-
+\author{
+Francesco Napolitano \email{franapoli@gmail.com}
+}

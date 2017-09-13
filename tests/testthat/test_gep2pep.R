@@ -175,13 +175,11 @@ test_that("PertSEA", {
 })
 
 
-
 db1 <- expected_dbs[1];
 db3 <- expected_dbs[3]
 pws1 <- names(rp$get(paste0(db1, "_sets")))[c(2,5,6,9)]
 pws3 <- names(rp$get(paste0(db3, "_sets")))[c(1,3,10)]
-subpws <- list(pws1, pws3)
-names(subpws) <- c(db1, db3)
+subpws <- testpws[c(pws1, pws3)]
 res <- PathSEA(rp, subpws)
 
 randj1 <- sample(1:ncol(testgep), 1)
@@ -212,3 +210,19 @@ test_that("PathSEA", {
     expect_equal(unname(res[["PathSEA"]][[db3]][name3, "PV"]),
                  ks3$p.value)    
 })
+
+
+
+## A gene that is found in at least 3 pathways:
+gene <- intersect(intersect(testpws[[3]]$set, testpws[[4]]$set),
+                  testpws[[7]]$set)[1]
+subpw <- gene2pathways(rp, gene)
+## it is actually found also in a 4th:
+extrapw <- setdiff(names(subpw), names(testpws[c(3,4,7)]))
+
+test_that("gene2pathways", {
+    expect_true(length(subpw) >= 3)
+    expect_true(all(names(testpws[c(3,4,7)]) %in% names(subpw)))
+    expect_true(gene %in% testpws[[extrapw]]$set)
+})
+

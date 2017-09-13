@@ -10,7 +10,8 @@ createRepository(path, sets, name = NULL, description = NULL)
 \item{path}{Path to a non-existing directory where the repository
 will be created.}
 
-\item{sets}{A database of pathways, see details.}
+\item{sets}{A database of pathways (or generic gene sets), see
+details.}
 
 \item{name}{Name of the repository. Defaults to \code{NULL} (a
 generic name will be given).}
@@ -77,4 +78,3 @@ unlink(repo_path, TRUE)
 \seealso{
 buildPEPs
 }
-

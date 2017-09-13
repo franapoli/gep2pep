@@ -189,14 +189,15 @@ exportSEA(rp, psea)
 A complementary approach to PertSEA is Pathway-Set Enrichment Analysis
 (PathSEA). PathSEA searches for perturbagens that consistently
 dysregulate a set of pathways. It can be seen as a pathway-based
-version of the popular Gene Set Enrichment Analysis (GSEA). Since
-pathways are different in each collection, a different set must be
-specified to run the analysis in each of them.
+version of the popular Gene Set Enrichment Analysis (GSEA). The
+PathSEA is run independently in each pathway collection.
 
 ```{r}
-pathsets <- list(C3_TFT = c("M11607", "M10817", "M16694"),
-                C4_CGN = c("M19723", "M5038", "M13419", "M1094"))
-psea <- PathSEA(rp, pathsets)
+pathways <- c("M11607", "M10817", "M16694",         ## from C3_TFT
+              "M19723", "M5038", "M13419", "M1094") ## from C4_CGN
+subdb <- db[pathways]
+
+psea <- PathSEA(rp, subdb)
 psea$PathSEA$C3_TFT
 ```
 

@@ -229,7 +229,8 @@ getCollections <- function(rp)
 #'
 #' @param path Path to a non-existing directory where the repository
 #'     will be created.
-#' @param sets A database of pathways, see details.
+#' @param sets A database of pathways (or generic gene sets), see
+#'     details.
 #' @param name Name of the repository. Defaults to \code{NULL} (a
 #'     generic name will be given).
 #' @param description Description of the repository. If NULL
@@ -658,12 +659,13 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #' set of pathways.
 #'
 #' @inheritParams dummyFunction
-#' @param pathways A list where each entry must be a vector of pathway
-#'     IDs and must be named like a pathway database. PSEA will be
-#'     performed for each database separately.
+#' @param pathways A database of pathways in the same format as input
+#'     to \code{\link{createRepository}}. PSEA will be performed for
+#'     each database separately.
 #' @param bgsets Another list like \code{pathways}, representing the
 #'     statistical background for each database. If set to "all" (the
-#'     default), all pathways not in \code{pathways} will be used.
+#'     default), all pathways that are in the repository and not in
+#'     \code{pathways} will be used.
 #' @param details If TRUE (default) details will be reported for each
 #'     perturbagen in \code{pgset}.
 #' @return A list of 2, by names "PathSEA" and "details". The
@@ -675,12 +677,12 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #'     they are dysregulated by it (from the most UP-regulated to the
 #'     most DOWN-regulatied, according to the corresponding
 #'     p-values). Then, a Kolmogorov-Smirnov (KS) test is performed to
-#'     compare the ranks assigned to pathways in \code{pathways} against
-#'     the ranks assigned to pathways in \code{bgsets}. A positive
-#'     (negative) Enrichment Score (ES) of the KS test indicates
-#'     whether each pathway is UP- (DOWN-) regulated by \code{pgset}
-#'     as compared to \code{bgset}. A p-value is associated to the
-#'     ES.
+#'     compare the ranks assigned to pathways in \code{pathways}
+#'     against the ranks assigned to pathways in \code{bgsets}. A
+#'     positive (negative) Enrichment Score (ES) of the KS test
+#'     indicates whether each pathway is UP- (DOWN-) regulated by
+#'     \code{pgset} as compared to \code{bgset}. A p-value is
+#'     associated to the ES.
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
@@ -689,10 +691,11 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #' geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
 #' buildPEPs(rp, geps)
 #'
-#' pathways <- list(C3_TFT = c("M11607", "M10817", "M16694"),
-#'                 C4_CGN = c("M19723", "M5038", "M13419", "M1094"))
+#' pathways <- c("M11607", "M10817", "M16694",         ## from C3_TFT
+#'               "M19723", "M5038", "M13419", "M1094") ## from C4_CGN
+#' subdb <- db[pathways]
 #'
-#' psea <- PathSEA(rp, pathways)
+#' psea <- PathSEA(rp, subdb)
 #' ## [15:35:29] Working on collection: C3_TFT
 #' ## [15:35:29] Common pathway sets removed from bgset.
 #' ## [15:35:29] Col-ranking collection...
@@ -718,7 +721,11 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
                     details=TRUE)
 {
-    dbs <- collections
+    pathways <- pwList2pwStruct(pathways)
+    if(bgsets != "all")
+        bgsets <- pwList2pwStruct(bgsets)
+       
+    dbs <- collections ## just renaming
     if(length(dbs) == 1 && dbs=="all") {
         dbs <- getCollections(rp_peps)
     } else {
@@ -740,11 +747,11 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
     for(i in 1:length(pathways))
     {
         say(paste0("Working on collection: ", dbs[i]))
-        gmd <- pathways[[dbs[i]]]
+        gmd <- names(pathways[[dbs[i]]])
 
         if(length(bgsets) == 1 && bgsets=="all") {
             bgset <- names(rp_peps$get(paste0(dbs[i], "_sets")))
-        } else bgset <- bgsets[[i]]
+        } else bgset <- names(bgsets[[i]])
 
         if(length(intersect(gmd, bgset)) > 0) {
             bgset <- setdiff(bgset, gmd)
@@ -778,6 +785,47 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
 
     return(list(PathSEA=res, details=thedetails))
 }
+
+
+#' Finds pathways including a given gene.
+#'
+#' Given a gene, find the set of pathways that involve it in each
+#' collection of the repository. This can be used to define a set of
+#' pathways for the \code{\link{PathSEA}}.
+#'
+#' @inheritParams dummyFunction
+#' @param gene A gene identifier of the same type as that used to
+#'     create the repository.
+#' @return A database of pathways suitable as input to
+#'     \code{\link{PathSEA}}.
+#' @seealso createRepository, PathSEA
+#' @examples
+#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#'
+#' ## Finding all pathways containing "FAM126A":
+#' subpw <- gene2pathways(rp, "FAM126A")
+#'
+#' print(names(subpw))
+#'
+#' unlink(repo_path, TRUE)
+#'
+#' @export
+gene2pathways <- function(rp, gene)
+{
+    dbs <- getCollections(rp)
+    mods <- list()
+    for(i in 1:length(dbs)) {
+        db <- rp$get(paste0(dbs[i], "_sets"))
+        w <- sapply(db, function(x) gene %in% x$set)
+        mods <- c(mods, db[w])
+    }
+
+    return(mods)        
+}
+
 
 
 gep2pep <- function(geps, sets, parallel=FALSE) {
@@ -930,7 +978,7 @@ rankPEPsByRows <- function(peps, rankingset="all")
     if(length(rankingset) == 1 && rankingset == "all")
         rankingset <- 1:ncol(peps[["ES"]])
 
-    ESs <- peps[["ES"]][, rankingset]
+    ESs <- peps[["ES"]][, rankingset, drop=FALSE]
     x <- t(apply(-ESs, 1, rank, ties.method = "random", na.last="keep"))
     return(x)
 }
@@ -978,21 +1026,6 @@ attachInfo <- function(rp, results)
 }
 
 
-findGenePathways <- function(rp, gene)
-{
-    ## gene <- intersect(intersect(db[[3]]$set, db[[4]]$set), db[[7]]$set)[1]
-    
-    dbs <- getCollections(rp)
-    mods <- list()
-    for(i in 1:length(dbs)) {
-        db <- rp$get(paste0(dbs[i], "_sets"))
-        w <- sapply(db, function(x) gene %in% x$set)
-        mods[[dbs[i]]] <- db[w]
-    }
-
-    return(mods)        
-}
-
 checkGEPsFormat <- function(geps)
 {
     dims <- dim(geps)
@@ -1035,4 +1068,15 @@ get_repo_prjname <- function(rp) {
         rp$entries()[sapply(lapply(rp$entries(), get, x="tags"),
                             `%in%`, x="#project")]
     )[[1]] ## take the first for robustness, should be only 1
+}
+
+## splits a flat list of pathways into sublists according to
+## collections
+pwList2pwStruct <- function(db) {
+    collids <- makeCollectionIDs(db)
+    colls <- unique(collids)
+    out <- list()
+    for(i in 1:length(colls))
+        out[[colls[[i]]]] <- db[collids == colls[[i]]]
+    return(out)
 }
