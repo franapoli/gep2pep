@@ -62,17 +62,17 @@ However, for this vignette a small excerpt will be used:
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 ```
 
-The database includes 30 pathways, each of which is included in
-one of 3 different collections. Each collection is identified by a
-"db" and "subdb" name, which `gep2pep` puts together into a single
-collection name using `makeCollectionIDs`.
+The database includes 30 pathways, each of which is included in one of
+3 different collections. Each collection is identified by a "category"
+and "subcategory" name, which `gep2pep` puts together into a single
+collection identifier using `makeCollectionIDs`.
 
 
 ```{r}
-dbs <- sapply(db, get, x="db")
-subdbs <- sapply(db, get, x="subdb")
-print(dbs)
-print(subdbs)
+cats <- sapply(db, get, x="category")
+subcats <- sapply(db, get, x="subcategory")
+print(cats)
+print(subcats)
 makeCollectionIDs(db)
 ```
 
@@ -121,7 +121,7 @@ geps[1:5, 1:3]
 ```
 
 The GEPs can be converted to PEPs using the `buildPEPs` function. They
-are stored as repository items by the names "DB_SUBDB".
+are stored as repository items by the names "category_subcategory".
 
 ```{r}
 buildPEPs(rp, geps)

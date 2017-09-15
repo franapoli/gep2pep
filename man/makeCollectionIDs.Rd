@@ -12,12 +12,12 @@ makeCollectionIDs(sets)
 }
 \value{
 A vector of identifiers, one per pathway, with the format:
-    "db_subdb".
+    "category_subcategory".
 }
 \description{
-Given a database, uses "db" and "subdb" entries to create a vector
-of collection identifiers. Useful to extract a collection from a
-database.
+Given a database, uses "category" and "subcategory" entries to
+create a vector of collection identifiers. Useful to extract a
+collection from a database.
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))

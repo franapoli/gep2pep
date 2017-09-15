@@ -18,11 +18,11 @@ stored collections by looking at appropriate repository item
 names.
 }
 \details{
-Each collection in a database has a "db" name and a
-    "subdb" name assigned, which are used to build the collection
-    identifier as "db_subdb". This function obtains the identifiers
-    by looking at data stored in the repository \code{rp} (entries
-    that are tagged with "sets").
+Each collection in a database has a "category" and a
+    "subcategory" assigned, which are used to build the collection
+    identifier as "category_subcategory". This function obtains the
+    identifiers by looking at data stored in the repository
+    \code{rp} (entries that are tagged with "sets").
 }
 \examples{
 

@@ -128,14 +128,14 @@ dummyFunction <- function(rp, rp_peps, collections) {}
 #'
 #' str(db[[1]], nchar.max=20)
 #' ## List of 8
-#' ##  $ id       : chr "M3128"
-#' ##  $ name     : chr "AAANWWTGC_UNKNOWN"
-#' ##  $ db       : chr "C3"
-#' ##  $ subdb    : chr "TFT"
-#' ##  $ organism : chr "Homo sapiens"
-#' ##  $ desc     : chr "Genes having at lea"| __truncated__
-#' ##  $ desc_full: chr "Comprehensive ident"| __truncated__
-#' ##  $ set      : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
+#' ##  $ id          : chr "M3128"
+#' ##  $ name        : chr "AAANWWTGC_UNKNOWN"
+#' ##  $ category    : chr "C3"
+#' ##  $ subcategory : chr "TFT"
+#' ##  $ organism    : chr "Homo sapiens"
+#' ##  $ desc        : chr "Genes having at lea"| __truncated__
+#' ##  $ desc_full   : chr "Comprehensive ident"| __truncated__
+#' ##  $ set         : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
 #'
 #' }
 #'
@@ -146,14 +146,14 @@ dummyFunction <- function(rp, rp_peps, collections) {}
 #'
 #' str(db_sample[[1]], nchar.max=20)
 #' ## List of 8
-#' ##  $ id       : chr "M3128"
-#' ##  $ name     : chr "AAANWWTGC_UNKNOWN"
-#' ##  $ db       : chr "C3"
-#' ##  $ subdb    : chr "TFT"
-#' ##  $ organism : chr "Homo sapiens"
-#' ##  $ desc     : chr "Genes having at lea"| __truncated__
-#' ##  $ desc_full: chr "Comprehensive ident"| __truncated__
-#' ##  $ set      : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
+#' ##  $ id          : chr "M3128"
+#' ##  $ name        : chr "AAANWWTGC_UNKNOWN"
+#' ##  $ db          : chr "C3"
+#' ##  $ subcategory : chr "TFT"
+#' ##  $ organism    : chr "Homo sapiens"
+#' ##  $ desc        : chr "Genes having at lea"| __truncated__
+#' ##  $ desc_full   : chr "Comprehensive ident"| __truncated__
+#' ##  $ set         : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
 #' @export
 importMSigDB.xml <- function(fname) {
 
@@ -164,8 +164,9 @@ importMSigDB.xml <- function(fname) {
     msigDB <- data.frame(
         id = ids,
         name = sapply(sets, function(x) xmlAttrs(x)[["STANDARD_NAME"]]),
-        db = sapply(sets, function(x) xmlAttrs(x)[["CATEGORY_CODE"]]),
-        subdb = sapply(sets, function(x) xmlAttrs(x)[["SUB_CATEGORY_CODE"]]),
+        category = sapply(sets, function(x) xmlAttrs(x)[["CATEGORY_CODE"]]),
+        subcategory = sapply(sets, function(x) {
+            xmlAttrs(x)[["SUB_CATEGORY_CODE"]]}),
         organism = sapply(sets, function(x) xmlAttrs(x)[["ORGANISM"]]),
         desc = sapply(sets, function(x) xmlAttrs(x)[["DESCRIPTION_BRIEF"]]),
         desc_full = sapply(sets, function(x) xmlAttrs(x)[["DESCRIPTION_FULL"]]),
@@ -191,11 +192,11 @@ importMSigDB.xml <- function(fname) {
 #' 
 #' @inheritParams dummyFunction
 #' @return Vector of collection names (see details).
-#' @details Each collection in a database has a "db" name and a
-#'     "subdb" name assigned, which are used to build the collection
-#'     identifier as "db_subdb". This function obtains the identifiers
-#'     by looking at data stored in the repository \code{rp} (entries
-#'     that are tagged with "sets").
+#' @details Each collection in a database has a "category" and a
+#'     "subcategory" assigned, which are used to build the collection
+#'     identifier as "category_subcategory". This function obtains the
+#'     identifiers by looking at data stored in the repository
+#'     \code{rp} (entries that are tagged with "sets").
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -235,7 +236,8 @@ getCollections <- function(rp)
 #'     generic name will be given).
 #' @param description Description of the repository. If NULL
 #'     (default), a generic description will be given.
-#' @return An object of class \code{repo}.
+#' @return An object of class \code{repo} that can be passed to
+#'     \code{gep2pep} functions.
 #' @details \code{sets} must be in the same format as output by
 #'     \code{\link{importMSigDB.xml}}. It is a list where each item
 #'     includes the following fields:
@@ -246,11 +248,11 @@ getCollections <- function(rp)
 #'
 #'   \item{name: }{a descriptive name of the gene set}
 #'
-#'   \item{db: }{an ID for the database this gene set belongs to (for
-#'   example "GO")}
+#'   \item{category: }{an ID for the category this gene set belongs to
+#'   (for example "GO")}
 #'
-#'   \item{subdb: }{an ID for the sub-database this gene set belongs
-#'   to (for example "BP")}
+#'   \item{subcategory: }{an ID for the sub-category this gene set
+#'   belongs to (for example "BP")}
 #'
 #'   \item{organism: }{name of the organism (for example
 #'   "homo sapiens")}
@@ -324,17 +326,56 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
 }
 
 
+#' Opens an existing repository of pathway collections.
+#'
+#' The repository must have been created by
+#' \code{\link{createRepository}}. Provides an R object to interact
+#' with the repository.
+#'
+#' @param path Path to a directory where the repository has been
+#'     created with \code{\link{createRepository}}.
+#' @return An object of class \code{repo} that can be passed to
+#'     \code{gep2pep} functions.
+#' @details This function only calls the \code{repo_open} function
+#'     from the \code{repo} package on \code{path}. It is meant to
+#'     allow users not to explicitly load the \code{repo} library,
+#'     unless they want to access advanced features.
+#' @seealso createRepository
+#' @examples
+#'
+#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#' rp2 <- openRepository(repo_path)
+#'
+#' ## rp and rp2 point to the same data:
+#' identical(rp$entries(), rp2$entries())
+#' ## > [1] TRUE
+#'
+#' unlink(repo_path, TRUE)
+#' @export
+openRepository <- function(path)
+{
+    if(!file.exists(path)) {
+        say(paste("path must point to an existing directory containing",
+                  "a repository created with createRepository", TRUE))
+    }
+    rp <- repo_open(path, TRUE)
+}
+
+
 
 #' Creates a collection label for each pathway.
 #'
-#' Given a database, uses "db" and "subdb" entries to create a vector
-#' of collection identifiers. Useful to extract a collection from a
-#' database.
+#' Given a database, uses "category" and "subcategory" entries to
+#' create a vector of collection identifiers. Useful to extract a
+#' collection from a database.
 #'
 #' @param sets A pathway database in the same format as output by
 #'     \code{importMSigDB.xml}.
 #' @return A vector of identifiers, one per pathway, with the format:
-#'     "db_subdb".
+#'     "category_subcategory".
 #' @seealso importMSigDB.xml
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -350,8 +391,8 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
 #'
 #' @export
 makeCollectionIDs <- function(sets) {
-    dbs <- sapply(sets, get, x="db")
-    subdbs <- sapply(sets, get, x="subdb")
+    dbs <- sapply(sets, get, x="category")
+    subdbs <- sapply(sets, get, x="subcategory")
     subdbs[subdbs==""] <- dbs[subdbs==""]
     db_ids <- paste(dbs, subdbs, sep="_")
     return(db_ids)

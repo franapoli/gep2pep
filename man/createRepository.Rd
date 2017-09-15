@@ -20,7 +20,8 @@ generic name will be given).}
 (default), a generic description will be given.}
 }
 \value{
-An object of class \code{repo}.
+An object of class \code{repo} that can be passed to
+    \code{gep2pep} functions.
 }
 \description{
 Given a database of collections, stores them in a local repository
@@ -37,11 +38,11 @@ to be used by \code{gep2pep} functions.
 
   \item{name: }{a descriptive name of the gene set}
 
-  \item{db: }{an ID for the database this gene set belongs to (for
-  example "GO")}
+  \item{category: }{an ID for the category this gene set belongs to
+  (for example "GO")}
 
-  \item{subdb: }{an ID for the sub-database this gene set belongs
-  to (for example "BP")}
+  \item{subcategory: }{an ID for the sub-category this gene set
+  belongs to (for example "BP")}
 
   \item{organism: }{name of the organism (for example
   "homo sapiens")}
