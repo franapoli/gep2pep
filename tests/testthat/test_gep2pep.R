@@ -34,7 +34,7 @@ test_that("new db creation", {
   expect_true(rp$has(paste0(expected_dbs[2], "_sets")))
   expect_true(rp$has(paste0(expected_dbs[3], "_sets")))
   expect_true(rp$has("gep2pep repository"))
-  expect_equal(length(rp$entries()), 4)
+  expect_equal(length(rp$entries()), 5)
   expect_equal(length(rp$get(paste0(expected_dbs[1], "_sets"))), 10)
   expect_equal(length(rp$get(paste0(expected_dbs[2], "_sets"))), 10)
   expect_equal(length(rp$get(paste0(expected_dbs[3], "_sets"))), 10)
@@ -43,7 +43,7 @@ test_that("new db creation", {
 buildPEPs(rp, testgep)
 
 test_that("build first PEPs", {
-  expect_equal(length(rp$entries()), 7)
+  expect_equal(length(rp$entries()), 8)
   expect_equal(length(dbs), length(testpws))
   expect_true(rp$has(expected_dbs[1]))
   expect_true(rp$has(expected_dbs[2]))

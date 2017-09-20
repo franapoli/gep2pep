@@ -321,6 +321,11 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
                c("gep2pep", "sets"),
                prj = name)
     }    
+
+    rp$put(list(NULL), "perturbagens",
+           "Perturbagen lists for PEPs",
+           c("gep2pep", "perts"),
+           prj = name)
     
     return(rp)
 }
@@ -466,6 +471,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
                       replace_existing=FALSE)
 {
     checkGEPsFormat(geps)
+    perts <- rp$get("perturbagens")
     
     if(length(collections) == 1 && collections == "all") {
         dbs <- getCollections(rp)
@@ -477,7 +483,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
                    " (", i, "/", length(dbs), ")" ))
 
         if(rp$has(dbs[i]))
-            curpeps <- colnames(rp$get(dbs[i])[[1]]) else curpeps <- NULL
+            curpeps <- perts[[dbs[i]]] else curpeps <- NULL
         newpeps <- setdiff(colnames(geps), curpeps)
         oldpeps <- intersect(colnames(geps), curpeps)
 
@@ -499,7 +505,8 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 
         cat("\n")        
     }
-    
+
+    return(perts)
 }
 
 
@@ -949,7 +956,8 @@ storePEPs <- function(rp, db_id, peps) {
     }
 
     
-    say("Storing pathway expression profiles...")        
+    
+    say("Storing pathway expression profiles..")        
     rp$put(peps, db_id,
            paste0("Pathway data for collection ", db_id,
                   ". It contains 2 matrices: 1 for enrichement scores ",
@@ -958,6 +966,13 @@ storePEPs <- function(rp, db_id, peps) {
            c("gep2pep", "pep"), replace=TRUE,
            depends = paste0(db_id, "_sets"),
            prj = get_repo_prjname(rp))
+
+    
+
+    say("Storing perturbagen information..")
+    perts <- rp$get("perturbagens")
+    perts[[db_id]] <- colnames(peps$ES)
+    rp$set("perturbagens", perts)    
 
     say("Done.")
 }
