@@ -1,30 +1,47 @@
 
-context("gep2pep")
+dbfolder <- file.path(tempdir(), "gep2pepDB")
+
+clear_test_repo <- function(suffix=NULL) {
+    folder <- paste0(dbfolder, suffix)
+    if(file.exists(folder))
+        unlink(folder, T)
+}
+
+create_test_repo <- function(suffix=NULL) {
+    folder <- paste0(dbfolder, suffix)
+    clear_test_repo(suffix)
+    return(
+        suppressMessages(
+            createRepository(folder, testpws)
+            )
+        )    
+}
+
+testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+rp <- create_test_repo()
+dbs <- makeCollectionIDs(testpws)
+expected_dbs <- c("C3_TFT", "C3_MIR", "C4_CGN")
+
+
+context("gep format checks")
 
 randmat <- matrix(runif(9), 3)
 nm_randmat <- randmat
 rownames(nm_randmat) <- colnames(nm_randmat) <- 1:3
 okmat <- apply(nm_randmat,2,rank)
-okmatNA <- okmat; okmatNA[1,2] <- NA
+okmatNA <- okmat; okmatNA[okmatNA==2] <- NA
 okmatRep <- okmat; okmatRep[2:3, 1] <- 1
 test_that("check geps", {
     expect_error(checkGEPsFormat(randmat))
     expect_error(checkGEPsFormat(nm_randmat))
-    expect_error(checkGEPsFormat(okmatNA))
+    expect_silent(checkGEPsFormat(okmatNA))
     expect_error(checkGEPsFormat(okmatRep))
     expect_silent(checkGEPsFormat(okmat))
 })
 
-testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
-testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
-dbfolder <- file.path(tempdir(), "gep2pepDB")
-if(file.exists(dbfolder))
-    unlink(dbfolder, T)
-rp <- createRepository(dbfolder, testpws)
+context("creation of newdb")
 
-
-dbs <- makeCollectionIDs(testpws)
-expected_dbs <- c("C3_TFT", "C3_MIR", "C4_CGN")
 
 test_that("new db creation", {
   expect_equal(length(dbs), length(testpws))
@@ -40,7 +57,9 @@ test_that("new db creation", {
   expect_equal(length(rp$get(paste0(expected_dbs[3], "_sets"))), 10)
 })
 
-buildPEPs(rp, testgep)
+context("creation of peps")
+
+suppressMessages(buildPEPs(rp, testgep, progress_bar=FALSE))
 
 test_that("build first PEPs", {
   expect_equal(length(rp$entries()), 8)
@@ -94,9 +113,15 @@ test_that("KS statistics", {
   expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
 })
 
+context("adding existing peps")
 
 oldTFT <- rp$get("C3_TFT")
-buildPEPs(rp, testgep[, 1:3])
+test_that("Adding PEPs", {
+    expect_warning(
+        suppressMessages(buildPEPs(rp, testgep[, 1:3], progress_bar=FALSE))
+        )
+})
+
 untouchedTFT <- rp$get("C3_TFT")
 
 subs <- c(2,4,5)
@@ -104,16 +129,35 @@ smallTFT <- list(ES=oldTFT$ES[, subs],
                  PV=oldTFT$PV[, subs])
 rp$set("C3_TFT", smallTFT)
 
-buildPEPs(rp, testgep[, 1:3])
 
 rebuiltTFT <- rp$get("C3_TFT")
 test_that("Adding PEPs", {
+    expect_warning(
+        suppressMessages(buildPEPs(rp, testgep[, 1:3], progress_bar=FALSE))
+        )
     expect_equal(untouchedTFT, oldTFT)
     expect_equal(rebuiltTFT$ES, oldTFT$ES[,colnames(rebuiltTFT$ES)])
     expect_equal(rebuiltTFT$PV, oldTFT$PV[,colnames(rebuiltTFT$PV)])
 })
 
 rp$set("C3_TFT", oldTFT)
+
+
+context("adding peps one by one")
+
+rp2 <- create_test_repo("2")
+for(i in 1:ncol(testgep))
+    suppressMessages(
+        buildPEPs(rp2, testgep[,i,drop=F], progress_bar=FALSE)
+    )
+
+test_that("adding one by one", {
+    expect_true(identical(rp2$get("C3_TFT"), rp$get("C3_TFT")))
+})
+
+
+
+context("Row and Col ranking")
 
 peps1 <- rp$get(expected_dbs[1])
 peps3 <- rp$get(expected_dbs[3])
@@ -157,8 +201,10 @@ test_that("Column ranking", {
 })
 
 
+context("PertSEA")
+
 pgset <- c("(+)_chelidonine",  "(+/_)_catechin")
-res <- PertSEA(rp, pgset)
+res <- suppressMessages(PertSEA(rp, pgset))
 randi <- sample(1:length(testpws), 1)
 pwsid <- testpws[[randi]]$id
 randDB <- dbs[randi]
@@ -175,12 +221,14 @@ test_that("PertSEA", {
 })
 
 
-db1 <- expected_dbs[1];
+context("PathSEA")
+
+db1 <- expected_dbs[1]
 db3 <- expected_dbs[3]
 pws1 <- names(rp$get(paste0(db1, "_sets")))[c(2,5,6,9)]
 pws3 <- names(rp$get(paste0(db3, "_sets")))[c(1,3,10)]
 subpws <- testpws[c(pws1, pws3)]
-res <- PathSEA(rp, subpws)
+res <- suppressMessages(PathSEA(rp, subpws))
 
 randj1 <- sample(1:ncol(testgep), 1)
 ranked <- rankPEPsByCols(rp$get(db1))
@@ -225,4 +273,5 @@ test_that("gene2pathways", {
     expect_true(all(names(testpws[c(3,4,7)]) %in% names(subpw)))
     expect_true(gene %in% testpws[[extrapw]]$set)
 })
+
 
