@@ -296,7 +296,7 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
                              "created with the gep2pep package.")    
     
     if(file.exists(path)) {
-        say("Can not create repository in existing folder", TRUE) 
+        say("Can not create repository in existing folder", "error")
     } else rp <- repo_open(path, TRUE)
     
     rp$project(name, description)
@@ -359,7 +359,7 @@ openRepository <- function(path)
 {
     if(!file.exists(path)) {
         say(paste("path must point to an existing directory containing",
-                  "a repository created with createRepository", TRUE))
+                  "a repository created with createRepository", "error"))
     }
     rp <- repo_open(path, TRUE)
 }
@@ -418,7 +418,9 @@ makeCollectionIDs <- function(sets) {
 #'     names of \code{geps} are already present in the repository. If
 #'     set to TRUE, they will be replaced, otherwise they will be
 #'     skipped and only PEPs of new perturbagens will be computed and
-#'     added.
+#'     added. Either ways, will throw a warning.
+#' @param progress_bar If set to TRUE (default) will show a progress
+#'     bar updated after coversion of each column of \code{geps}.
 #' @return Nothing. The computed PEPs will be available in the
 #'     repository.
 #' @seealso buildPEPs
@@ -463,7 +465,7 @@ makeCollectionIDs <- function(sets) {
 #'
 #' @export
 buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
-                      replace_existing=FALSE)
+                      replace_existing=FALSE, progress_bar=TRUE)
 {
     checkGEPsFormat(geps)
     
@@ -486,18 +488,15 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
                           paste(oldpeps, collapse=", "))
             if(!replace_existing)
                 msg <- gsub("replaced", "skipped", msg)
-            say(msg)
+            say(msg, type="warning")
         }
 
-        gepsi <- geps[, newpeps, drop=FALSE]
-        
         if(length(newpeps) > 0) {
+            gepsi <- geps[, newpeps, drop=FALSE]       
             thisdb <- rp$get(paste0(dbs[i], "_sets"))
-            peps <- gep2pep(gepsi, thisdb, parallel)
+            peps <- gep2pep(gepsi, thisdb, parallel, progress_bar)
             storePEPs(rp, dbs[i], peps)
         }
-
-        cat("\n")        
     }
     
 }
@@ -536,7 +535,7 @@ exportSEA <- function(rp, results, outname=NULL)
 {
     type <- names(results)[[1]]
     if(! tolower(type) %in% c("pertsea", "pathsea"))
-        say("type must be on of: PertSEA, PathSEA", TRUE)
+        say("type must be on of: PertSEA, PathSEA", "error")
 
     if(is.null(outname))
         outname <- paste0(type, ".xls")
@@ -634,10 +633,10 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
     if(length(dbs) == 1 && dbs=="all") {
         dbs <- getCollections(rp_peps)
     } else {
-        off <- setdiff(dbs, getCollections)
+        off <- setdiff(dbs, getCollections(rp_peps))
         if(length(off)>0)
             say(paste0("The following collections could not be found: ",
-                       paste(off, collapse=", ")), TRUE)
+                       paste(off, collapse=", ")), "error")
     }
 
     if(details)
@@ -654,7 +653,7 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         
         if(length(intersect(pgset, bgset))>0) {
             bgset <- setdiff(bgset, pgset)
-            say("Common perturbagens removed from bgset.")
+            say("Common perturbagens removed from bgset")
         }
         
         rankingset <- c(bgset, pgset)
@@ -663,11 +662,11 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
             say(paste("The following perturbagens could not be found:",
                       paste(
                           setdiff(rankingset, colnames(peps)),
-                          collapse = ", ")), TRUE)                      
+                          collapse = ", ")), "error")
         
-        say(paste0("Row-ranking collection..."))
+        say(paste0("Row-ranking collection"))
         ranked <- rankPEPsByRows(peps, rankingset)
-        say(paste0("Computing enrichments..."))
+        say(paste0("Computing enrichments"))
         
         ks <- apply(ranked, 1, function(row) {
             inset <- row[pgset]
@@ -685,7 +684,7 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
                                     PV = PVs)[sorter, ]
         if(details)
             thedetails[[dbs[i]]] <- ranked[sorter, pgset]
-        say("done.")
+        say("done")
     }
 
     return(list(PertSEA=res, details=thedetails))
@@ -739,12 +738,12 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #' psea <- PathSEA(rp, subdb)
 #' ## [15:35:29] Working on collection: C3_TFT
 #' ## [15:35:29] Common pathway sets removed from bgset.
-#' ## [15:35:29] Col-ranking collection...
+#' ## [15:35:29] Column-ranking collection...
 #' ## [15:35:29] Computing enrichments...
 #' ## [15:35:29] done.
 #' ## [15:35:29] Working on collection: C4_CGN
 #' ## [15:35:29] Common pathway sets removed from bgset.
-#' ## [15:35:29] Col-ranking collection...
+#' ## [15:35:29] Column-ranking collection...
 #' ## [15:35:29] Computing enrichments...
 #' ## [15:35:29] done.
 #'
@@ -762,41 +761,41 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
                     details=TRUE)
 {
+    checkSets(rp_peps, pathways)
     pathways <- pwList2pwStruct(pathways)
-    if(bgsets != "all")
+    if(length(bgsets)==1 && bgsets != "all") {
+        checkSets(bgsets)
         bgsets <- pwList2pwStruct(bgsets)
+    }
        
     dbs <- collections ## just renaming
     if(length(dbs) == 1 && dbs=="all") {
         dbs <- getCollections(rp_peps)
-    } else {
-        off <- setdiff(dbs, getCollections)
-        if(length(off)>0)
-            say(paste0("The following collections could not be found: ",
-                       paste(off, collapse=", ")), TRUE)
     }
     
-    if(! all(names(pathways) %in% dbs))
-        say(paste("Names of pathways should match",
-                  "pathway collection names in the repository.", TRUE))
-
+    if(length(setdiff(names(pathways), dbs)>1)) {
+        say(paste("Removing pathways not in specified collections"))
+        pathways <- pathways[dbs]
+    }
+    
     if(details)
         thedetails <- list() else thedetails <- NULL     
     
-    dbs <- names(pathways)
     res <- list()
     for(i in 1:length(pathways))
     {
         say(paste0("Working on collection: ", dbs[i]))
         gmd <- names(pathways[[dbs[i]]])
 
+        allsets <- names(rp_peps$get(paste0(dbs[i], "_sets")))
+                 
         if(length(bgsets) == 1 && bgsets=="all") {
-            bgset <- names(rp_peps$get(paste0(dbs[i], "_sets")))
-        } else bgset <- names(bgsets[[i]])
+            bgset <- allsets
+        } else bgset <- names(pwList2pwStruct(bgsets)[[i]])
 
         if(length(intersect(gmd, bgset)) > 0) {
             bgset <- setdiff(bgset, gmd)
-            say("Common pathway sets removed from bgset.")
+            say("Common pathway sets removed from bgset")
         }
         rankingset <- c(gmd, bgset)
 
@@ -804,11 +803,11 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
         notok <- rankingset[rankingset %in% rownames(peps)]
         if(length(notok)>0)
             say(paste0("Pathway set ids not found in ", dbs[i], ": ",
-                       paste(notok, collapse=", ")), TRUE)
+                       paste(notok, collapse=", ")), "error")
 
-        say(paste0("Col-ranking collection..."))
+        say(paste0("Column-ranking collection"))
         ranked <- rankPEPsByCols(peps, rankingset)
-        say(paste0("Computing enrichments..."))
+        say(paste0("Computing enrichments"))
 
         ks <- apply(ranked, 2, function(col) ks.test.2(col[gmd], col[bgset]))
 
@@ -821,7 +820,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
         if(details)
             thedetails[[dbs[i]]] <- ranked[gmd, sorter]
         
-        say("done.")        
+        say("done")
     }
 
     return(list(PathSEA=res, details=thedetails))
@@ -867,9 +866,11 @@ gene2pathways <- function(rp, gene)
     return(mods)        
 }
 
+getPerturbagens <- function(rp, collection) {
+  return(colnames(rp$get(collection)[[1]]))
+}
 
-
-gep2pep <- function(geps, sets, parallel=FALSE) {
+gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
 
     pathw <- sets
     genemat <- geps
@@ -877,11 +878,13 @@ gep2pep <- function(geps, sets, parallel=FALSE) {
 
     x <- list()
     sets <- sapply(unname(pathw), get, x="set")
-    
-    pb <- txtProgressBar()
+
+    if(pbar)
+        pb <- txtProgressBar()
     for(j in 1:ncol(genemat))
     {
-        setTxtProgressBar(pb, (j-1)/ncol(genemat))
+        if(pbar)
+            setTxtProgressBar(pb, (j-1)/ncol(genemat))
         genematj <- genemat[,j]
 
         '%dobest%' <- if (parallel) get('%dopar%') else get('%do%')
@@ -895,8 +898,10 @@ gep2pep <- function(geps, sets, parallel=FALSE) {
         }
         x[[j]] <- gres
     }
-    setTxtProgressBar(pb, 1)
-    close(pb)
+    if(pbar) {
+        setTxtProgressBar(pb, 1)
+        close(pb)
+    }
 
     ES <- matrix(NA, length(pathw), ncol(genemat))
     PV <- matrix(NA, length(pathw), ncol(genemat))
@@ -944,12 +949,12 @@ storePEPs <- function(rp, db_id, peps) {
         curmat[["PV"]][, oldpeps] <- peps$PV[, oldpeps]
 
         ## adding new PEPs
-        peps$ES <- cbind(curmat$ES, peps$ES[, newpeps])
-        peps$PV <- cbind(curmat$PV, peps$PV[, newpeps])        
+        peps$ES <- cbind(curmat$ES, peps$ES[, newpeps, drop=F])
+        peps$PV <- cbind(curmat$PV, peps$PV[, newpeps, drop=F])
     }
 
     
-    say("Storing pathway expression profiles...")        
+    say("Storing pathway expression profiles")
     rp$put(peps, db_id,
            paste0("Pathway data for collection ", db_id,
                   ". It contains 2 matrices: 1 for enrichement scores ",
@@ -959,17 +964,25 @@ storePEPs <- function(rp, db_id, peps) {
            depends = paste0(db_id, "_sets"),
            prj = get_repo_prjname(rp))
 
-    say("Done.")
+    say("Done")
 }
 
-say <- function(txt, stopping=FALSE) {
-    msg <- paste0("[",
-                  format(Sys.time(), format="%H:%M:%S"),
-                  "] ",
-                  txt)
-    
-    if(stopping)
-        stop(msg, call.=FALSE) else message(msg)
+say <- function(txt, type="diagnostic", names=NULL) {
+  ## can be error or warning
+    msg <- paste0(
+        "[",
+        format(Sys.time(), format="%H:%M:%S"),
+        "] ",
+        txt,
+        paste(names, collapse = ", "),
+        "."
+    )
+
+    if(type=="error") {
+        stop(msg, call.=FALSE)
+      } else if (type=="warning") {
+        warning(msg, call.=FALSE, immediate.=TRUE)
+        } else message(msg)
 }
 
 ks.sign <- function (x, y)
@@ -1071,36 +1084,33 @@ checkGEPsFormat <- function(geps)
 {
     dims <- dim(geps)
     if(length(dims) != 2)
-        say("GEPs must be a two-dimensional matrix.", TRUE)
+        say("GEPs must be a two-dimensional matrix", "error")
     if(dims[[1]]==1)
         say(paste("GEPs must have genes over rows,",
-                  "while input matrix seems to have 1 row."),
-            TRUE)
+                  "while input matrix seems to have 1 row"),
+            "error")
 
     gnames <- rownames(geps)
     if(is.null(gnames))
-        say("GEPs must have rownames (as gene IDs).", TRUE)
+        say("GEPs must have rownames (as gene IDs)", "error")
     if(any(duplicated(gnames)))
-        say("GEP rownames must be unique.", TRUE)
+        say("GEP rownames must be unique", "error")
     
     pnames <- colnames(geps)
     if(is.null(pnames))
-        say("GEPs must have colnames (as perturbagen IDs).", TRUE)
+        say("GEPs must have colnames (as perturbagen IDs)", "error")
     if(any(duplicated(pnames)))
-        say("GEP colnames must be unique.", TRUE)
-
-    if(any(is.na(geps)))
-        say("GEPs can not contain NAs.", TRUE)
+        say("GEP colnames must be unique", "error")
 
     not_unique <- apply(geps, 2, function(x) {
         any(duplicated(x))})
-    mins <- apply(geps, 2, min)
-    maxs <- apply(geps, 2, max)    
+    mins <- apply(geps, 2, min, na.rm=TRUE)
+    maxs <- apply(geps, 2, max, na.rm=TRUE)
     
     if(any(mins != 1) || any(maxs != dims[1]) || any(not_unique))
         say(paste("GEP columns must be ranks. Check",
                   "that each column is made of numbers from 1",
-                  "to the number of rows."), TRUE)
+                  "to the number of rows."), "error")
         
 }
 
@@ -1120,4 +1130,39 @@ pwList2pwStruct <- function(db) {
     for(i in 1:length(colls))
         out[[colls[[i]]]] <- db[collids == colls[[i]]]
     return(out)
+}
+
+
+getCollection <- function(rp, id) {
+    id_coll <- paste0(id, "_sets")
+    if(! id %in% getCollections(rp))
+        say(paste("Could not find collection:", id), "error")
+    return(rp$get(id_coll))
+}
+
+getPEPs <- function(rp, id) {
+    if(! id %in% getCollections(rp))
+        say(paste("Could not find PEP collection:", id), "error")
+    return(rp$get(id))
+}
+
+
+checkSets <- function(rp, sets) {
+
+    coll_ids <- makeCollectionIDs(sets)
+    ucoll_ids <- unique(coll_ids)
+    
+    off <- setdiff(ucoll_ids, getCollections(rp))
+    if(length(off)>0)
+        say(paste0("The following collections could not be found: ",
+                   paste(off, collapse=", ")), "error")
+
+    for(i in 1:length(ucoll_ids)) {
+        sub <- names(sets[coll_ids == ucoll_ids[i]])
+        coll <- getCollection(rp, ucoll_ids[i])
+        off <- setdiff(sub, names(coll))
+        if(length(off) > 0)
+            say(paste0("The following pathways could not be found ",
+                      "in collection ", ucoll_ids[i], ": "), "error", off)            
+    }            
 }

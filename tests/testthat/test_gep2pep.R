@@ -1,26 +1,42 @@
 
+dbfolder <- file.path(tempdir(), "gep2pepDB")
+
+clear_test_repo <- function(suffix=NULL) {
+    folder <- paste0(dbfolder, suffix)
+    if(file.exists(folder))
+        unlink(folder, T)
+}
+
+create_test_repo <- function(suffix=NULL) {
+    folder <- paste0(dbfolder, suffix)
+    clear_test_repo(suffix)
+    return(
+        createRepository(folder, testpws)
+        )    
+}
+
 context("gep2pep")
+
+
 
 randmat <- matrix(runif(9), 3)
 nm_randmat <- randmat
 rownames(nm_randmat) <- colnames(nm_randmat) <- 1:3
 okmat <- apply(nm_randmat,2,rank)
-okmatNA <- okmat; okmatNA[1,2] <- NA
+okmatNA <- okmat; okmatNA[okmatNA==2] <- NA
 okmatRep <- okmat; okmatRep[2:3, 1] <- 1
 test_that("check geps", {
     expect_error(checkGEPsFormat(randmat))
     expect_error(checkGEPsFormat(nm_randmat))
-    expect_error(checkGEPsFormat(okmatNA))
+    expect_silent(checkGEPsFormat(okmatNA))
     expect_error(checkGEPsFormat(okmatRep))
     expect_silent(checkGEPsFormat(okmat))
 })
 
 testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
 testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
-dbfolder <- file.path(tempdir(), "gep2pepDB")
-if(file.exists(dbfolder))
-    unlink(dbfolder, T)
-rp <- createRepository(dbfolder, testpws)
+
+rp <- create_test_repo()
 
 
 dbs <- makeCollectionIDs(testpws)
@@ -96,7 +112,10 @@ test_that("KS statistics", {
 
 
 oldTFT <- rp$get("C3_TFT")
-buildPEPs(rp, testgep[, 1:3])
+test_that("Adding PEPs", {
+    expect_warning(buildPEPs(rp, testgep[, 1:3]))
+})
+
 untouchedTFT <- rp$get("C3_TFT")
 
 subs <- c(2,4,5)
@@ -104,10 +123,10 @@ smallTFT <- list(ES=oldTFT$ES[, subs],
                  PV=oldTFT$PV[, subs])
 rp$set("C3_TFT", smallTFT)
 
-buildPEPs(rp, testgep[, 1:3])
 
 rebuiltTFT <- rp$get("C3_TFT")
 test_that("Adding PEPs", {
+    expect_warning(buildPEPs(rp, testgep[, 1:3]))
     expect_equal(untouchedTFT, oldTFT)
     expect_equal(rebuiltTFT$ES, oldTFT$ES[,colnames(rebuiltTFT$ES)])
     expect_equal(rebuiltTFT$PV, oldTFT$PV[,colnames(rebuiltTFT$PV)])
@@ -175,7 +194,7 @@ test_that("PertSEA", {
 })
 
 
-db1 <- expected_dbs[1];
+db1 <- expected_dbs[1]
 db3 <- expected_dbs[3]
 pws1 <- names(rp$get(paste0(db1, "_sets")))[c(2,5,6,9)]
 pws3 <- names(rp$get(paste0(db3, "_sets")))[c(1,3,10)]
@@ -226,3 +245,13 @@ test_that("gene2pathways", {
     expect_true(gene %in% testpws[[extrapw]]$set)
 })
 
+
+rp2 <- create_test_repo("2")
+for(i in 1:ncol(testgep))
+    suppressMessages(
+        buildPEPs(rp2, testgep[,i,drop=F], progress_bar=FALSE)
+    )
+
+test_that("adding one by one", {
+    expect_true(identical(rp2$get("C3_TFT"), rp$get("C3_TFT")))
+})
