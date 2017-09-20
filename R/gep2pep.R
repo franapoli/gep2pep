@@ -890,9 +890,6 @@ gene2pathways <- function(rp, gene)
     return(mods)        
 }
 
-getPerturbagens <- function(rp, collection) {
-  return(colnames(rp$get(collection)[[1]]))
-}
 
 gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
 
