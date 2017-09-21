@@ -2,8 +2,8 @@
 % Please edit documentation in R/gep2pep.R
 \docType{package}
 \name{gep2pep-package}
-\alias{gep2pep}
 \alias{gep2pep-package}
+\alias{gep2pep}
 \title{gep2pep: creation and analysis of Pathway Expression Profiles}
 \description{
 Pathway Expression Profiles (PEPs) are based on the collective
@@ -14,25 +14,34 @@ and performs enrichment analysis of pathways or perturbagens.
 }
 \details{
 \code{gep2pep} creates a local repository of gene sets, which can
-also be imported from the MSigDB database. The local repository is
-in the \code{repo} format. When a GEP, defined as a ranked list of
-genes, is passed to \code{\link{buildPEPs}}, the stored database of
-pathways is used to convert the GEP to a PEP and permanently store
-the latter.
+also be imported from the MSigDB [1] database. The local repository
+is in the \code{repo} format. When a GEP, defined as a ranked list
+of genes, is passed to \code{\link{buildPEPs}}, the stored database
+of pathways is used to convert the GEP to a PEP and permanently
+store the latter.
 
 One type of analysis that can be performed on PEPs and that is
 directly supported by \code{gep2pep} is the Drug-Set Enrichment
-Analysis (DSEA, see reference section). It finds pathways that
-are consistently dysregulated by a set of drugs, as opposed to a
-background of other drugs. Of course PEPs may refer to
-non-pharmacological perturbagens (genetic perturbations, disease
-states, etc.) for analogous analyses. See \code{\link{PertSEA}}
-function.
+Analysis (DSEA [2]). It finds pathways that are consistently
+dysregulated by a set of drugs, as opposed to a background of other
+drugs. Of course PEPs may refer to non-pharmacological perturbagens
+(genetic perturbations, disease states, etc.) for analogous
+analyses. See \code{\link{PertSEA}} function.
 
 A complementary approach is that of finding perturbagens that
 consistently dysregulate a set of pathways. This is the
 pathway-based version of the Gene Set Enrichment Analysis
-(GSEA). See \code{\link{PathSEA}}.
+(GSEA). As an application example, this approach can be used to
+find drugs mimicking the dysregulation of a gene by looking for
+drugs dysregulating pathways involving the gene (this has been
+published as the \code{gene2drug} tool [3]). See
+\code{\link{PathSEA}}.
+
+Both DSEA and gene2drug analyses can be performed using
+preprocessed data from
+\url{http://dsea.tigem.it/downloads.php}. The data include
+Connectivity Map GEPs converted to PEPs in the form of a
+\code{gep2pep} repository.
 
 Naming conventions:
 
@@ -65,12 +74,19 @@ Naming conventions:
 
 }
 }
+\references{
+[1] Subramanian A. et al. Gene set enrichment analysis: A
+    knowledge-based approach for interpreting genome-wide
+    expression profiles. PNAS 102, 15545–15550 (2005).
+
+[2] Napolitano F. et al, Drug-set enrichment analysis: a novel tool
+    to investigate drug mode of action. Bioinformatics 32, 235-241
+    (2016).
+
+[3] Napolitano F. et al, gene2drug: a Computational Tool for
+    Pathway-based Rational Drug Repositioning, bioRxiv 192005; doi:
+    https://doi.org/10.1101/192005
+}
 \author{
 Francesco Napolitano \email{franapoli@gmail.com}
 }
-\references{
-Napolitano F. et al, Drug-set enrichment analysis: a
-    novel tool to investigate drug mode of action. Bioinformatics
-    32, 235-241 (2016).
-}
-

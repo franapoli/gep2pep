@@ -10,26 +10,35 @@
 #' @details
 #'
 #' \code{gep2pep} creates a local repository of gene sets, which can
-#' also be imported from the MSigDB database. The local repository is
-#' in the \code{repo} format. When a GEP, defined as a ranked list of
-#' genes, is passed to \code{\link{buildPEPs}}, the stored database of
-#' pathways is used to convert the GEP to a PEP and permanently store
-#' the latter.
+#' also be imported from the MSigDB [1] database. The local repository
+#' is in the \code{repo} format. When a GEP, defined as a ranked list
+#' of genes, is passed to \code{\link{buildPEPs}}, the stored database
+#' of pathways is used to convert the GEP to a PEP and permanently
+#' store the latter.
 #'
 #' One type of analysis that can be performed on PEPs and that is
 #' directly supported by \code{gep2pep} is the Drug-Set Enrichment
-#' Analysis (DSEA, see reference section). It finds pathways that
-#' are consistently dysregulated by a set of drugs, as opposed to a
-#' background of other drugs. Of course PEPs may refer to
-#' non-pharmacological perturbagens (genetic perturbations, disease
-#' states, etc.) for analogous analyses. See \code{\link{PertSEA}}
-#' function.
+#' Analysis (DSEA [2]). It finds pathways that are consistently
+#' dysregulated by a set of drugs, as opposed to a background of other
+#' drugs. Of course PEPs may refer to non-pharmacological perturbagens
+#' (genetic perturbations, disease states, etc.) for analogous
+#' analyses. See \code{\link{PertSEA}} function.
 #'
 #' A complementary approach is that of finding perturbagens that
 #' consistently dysregulate a set of pathways. This is the
 #' pathway-based version of the Gene Set Enrichment Analysis
-#' (GSEA). See \code{\link{PathSEA}}.
+#' (GSEA). As an application example, this approach can be used to
+#' find drugs mimicking the dysregulation of a gene by looking for
+#' drugs dysregulating pathways involving the gene (this has been
+#' published as the \code{gene2drug} tool [3]). See
+#' \code{\link{PathSEA}}.
 #'
+#' Both DSEA and gene2drug analyses can be performed using
+#' preprocessed data from
+#' \url{http://dsea.tigem.it/downloads.php}. The data include
+#' Connectivity Map GEPs converted to PEPs in the form of a
+#' \code{gep2pep} repository.
+#' 
 #' Naming conventions:
 #'
 #' \itemize{
@@ -60,10 +69,20 @@
 #'   package. It is implemented in \code{repo} format.}
 #'
 #' }
-#' @references Napolitano F. et al, Drug-set enrichment analysis: a
-#'     novel tool to investigate drug mode of action. Bioinformatics
-#'     32, 235-241 (2016).
-#' 
+#' @references 
+#'
+#' [1] Subramanian A. et al. Gene set enrichment analysis: A
+#'     knowledge-based approach for interpreting genome-wide
+#'     expression profiles. PNAS 102, 15545–15550 (2005).
+#'
+#' [2] Napolitano F. et al, Drug-set enrichment analysis: a novel tool
+#'     to investigate drug mode of action. Bioinformatics 32, 235-241
+#'     (2016).
+#'
+#' [3] Napolitano F. et al, gene2drug: a Computational Tool for
+#'     Pathway-based Rational Drug Repositioning, bioRxiv 192005; doi:
+#'     https://doi.org/10.1101/192005
+#'
 #' @docType package
 #' @name gep2pep-package
 #' @author Francesco Napolitano \email{franapoli@@gmail.com}
@@ -189,6 +208,7 @@ importMSigDB.xml <- function(fname) {
 #' Check both repository data consistency (see \code{repo_check} from
 #' the \code{repo} package) and specific gep2pep data consistency.
 #' @inheritParams dummyFunction
+#' @return Nothing.
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
@@ -216,17 +236,17 @@ checkRepository <- function(rp) {
     
     off <- setdiff(names(perts), dbs)
     if(length(off>0)) {
-        say("The following collections are in perturbagens",
-            "list but not in repository collections:", "warning",
-            off)
+        say(paste("The following collections are in perturbagens",
+                  "list but not in repository collections:"),
+            "warning", off)
         problems <- TRUE
     }
 
     off <- setdiff(names(perts), dbs)
     if(length(off>0)) {
-        say("The following collections are in repository",
-            "collections but not in perturbagens list:", "warning",
-            off)
+        say(paste("The following collections are in repository",
+                  "collections but not in perturbagens list:"),
+            "warning", off)
         problems <- TRUE
     }
 
@@ -235,9 +255,9 @@ checkRepository <- function(rp) {
 
     off <- setdiff(pepitems, dbs)
     if(length(off>0)) {
-        say("The following collections have PEPs but not",
-            "pathways in the repository:", "warning",
-            off)
+        say(paste("The following collections have PEPs but not",
+                  "pathways in the repository:"),
+                  "warning", off)
         problems <- TRUE
     }
 
@@ -255,9 +275,9 @@ checkRepository <- function(rp) {
                 peps <- rp$get(dbs[i])
 
                 if(!identical(colnames(peps$ES), perts[[dbs[i]]])) {
-                    say(paste("Column names in the PEP matrix differ from those",
-                              "in the perturbagens repository item: this is a",
-                              "serious inconsistency!"),
+                    say(paste("Column names in the PEP matrix differ from",
+                              "those in the perturbagens repository item:",
+                              "this is a serious inconsistency!"),
                         "warning")
                     problems <- TRUE
                 }
@@ -897,7 +917,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
     pathways <- pwList2pwStruct(pathways)
 
     for(i in 1:length(pathways))
-        if(!rp$has(names(pathways)[i]))
+        if(!rp_peps$has(names(pathways)[i]))
             say("Cold not find PEPs: ", "error", names(pathways)[i])
 
     if(length(bgsets)==1 && bgsets != "all") {
@@ -911,10 +931,10 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
             say(paste("There is at least one selected collections for which",
                       "no pathway has been provided"), "warning")
         
-        offcolls <- setdiff(collections, getCollections(rp_peps))
+        offcols <- setdiff(collections, getCollections(rp_peps))
         if(length(offcols) > 0)
             say("The following collections are not in the repository:",
-                "error", offcolls)
+                "error", offcols)
     }
             
     collections <- intersect(names(pathways),
@@ -1095,8 +1115,8 @@ storePEPs <- function(rp, db_id, peps) {
         curmat[["PV"]][, oldpeps] <- peps$PV[, oldpeps]
 
         ## adding new PEPs
-        peps$ES <- cbind(curmat$ES, peps$ES[, newpeps, drop=F])
-        peps$PV <- cbind(curmat$PV, peps$PV[, newpeps, drop=F])
+        peps$ES <- cbind(curmat$ES, peps$ES[, newpeps, drop=FALSE])
+        peps$PV <- cbind(curmat$PV, peps$PV[, newpeps, drop=FALSE])
     }
 
     
@@ -1315,6 +1335,6 @@ checkSets <- function(rp, sets) {
         off <- setdiff(sub, names(coll))
         if(length(off) > 0)
             say(paste0("The following pathways could not be found ",
-                      "in collection ", ucoll_ids[i], ": "), "error", off)            
+                      "in collection ", ucoll_ids[i], ": "), "error", off)
     }            
 }
