@@ -68,12 +68,12 @@ subdb <- db[pathways]
 psea <- PathSEA(rp, subdb)
 ## [15:35:29] Working on collection: C3_TFT
 ## [15:35:29] Common pathway sets removed from bgset.
-## [15:35:29] Col-ranking collection...
+## [15:35:29] Column-ranking collection...
 ## [15:35:29] Computing enrichments...
 ## [15:35:29] done.
 ## [15:35:29] Working on collection: C4_CGN
 ## [15:35:29] Common pathway sets removed from bgset.
-## [15:35:29] Col-ranking collection...
+## [15:35:29] Column-ranking collection...
 ## [15:35:29] Computing enrichments...
 ## [15:35:29] done.
 
@@ -88,3 +88,4 @@ psea$PathSEA$C3_TFT
 unlink(repo_path, TRUE)
 
 }
+

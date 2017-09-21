@@ -3,6 +3,7 @@
 export(PathSEA)
 export(PertSEA)
 export(buildPEPs)
+export(checkRepository)
 export(createRepository)
 export(exportSEA)
 export(gene2pathways)

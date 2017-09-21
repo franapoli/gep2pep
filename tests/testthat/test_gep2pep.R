@@ -17,6 +17,7 @@ create_test_repo <- function(suffix=NULL) {
         )    
 }
 
+
 testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
 testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 rp <- create_test_repo()
@@ -55,6 +56,7 @@ test_that("new db creation", {
   expect_equal(length(rp$get(paste0(expected_dbs[1], "_sets"))), 10)
   expect_equal(length(rp$get(paste0(expected_dbs[2], "_sets"))), 10)
   expect_equal(length(rp$get(paste0(expected_dbs[3], "_sets"))), 10)
+  expect_failure(expect_warning(suppressMessages(checkRepository(rp))))
 })
 
 context("creation of peps")
@@ -80,6 +82,8 @@ test_that("build first PEPs", {
   expect_equal(ncol(rp$get(expected_dbs[1])[[2]]), ncol(testgep))
   expect_equal(ncol(rp$get(expected_dbs[3])[[1]]), ncol(testgep))
   expect_equal(ncol(rp$get(expected_dbs[3])[[2]]), ncol(testgep))
+
+  expect_failure(expect_warning(suppressMessages(checkRepository(rp))))  
 })
 
 
@@ -119,7 +123,8 @@ oldTFT <- rp$get("C3_TFT")
 test_that("Adding PEPs", {
     expect_warning(
         suppressMessages(buildPEPs(rp, testgep[, 1:3], progress_bar=FALSE))
-        )
+    )
+    expect_failure(expect_warning(suppressMessages(checkRepository(rp))))    
 })
 
 untouchedTFT <- rp$get("C3_TFT")
@@ -127,8 +132,9 @@ untouchedTFT <- rp$get("C3_TFT")
 subs <- c(2,4,5)
 smallTFT <- list(ES=oldTFT$ES[, subs],
                  PV=oldTFT$PV[, subs])
+## the following will create conflicts with
+## the "perturbagens" item
 rp$set("C3_TFT", smallTFT)
-
 
 rebuiltTFT <- rp$get("C3_TFT")
 test_that("Adding PEPs", {
@@ -138,7 +144,9 @@ test_that("Adding PEPs", {
     expect_equal(untouchedTFT, oldTFT)
     expect_equal(rebuiltTFT$ES, oldTFT$ES[,colnames(rebuiltTFT$ES)])
     expect_equal(rebuiltTFT$PV, oldTFT$PV[,colnames(rebuiltTFT$PV)])
+    expect_warning(suppressMessages(checkRepository(rp)))
 })
+
 
 rp$set("C3_TFT", oldTFT)
 
@@ -153,6 +161,7 @@ for(i in 1:ncol(testgep))
 
 test_that("adding one by one", {
     expect_true(identical(rp2$get("C3_TFT"), rp$get("C3_TFT")))
+    expect_failure(expect_warning(suppressMessages(checkRepository(rp2))))    
 })
 
 

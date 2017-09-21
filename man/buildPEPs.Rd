@@ -5,7 +5,7 @@
 \title{Build PEPs from GEPs and stores them in the repository.}
 \usage{
 buildPEPs(rp, geps, parallel = FALSE, collections = "all",
-  replace_existing = FALSE)
+  replace_existing = FALSE, progress_bar = TRUE)
 }
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
@@ -28,7 +28,10 @@ collections in \code{rp} will be used.}
 names of \code{geps} are already present in the repository. If
 set to TRUE, they will be replaced, otherwise they will be
 skipped and only PEPs of new perturbagens will be computed and
-added.}
+added. Either ways, will throw a warning.}
+
+\item{progress_bar}{If set to TRUE (default) will show a progress
+bar updated after coversion of each column of \code{geps}.}
 }
 \value{
 Nothing. The computed PEPs will be available in the
@@ -82,3 +85,4 @@ unlink(repo_path, TRUE)
 \seealso{
 buildPEPs
 }
+

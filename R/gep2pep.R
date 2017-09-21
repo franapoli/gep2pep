@@ -84,6 +84,7 @@ NULL
 NULL
 
 
+
 #' Dummy function for parameter inheritance
 #' @param rp A repository created by \code{\link{createRepository}}.
 #' @param rp_peps A repository created with
@@ -182,6 +183,124 @@ importMSigDB.xml <- function(fname) {
     return(msigDB)    
 }
 
+
+#' Check an existyng repository for consistency
+#'
+#' Check both repository data consistency (see \code{repo_check} from
+#' the \code{repo} package) and specific gep2pep data consistency.
+#' @inheritParams dummyFunction
+#' @examples
+#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#' checkRepository(rp)
+#'
+#' unlink(repo_path, TRUE)
+#' @export
+checkRepository <- function(rp) {
+    say("Checking repository consistency...")
+    rp$check()
+
+    message()
+    say("Checing for gep2pep data consistency...")
+    message()
+    
+    dbs <- getCollections(rp)
+    perts <- rp$get("perturbagens")
+    if(is.null(perts[[1]])) ## this happens due to a bug
+        perts <- perts[-1]
+
+    say("Checking perturbagens list...")
+    problems <- FALSE
+    
+    off <- setdiff(names(perts), dbs)
+    if(length(off>0)) {
+        say("The following collections are in perturbagens",
+            "list but not in repository collections:", "warning",
+            off)
+        problems <- TRUE
+    }
+
+    off <- setdiff(names(perts), dbs)
+    if(length(off>0)) {
+        say("The following collections are in repository",
+            "collections but not in perturbagens list:", "warning",
+            off)
+        problems <- TRUE
+    }
+
+    w <- sapply(lapply(rp$entries(), get, x="tags"), `%in%`, x="pep")
+    pepitems <- names(w[w])
+
+    off <- setdiff(pepitems, dbs)
+    if(length(off>0)) {
+        say("The following collections have PEPs but not",
+            "pathways in the repository:", "warning",
+            off)
+        problems <- TRUE
+    }
+
+    if(!problems)
+        say("Ok.")
+
+    if(length(perts)>0) {
+
+        say("Checking PEPs...")
+        for(i in 1:length(dbs)) {
+            problems <- FALSE
+            
+            say(paste0("Checking collection", dbs[i], "..."))
+            if(rp$has(dbs[i])) {
+                peps <- rp$get(dbs[i])
+
+                if(!identical(colnames(peps$ES), perts[[dbs[i]]])) {
+                    say(paste("Column names in the PEP matrix differ from those",
+                              "in the perturbagens repository item: this is a",
+                              "serious inconsistency!"),
+                        "warning")
+                    problems <- TRUE
+                }
+                
+                sets <- rp$get(paste0(dbs[i], "_sets"))            
+
+                if(!identical(colnames(peps$ES), colnames(peps$PV))) {
+                    say(paste("Column names of the ES matrix are not",
+                              "identical to column names of PV matrix:",
+                              "this is a serious inconsistency!"),
+                        "warning")
+                    problems <- TRUE
+                }
+
+                if(!identical(rownames(peps$ES), rownames(peps$PV))) {
+                    say(paste("Row names of the ES matrix are not",
+                              "identical to row names of PV matrix!",
+                              "this is a serious inconsistency!"),
+                        "warning")
+                    problems <- TRUE
+                }
+
+                if(!setequal(names(sets), rownames(peps$PV))) {
+                    say(paste("There are pathways in the repository that",
+                              "are not in the PEP matrix."),
+                        "warning")
+                    problems <- TRUE
+                }
+
+                if(!problems)
+                    say("ok.")
+            }
+        }
+
+        say("Summary of common perturbagens across collections:")
+        out <- outer(perts, perts,
+                     Vectorize(
+                         function(a,b) length(intersect(a,b))
+                     ))
+        print(out)
+    } else say("No perturbagens to check.")
+}
+    
 
 
 #' Returns the names of the pathway collections in a repository.
@@ -288,6 +407,15 @@ getCollections <- function(rp)
 #' @export
 createRepository <- function(path, sets, name=NULL, description=NULL)
 {
+    if(missing(sets))
+        say(paste("sets parameter must be provided, see",
+                  "help(createRepository) for the format)"),
+            "error")
+    
+    if(file.exists(path)) {
+        say("Can not create repository in existing folder", "error")
+    } else rp <- repo_open(path, TRUE)
+
     if(is.null(name))
         name <- "gep2pep repository"
     if(is.null(description))
@@ -295,9 +423,6 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
                              "and possibly Pathway Expression Profiles", 
                              "created with the gep2pep package.")    
     
-    if(file.exists(path)) {
-        say("Can not create repository in existing folder", "error")
-    } else rp <- repo_open(path, TRUE)
     
     rp$project(name, description)
 
@@ -364,7 +489,7 @@ openRepository <- function(path)
 {
     if(!file.exists(path)) {
         say(paste("path must point to an existing directory containing",
-                  "a repository created with createRepository", "error"))
+                  "a repository created with createRepository"), "error")
     }
     rp <- repo_open(path, TRUE)
 }
@@ -987,7 +1112,7 @@ storePEPs <- function(rp, db_id, peps) {
            prj = get_repo_prjname(rp))
 
 
-    say("Storing perturbagen information..")
+    say("Storing perturbagen information...")
     perts <- rp$get("perturbagens")
     perts[[db_id]] <- colnames(peps$ES)
     rp$set("perturbagens", perts)    
@@ -1002,8 +1127,7 @@ say <- function(txt, type="diagnostic", names=NULL) {
         format(Sys.time(), format="%H:%M:%S"),
         "] ",
         txt,
-        paste(names, collapse = ", "),
-        "."
+        paste(names, collapse = ", ")
     )
 
     if(type=="error") {
