@@ -216,17 +216,17 @@ checkRepository <- function(rp) {
     
     off <- setdiff(names(perts), dbs)
     if(length(off>0)) {
-        say("The following collections are in perturbagens",
-            "list but not in repository collections:", "warning",
-            off)
+        say(paste("The following collections are in perturbagens",
+                  "list but not in repository collections:"),
+            "warning", off)
         problems <- TRUE
     }
 
     off <- setdiff(names(perts), dbs)
     if(length(off>0)) {
-        say("The following collections are in repository",
-            "collections but not in perturbagens list:", "warning",
-            off)
+        say(paste("The following collections are in repository",
+                  "collections but not in perturbagens list:"),
+                  "warning", off)
         problems <- TRUE
     }
 
@@ -235,9 +235,9 @@ checkRepository <- function(rp) {
 
     off <- setdiff(pepitems, dbs)
     if(length(off>0)) {
-        say("The following collections have PEPs but not",
-            "pathways in the repository:", "warning",
-            off)
+        say(paste("The following collections have PEPs but not",
+                  "pathways in the repository:"),
+            "warning", off)
         problems <- TRUE
     }
 
@@ -897,7 +897,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
     pathways <- pwList2pwStruct(pathways)
 
     for(i in 1:length(pathways))
-        if(!rp$has(names(pathways)[i]))
+        if(!rp_peps$has(names(pathways)[i]))
             say("Cold not find PEPs: ", "error", names(pathways)[i])
 
     if(length(bgsets)==1 && bgsets != "all") {
@@ -911,10 +911,10 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
             say(paste("There is at least one selected collections for which",
                       "no pathway has been provided"), "warning")
         
-        offcolls <- setdiff(collections, getCollections(rp_peps))
+        offcols <- setdiff(collections, getCollections(rp_peps))
         if(length(offcols) > 0)
             say("The following collections are not in the repository:",
-                "error", offcolls)
+                "error", offcols)
     }
             
     collections <- intersect(names(pathways),
