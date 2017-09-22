@@ -9,6 +9,9 @@ checkRepository(rp)
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
 }
+\value{
+Nothing.
+}
 \description{
 Check both repository data consistency (see \code{repo_check} from
 the \code{repo} package) and specific gep2pep data consistency.
@@ -22,4 +25,3 @@ checkRepository(rp)
 
 unlink(repo_path, TRUE)
 }
-

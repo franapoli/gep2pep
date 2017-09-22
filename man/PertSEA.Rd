@@ -39,8 +39,8 @@ A list of 2, by names "PertSEA" and "details". The
 Perturbagen Set Enrichment Analysis (PertSEA) can be seen as a
 Gene-SEA performed over rows (as opposed to columns) of a matrix of
 GEPs. It tells how much a pathway is consistently dysregulated by a
-set of perturbagens when compared to a statistical background of
-perturbagens.
+set of perturbagens (or experimental conditions in general) when
+compared to a statistical background of other perturbagens.
 }
 \details{
 For each pathway, all perturbagens are ranked by how much
@@ -51,8 +51,11 @@ For each pathway, all perturbagens are ranked by how much
     \code{bgset}. A positive (negative) Enrichment Score (ES) of
     the KS test indicates whether each pathway is UP- (DOWN-)
     regulated by \code{pgset} as compared to \code{bgset}. A
-    p-value is associated to the ES. See reference for further
-    details.
+    p-value is associated to the ES.
+
+    When PEPs are obtained from drug-induced gene expression
+    profiles, \code{PathSEA} can be used to perform Drug-Set
+    Enrichment Analysis [1].
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -95,8 +98,7 @@ unlink(repo_path, TRUE)
 
 }
 \references{
-Napolitano F. et al, Drug-set enrichment analysis: a
+[1] Napolitano F. et al, Drug-set enrichment analysis: a
     novel tool to investigate drug mode of action. Bioinformatics
     32, 235-241 (2016).
 }
-

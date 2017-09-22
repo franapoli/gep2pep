@@ -52,6 +52,12 @@ For each perturbagen, all pathways are ranked by how much
     indicates whether each pathway is UP- (DOWN-) regulated by
     \code{pgset} as compared to \code{bgset}. A p-value is
     associated to the ES.
+
+    When PEPs are obtained from drug-induced gene expression
+    profiles, \code{PathSEA} can be used together with
+    \code{gene2pathways} to perform gene2drug [1] analysis, which
+    predicts which drugs may target a gene of interest (or mimick
+    such effect).
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -88,4 +94,8 @@ psea$PathSEA$C3_TFT
 unlink(repo_path, TRUE)
 
 }
-
+\references{
+[1] Napolitano F. et al, gene2drug: a Computational
+    Tool for Pathway-based Rational Drug Repositioning, bioRxiv
+    (2017) 192005; doi: https://doi.org/10.1101/192005
+}

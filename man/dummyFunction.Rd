@@ -23,4 +23,3 @@ Nothing
 \description{
 Dummy function for parameter inheritance
 }
-

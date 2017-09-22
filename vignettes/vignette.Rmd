@@ -11,17 +11,16 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-
 ## About gep2pep
 
-Pathway Expression Profiles (PEPs) are based on the collective
-expression of genes belonging to a collection of pathways (or generic
-gene sets) as opposed to individual genes. \code{gep2pep} supports the
-conversion of gene expression profiles (GEPs) to PEPs and performs
-enrichment analysis of pathways or perturbagens.
+Pathway Expression Profiles (PEPs) are based on the expression of
+pathways (or generic gene sets) belonging to a collection, as opposed
+to individual genes. `gep2pep` supports the conversion of gene
+expression profiles (GEPs) to PEPs and performs enrichment analysis of
+pathways or perturbagens.
 
 `gep2pep` creates a local repository of gene sets, which can also be
-imported from the MSigDB database. The local repository is in the
+imported from the MSigDB database [1]. The local repository is in the
 `repo` format. When a GEP, defined as a ranked list of genes, is
 passed to `buildPEPs`, the stored database of pathways is used to
 convert the GEP to a PEP and permanently store the latter.
@@ -36,16 +35,43 @@ analyses. See the `PertSEA` function.
 
 A complementary approach is that of finding perturbagens that
 consistently dysregulate a set of pathways. This is the pathway-based
-version of the Gene Set Enrichment Analysis (GSEA). See `PathSEA`.
+version of the Gene Set Enrichment Analysis (GSEA). As an application
+example, this approach can be used to find drugs mimicking the
+dysregulation of a gene by looking for drugs dysregulating pathways
+involving the gene (this has been published as the `gene2drug` tool
+[3]). See the `PathSEA` function.
+
+This vignette uses toy data, as real data is computationally
+expensive. Connectivity Map data [4] (drug induced gene expression
+profiles) pre-converted to PEPs can be downloaded from
+http://dsea.tigem.it in the `gep2pep` format.
+
+
+### References
+
+[1] Subramanian A. et al. Gene set enrichment analysis: A
+    knowledge-based approach for interpreting genome-wide expression
+    profiles. PNAS 102, 15545-15550 (2005).
+    
+[2] Napolitano F. et al, Drug-set enrichment analysis: a novel tool to
+    investigate drug mode of action. Bioinformatics 32, 235-241 (2016).
+
+[3] Napolitano F. et al, gene2drug: a Computational Tool for
+    Pathway-based Rational Drug Repositioning, bioRxiv (2017) 192005;
+    doi: https://doi.org/10.1101/192005
+
+[4] Lamb, J. et al. The Connectivity Map: Using Gene-Expression
+    Signatures to Connect Small Molecules, Genes, and Disease. Science
+    313, 1929-1935 (2006).
+
+
+## Creating a repository of pathways
 
 In order to use the package, it must be loaded as follows:
 
 ```{r}
 library(gep2pep)
 ```
-
-
-## Creating a repository of pathways
 
 The [MSigDB](http://software.broadinstitute.org/gsea/msigdb) is a
 curated database of gene set collections. The entire database can be
@@ -138,8 +164,9 @@ rp$get("C3_TFT")$ES[1:3, 1:3]
 rp$get("C3_TFT")$PV[1:3, 1:3]
 ```
 
+## Performing Analysis
 
-## Performing Perturbagen-Set Enrichment Analysis.
+### Performing Perturbagen-Set Enrichment Analysis (PertSEA).
 
 Suppose the stored PEPs correspond to pharmacological
 perturbations. Then `gep2pep` can perform Drug-Set Enrichment Analysis
@@ -183,8 +210,15 @@ The analysis can be exported in XLS format as follows:
 exportSEA(rp, psea)
 ```
 
+Performing `PertSEA` using Pathway Expression Profiles derived from
+drug-induced gene expression profiles yields Drug-set enrichment
+analysis (DSEA). See the following reference:
 
-## Performing Pathway-Set Enrichment Analysis
+* Napolitano F. et al, Drug-set enrichment analysis: a novel tool to
+  investigate drug mode of action. Bioinformatics 32, 235-241 (2016).
+
+
+### Performing Pathway-Set Enrichment Analysis (PathSEA)
 
 A complementary approach to PertSEA is Pathway-Set Enrichment Analysis
 (PathSEA). PathSEA searches for perturbagens that consistently
@@ -202,16 +236,28 @@ psea$PathSEA$C3_TFT
 ```
 
 PathSEA results are analogous to those of PertSEA, but
-perturbagen-wise.
+perturbagen-wise. A set of pathways con also be obtained starting from
+a gene of interest, for example:
+
+```{r}
+pathways <- gene2pathways(rp, "FAM126A")
+```
+
+Using a gene to obtain the pathways and performing `PathSEA` with
+drug-induced Pathway Expression Profiles yields "gene2drug" analysis,
+see the following reference:
+
+* Napolitano F. et al, gene2drug: a Computational Tool for
+  Pathway-based Rational Drug Repositioning, bioRxiv (2017) 192005;
+  doi: https://doi.org/10.1101/192005
 
 
-## Accessing the repository directly
+## Advanced access to the repository
 
 `gep2pep` users don't need to understand how to interact with a
 `gep2pep` repository, however it can be useful in some
-
-situations. `gep2pep` repositories are in the `repo` format (see the
-`repo` package), so they can be accessed as any other `repo`
+cases. `gep2pep` repositories are in the `repo` format (see the `repo`
+package), so they can be accessed as any other `repo`
 repository. However item tags should not be changed, as they are used
 by `gep2pep` to identify data types. Each `gep2pep` repository always
 contains a special *project* item including repository and session
@@ -240,9 +286,21 @@ rp$info()
 ```
 
 
+`put`, `set` and other `repo` commands can be used to alter repository
+contents directly, however this could leave the repository in an
+inconsistent state. The following checks a repository for possible
+problems:
+
+```{r}
+checkRepository(rp)
+```
+
 ```{r include=FALSE}
 unlink(repoRoot, TRUE)
 ```
 
-<hr/><small><i>Based on `gep2pep` version `r
-packageVersion("gep2pep")`</i></small>
+
+<hr/>
+<small><i>
+Based on `gep2pep` version `r packageVersion("gep2pep")`
+</i></small>
