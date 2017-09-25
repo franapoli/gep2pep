@@ -26,23 +26,23 @@ default), all pathways that are in the repository and not in
 collections in \code{rp} will be used.}
 
 \item{details}{If TRUE (default) details will be reported for each
-perturbagen in \code{pgset}.}
+condition in \code{pgset}.}
 }
 \value{
 A list of 2, by names "PathSEA" and "details". The
     "PathSEA" entry is a 2-columns matrix including ESs and
-    p-values for each collection and perturbagen. The "details"
+    p-values for each collection and condition. The "details"
     entry reports the rank of each pathway in \code{pathways} for
-    each perturbagen.
+    each condition.
 }
 \description{
 PathSEA is analogous to the Gene Set Enrichment Analysis (GSEA),
 but for pathways instead of single genes. It can therefore be used
-to look for perturbagens that consistently UP- or DOWN-regulate a
-set of pathways.
+to look for conditions under which a given set of pathways is
+consistently UP- or DOWN-regulated.
 }
 \details{
-For each perturbagen, all pathways are ranked by how much
+For each condition, all pathways are ranked by how much
     they are dysregulated by it (from the most UP-regulated to the
     most DOWN-regulatied, according to the corresponding
     p-values). Then, a Kolmogorov-Smirnov (KS) test is performed to

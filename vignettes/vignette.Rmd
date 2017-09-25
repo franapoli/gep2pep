@@ -13,11 +13,12 @@ vignette: >
 
 ## About gep2pep
 
-Pathway Expression Profiles (PEPs) are based on the expression of
-pathways (or generic gene sets) belonging to a collection, as opposed
-to individual genes. `gep2pep` supports the conversion of gene
-expression profiles (GEPs) to PEPs and performs enrichment analysis of
-pathways or perturbagens.
+Pathway Expression Profiles (PEPs) are based on the expression of all
+the pathways (or generic gene sets) belonging to a collection under a
+given experimental condition, as opposed to individual
+genes. `gep2pep` supports the conversion of gene expression profiles
+(GEPs) to PEPs and performs enrichment analysis of both pathways and
+conditions.
 
 `gep2pep` creates a local repository of gene sets, which can also be
 imported from the MSigDB database [1]. The local repository is in the
@@ -29,19 +30,21 @@ One type of analysis that can be performed on PEPs and that is
 directly supported by `gep2pep` is the Drug-Set Enrichment Analysis
 (DSEA, see reference below). It finds pathways that are consistently
 dysregulated by a set of drugs, as opposed to a background of other
-drugs. Of course PEPs may refer to non-pharmacological perturbagens
+drugs. Of course PEPs may refer to non-pharmacological conditions
 (genetic perturbations, disease states, etc.) for analogous
-analyses. See the `PertSEA` function.
+analyses. See the `CondSEA` function.
 
-A complementary approach is that of finding perturbagens that
-consistently dysregulate a set of pathways. This is the pathway-based
-version of the Gene Set Enrichment Analysis (GSEA). As an application
-example, this approach can be used to find drugs mimicking the
-dysregulation of a gene by looking for drugs dysregulating pathways
-involving the gene (this has been published as the `gene2drug` tool
-[3]). See the `PathSEA` function.
+A complementary approach is that of finding conditions under which a
+set of pathways is consistently UP- or DOWN-regulated. This is the
+pathway-based version of the Gene Set Enrichment Analysis (GSEA). As
+an application example, this approach can be used to find drugs
+mimicking the dysregulation of a gene by looking for drugs
+dysregulating the pathways involving the gene (this has been published
+as the `gene2drug` tool [3]). See the `PathSEA` function.
 
-This vignette uses toy data, as real data is computationally
+### Real world data
+
+This vignette uses toy data, as real data can be computationally
 expensive. Connectivity Map data [4] (drug induced gene expression
 profiles) pre-converted to PEPs can be downloaded from
 http://dsea.tigem.it in the `gep2pep` format.
@@ -128,7 +131,7 @@ Pathway Expression Profiles (PEPs) are created from Gene Expression
 Profiles (GEPs) using pathway information from the
 repository. GEPs must be provided as a matrix with rows corresponding
 to genes and columns corresponding to conditions
-(*perturbagens*). Genes and perturbagens must be specified through row
+(*conditions*). Genes and conditions must be specified through row
 and column names respectively. The values must be ranks: for each
 condition, the genes must be ranked from that being most UP-regulated
 (rank 1) to that being most DOWN-regulated (rank equal to the number
@@ -138,7 +141,7 @@ One well known database that can be obtained in this format is for
 example the Connectivty Map. A small excerpt (after further
 processing) is included with the `gep2pep`. The excerpt must be
 considered as a dummy example, as it only includes 500 genes for 5
-perturbagens. It can be loaded as follows:
+conditions. It can be loaded as follows:
 
 ```{r}
 geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
@@ -155,7 +158,7 @@ buildPEPs(rp, geps)
 
 Each PEP is composed of an Enrichment Score (ES) -- p-value (PV) pair
 associated to each pathway. ESs and PVs are stored in two separated
-matrices. For each perturbagen, the p-value reports wether a pathway
+matrices. For each condition, the p-value reports wether a pathway
 is significantly dysregulated and the sign of the corresponding ES
 indicates the direction (UP- or DOWN-regulation).
 
@@ -166,7 +169,7 @@ rp$get("C3_TFT")$PV[1:3, 1:3]
 
 ## Performing Analysis
 
-### Performing Perturbagen-Set Enrichment Analysis (PertSEA).
+### Performing Condition-Set Enrichment Analysis (CondSEA).
 
 Suppose the stored PEPs correspond to pharmacological
 perturbations. Then `gep2pep` can perform Drug-Set Enrichment Analysis
@@ -174,22 +177,22 @@ perturbations. Then `gep2pep` can perform Drug-Set Enrichment Analysis
 that are consistently dysregulated by a set of drugs, as opposed to a
 background of other drugs. Of course PEPs may refer to
 non-pharmacological conditions (genetic perturbations, disease states,
-etc.) for analogous analyses (Perturbagen-Set Enrichment Analysis,
-PertSEA). Given a set `pgset` of drugs of interest, PertSEA (which in
+etc.) for analogous analyses (Condition-Set Enrichment Analysis,
+CondSEA). Given a set `pgset` of drugs of interest, CondSEA (which in
 this case is a DSEA) is performed as follows:
 
 ```{r}
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
-psea <- PertSEA(rp, pgset)
+psea <- CondSEA(rp, pgset)
 ```
 
-The result is a list of of 2 elements, named "PertSEA" and "details",
-the most important of which is the former. The "PertSEA" entry is a
+The result is a list of of 2 elements, named "CondSEA" and "details",
+the most important of which is the former. The "CondSEA" entry is a
 list in which each element refers to a pathway collection and is made
 of a 2-columns matrix including ESs and p-values for each pathway.
 
 ```{r}
-psea$PertSEA$C3_TFT
+psea$CondSEA$C3_TFT
 ```
 
 In this dummy example the statistical background is made of only 3
@@ -210,7 +213,7 @@ The analysis can be exported in XLS format as follows:
 exportSEA(rp, psea)
 ```
 
-Performing `PertSEA` using Pathway Expression Profiles derived from
+Performing `CondSEA` using Pathway Expression Profiles derived from
 drug-induced gene expression profiles yields Drug-set enrichment
 analysis (DSEA). See the following reference:
 
@@ -220,8 +223,8 @@ analysis (DSEA). See the following reference:
 
 ### Performing Pathway-Set Enrichment Analysis (PathSEA)
 
-A complementary approach to PertSEA is Pathway-Set Enrichment Analysis
-(PathSEA). PathSEA searches for perturbagens that consistently
+A complementary approach to CondSEA is Pathway-Set Enrichment Analysis
+(PathSEA). PathSEA searches for conditions that consistently
 dysregulate a set of pathways. It can be seen as a pathway-based
 version of the popular Gene Set Enrichment Analysis (GSEA). The
 PathSEA is run independently in each pathway collection.
@@ -235,8 +238,8 @@ psea <- PathSEA(rp, subdb)
 psea$PathSEA$C3_TFT
 ```
 
-PathSEA results are analogous to those of PertSEA, but
-perturbagen-wise. A set of pathways con also be obtained starting from
+PathSEA results are analogous to those of CondSEA, but
+condition-wise. A set of pathways con also be obtained starting from
 a gene of interest, for example:
 
 ```{r}

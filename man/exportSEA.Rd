@@ -2,14 +2,14 @@
 % Please edit documentation in R/gep2pep.R
 \name{exportSEA}
 \alias{exportSEA}
-\title{Export PertSEA or PathSEA results to XLS format}
+\title{Export CondSEA or PathSEA results to XLS format}
 \usage{
 exportSEA(rp, results, outname = NULL)
 }
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
 
-\item{results}{The output of \code{PertSEA} or \code{PathSEA}.}
+\item{results}{The output of \code{CondSEA} or \code{PathSEA}.}
 
 \item{outname}{Name of the XLS file to be created.}
 }
@@ -17,8 +17,8 @@ exportSEA(rp, results, outname = NULL)
 Nothing.
 }
 \description{
-The XLS output includes the full PertSEA or PathSEA results,
-together with additional gene set information for the PertSEA.
+The XLS output includes the full CondSEA or PathSEA results,
+together with additional gene set information for the CondSEA.
 }
 \examples{
 
@@ -30,7 +30,7 @@ geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
 buildPEPs(rp, geps)
 
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
-psea <- PertSEA(rp, pgset)
+psea <- CondSEA(rp, pgset)
 
 \dontrun{
 exportSEA(rp, psea)
@@ -40,5 +40,5 @@ unlink(repo_path, TRUE)
 
 }
 \seealso{
-PertSEA, PathSEA
+CondSEA, PathSEA
 }

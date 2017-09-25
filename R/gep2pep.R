@@ -5,7 +5,7 @@
 #' pathways (or generic gene sets) belonging to a collection, as
 #' opposed to individual genes. \code{gep2pep} supports the conversion
 #' of gene expression profiles (GEPs) to PEPs and performs enrichment
-#' analysis of pathways or perturbagens.
+#' analysis of both pathways and conditions.
 #'
 #' @details
 #'
@@ -20,11 +20,11 @@
 #' directly supported by \code{gep2pep} is the Drug-Set Enrichment
 #' Analysis (DSEA [2]). It finds pathways that are consistently
 #' dysregulated by a set of drugs, as opposed to a background of other
-#' drugs. Of course PEPs may refer to non-pharmacological perturbagens
-#' (genetic perturbations, disease states, etc.) for analogous
-#' analyses. See \code{\link{PertSEA}} function.
+#' drugs. Of course PEPs may refer to non-pharmacological conditions
+#' (genetic perturbations, disease states, cell types, etc.) for
+#' analogous analyses. See \code{\link{CondSEA}} function.
 #'
-#' A complementary approach is that of finding perturbagens that
+#' A complementary approach is that of finding conditions that
 #' consistently dysregulate a set of pathways. This is the
 #' pathway-based version of the Gene Set Enrichment Analysis
 #' (GSEA). As an application example, this approach can be used to
@@ -60,9 +60,9 @@
 #'   pathways, as converted from a GEP according to a pathway
 #'   collection.}
 #'
-#'   \item{perturbagen: }{any experimental condition (drug, gene
-#'   knock-out, disease state, cell type, etc.) characterized by an
-#'   induced GEP and therefore a PEP.}
+#'   \item{condition: }{any transcriptomic-modelled biological state
+#'   (drug treatment, gene knock-out, disease state, cell type, etc.)
+#'   characterized by an induced GEP and therefore a PEP.}
 #'
 #'   \item{gep2pep repository: }{a pathway database and possibly a
 #'   related database of PEPs as created by the \code{gep2pep}
@@ -225,16 +225,16 @@ checkRepository <- function(rp) {
     message()
     
     dbs <- getCollections(rp)
-    perts <- rp$get("perturbagens")
+    perts <- rp$get("conditions")
     if(is.null(perts[[1]])) ## this happens due to a bug
         perts <- perts[-1]
 
-    say("Checking perturbagens list...")
+    say("Checking conditions list...")
     problems <- FALSE
     
     off <- setdiff(names(perts), dbs)
     if(length(off>0)) {
-        say(paste("The following collections are in perturbagens",
+        say(paste("The following collections are in conditions",
                   "list but not in repository collections:"),
             "warning", off)
         problems <- TRUE
@@ -243,7 +243,7 @@ checkRepository <- function(rp) {
     off <- setdiff(names(perts), dbs)
     if(length(off>0)) {
         say(paste("The following collections are in repository",
-                  "collections but not in perturbagens list:"),
+                  "collections but not in conditions list:"),
             "warning", off)
         problems <- TRUE
     }
@@ -274,7 +274,7 @@ checkRepository <- function(rp) {
 
                 if(!identical(colnames(peps$ES), perts[[dbs[i]]])) {
                     say(paste("Column names in the PEP matrix differ from",
-                              "those in the perturbagens repository item:",
+                              "those in the conditions repository item:",
                               "this is a serious inconsistency!"),
                         "warning")
                     problems <- TRUE
@@ -310,13 +310,13 @@ checkRepository <- function(rp) {
             }
         }
 
-        say("Summary of common perturbagens across collections:")
+        say("Summary of common conditions across collections:")
         out <- outer(perts, perts,
                      Vectorize(
                          function(a,b) length(intersect(a,b))
                      ))
         print(out)
-    } else say("No perturbagens to check.")
+    } else say("No conditions to check.")
 }
     
 
@@ -465,8 +465,8 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
                prj = name)
     }    
 
-    rp$put(list(NULL), "perturbagens",
-           "Perturbagen lists for PEPs",
+    rp$put(list(NULL), "conditions",
+           "Condition lists for PEPs",
            c("gep2pep", "perts"),
            prj = name)
     
@@ -555,7 +555,7 @@ makeCollectionIDs <- function(sets) {
 #'
 #' @inheritParams dummyFunction
 #' @param geps A matrix of ranks where each row corresponds to a gene
-#'     and each column to a perturbagen. Each column must include all
+#'     and each column to a condition. Each column must include all
 #'     ranks from 1 to the number of rows. Row and column names must
 #'     be defined. Row names will be matched against gene identifiers
 #'     in the pathways collections, and unrecognized gene names will
@@ -565,7 +565,7 @@ makeCollectionIDs <- function(sets) {
 #' @param replace_existing What to do if PEPs, identified by column
 #'     names of \code{geps} are already present in the repository. If
 #'     set to TRUE, they will be replaced, otherwise they will be
-#'     skipped and only PEPs of new perturbagens will be computed and
+#'     skipped and only PEPs of new conditions will be computed and
 #'     added. Either ways, will throw a warning.
 #' @param progress_bar If set to TRUE (default) will show a progress
 #'     bar updated after coversion of each column of \code{geps}.
@@ -616,7 +616,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
                       replace_existing=FALSE, progress_bar=TRUE)
 {
     checkGEPsFormat(geps)
-    perts <- rp$get("perturbagens")
+    perts <- rp$get("conditions")
     
     if(length(collections) == 1 && collections == "all") {
         dbs <- getCollections(rp)
@@ -652,16 +652,16 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 }
 
 
-#' Export PertSEA or PathSEA results to XLS format
+#' Export CondSEA or PathSEA results to XLS format
 #'
-#' The XLS output includes the full PertSEA or PathSEA results,
-#' together with additional gene set information for the PertSEA.
+#' The XLS output includes the full CondSEA or PathSEA results,
+#' together with additional gene set information for the CondSEA.
 #'
 #' @inheritParams dummyFunction
-#' @param results The output of \code{PertSEA} or \code{PathSEA}.
+#' @param results The output of \code{CondSEA} or \code{PathSEA}.
 #' @param outname Name of the XLS file to be created.
 #' @return Nothing.
-#' @seealso PertSEA, PathSEA
+#' @seealso CondSEA, PathSEA
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -672,7 +672,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 #' buildPEPs(rp, geps)
 #'
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
-#' psea <- PertSEA(rp, pgset)
+#' psea <- CondSEA(rp, pgset)
 #'
 #' \dontrun{
 #' exportSEA(rp, psea)
@@ -685,7 +685,7 @@ exportSEA <- function(rp, results, outname=NULL)
 {
     type <- names(results)[[1]]
     if(! tolower(type) %in% c("pertsea", "pathsea"))
-        say("type must be on of: PertSEA, PathSEA", "error")
+        say("type must be on of: CondSEA, PathSEA", "error")
 
     if(is.null(outname))
         outname <- paste0(type, ".xls")
@@ -700,16 +700,17 @@ exportSEA <- function(rp, results, outname=NULL)
     }              
 }
 
-#' Performs Perturbagen Set Enrichment Analysis
+#' Performs Condition Set Enrichment Analysis
 #'
-#' Perturbagen Set Enrichment Analysis (PertSEA) can be seen as a
+#' Condition Set Enrichment Analysis (CondSEA) can be seen as a
 #' Gene-SEA performed over rows (as opposed to columns) of a matrix of
-#' GEPs. It tells how much a pathway is consistently dysregulated by a
-#' set of perturbagens (or experimental conditions in general) when
-#' compared to a statistical background of other perturbagens.
+#' GEPs. It tells how much a pathway is consistently dysregulated
+#' under a set of conditions (such as a set of drug treatments,
+#' disease states, cell types, etc.) when compared to a statistical
+#' background of other conditions.
 #'
 #' @inheritParams dummyFunction
-#' @param pgset A vector of names of perturbagens. Corresponding PEPs
+#' @param pgset A vector of names of conditions. Corresponding PEPs
 #'     must exist in all the pathway collections currently in
 #'     \code{rp}.
 #' @param bgset The background against which to compare
@@ -717,17 +718,17 @@ exportSEA <- function(rp, results, outname=NULL)
 #'     PEPs will be used. If provided, the corresponding PEPs must
 #'     exist in all the pathway collections currently in \code{rp}.
 #' @param details If TRUE (default) rank details will be reported for
-#'     each perturbagen in \code{pgset}.
-#' @return A list of 2, by names "PertSEA" and "details". The
-#'     "PertSEA" entry is a 2-columns matrix including ESs and
+#'     each condition in \code{pgset}.
+#' @return A list of 2, by names "CondSEA" and "details". The
+#'     "CondSEA" entry is a 2-columns matrix including ESs and
 #'     p-values (see details) for each pathway database and
-#'     perturbagen. The "details" entry reports the rank of each
-#'     perturbagen in \code{pgset} for each pathway.
-#' @details For each pathway, all perturbagens are ranked by how much
+#'     condition. The "details" entry reports the rank of each
+#'     condition in \code{pgset} for each pathway.
+#' @details For each pathway, all conditions are ranked by how much
 #'     they dysregulate it (from the most UP-regulating to the most
 #'     DOWN-regulating). Then, a Kolmogorov-Smirnov (KS) test is
-#'     performed to compare the ranks assigned to perturbagens in
-#'     \code{pgset} against the ranks assigned to perturbagens in
+#'     performed to compare the ranks assigned to conditions in
+#'     \code{pgset} against the ranks assigned to conditions in
 #'     \code{bgset}. A positive (negative) Enrichment Score (ES) of
 #'     the KS test indicates whether each pathway is UP- (DOWN-)
 #'     regulated by \code{pgset} as compared to \code{bgset}. A
@@ -751,8 +752,8 @@ exportSEA <- function(rp, results, outname=NULL)
 #' buildPEPs(rp, geps)
 #'
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
-#' psea <- PertSEA(rp, pgset)
-#' ## [16:26:58] Common perturbagens removed from bgset.
+#' psea <- CondSEA(rp, pgset)
+#' ## [16:26:58] Common conditions removed from bgset.
 #' ## [16:26:58] Working on collection: C3_TFT
 #' ## [16:26:58] Row-ranking collection...
 #' ## [16:26:58] Computing enrichments...
@@ -766,7 +767,7 @@ exportSEA <- function(rp, results, outname=NULL)
 #' ## [16:26:58] Computing enrichments...
 #' ## [16:26:58] done.
 #'
-#' psea$PertSEA$C3_TFT
+#' psea$CondSEA$C3_TFT
 #' ##                ES  PV
 #' ## M5067   1.0000000 0.2
 #' ## M2501   1.0000000 0.2
@@ -782,7 +783,7 @@ exportSEA <- function(rp, results, outname=NULL)
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
+CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
                     details=TRUE)
 {
     dbs <- collections
@@ -809,13 +810,13 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         
         if(length(intersect(pgset, bgset))>0) {
             bgset <- setdiff(bgset, pgset)
-            say("Common perturbagens removed from bgset")
+            say("Common conditions removed from bgset")
         }
         
         rankingset <- c(bgset, pgset)
 
         if(!all(rankingset %in% colnames(peps$ES)))
-            say(paste("The following perturbagens could not be found:",
+            say(paste("The following conditions could not be found:",
                       paste(
                           setdiff(rankingset, colnames(peps)),
                           collapse = ", ")), "error")
@@ -843,7 +844,7 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         say("done")
     }
 
-    return(list(PertSEA=res, details=thedetails))
+    return(list(CondSEA=res, details=thedetails))
 }
 
 
@@ -851,8 +852,8 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #'
 #' PathSEA is analogous to the Gene Set Enrichment Analysis (GSEA),
 #' but for pathways instead of single genes. It can therefore be used
-#' to look for perturbagens that consistently UP- or DOWN-regulate a
-#' set of pathways.
+#' to look for conditions under which a given set of pathways is
+#' consistently UP- or DOWN-regulated.
 #'
 #' @inheritParams dummyFunction
 #' @param pathways A database of pathways in the same format as input
@@ -863,13 +864,13 @@ PertSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #'     default), all pathways that are in the repository and not in
 #'     \code{pathways} will be used.
 #' @param details If TRUE (default) details will be reported for each
-#'     perturbagen in \code{pgset}.
+#'     condition in \code{pgset}.
 #' @return A list of 2, by names "PathSEA" and "details". The
 #'     "PathSEA" entry is a 2-columns matrix including ESs and
-#'     p-values for each collection and perturbagen. The "details"
+#'     p-values for each collection and condition. The "details"
 #'     entry reports the rank of each pathway in \code{pathways} for
-#'     each perturbagen.
-#' @details For each perturbagen, all pathways are ranked by how much
+#'     each condition.
+#' @details For each condition, all pathways are ranked by how much
 #'     they are dysregulated by it (from the most UP-regulated to the
 #'     most DOWN-regulatied, according to the corresponding
 #'     p-values). Then, a Kolmogorov-Smirnov (KS) test is performed to
@@ -1145,10 +1146,10 @@ storePEPs <- function(rp, db_id, peps) {
            prj = get_repo_prjname(rp))
 
 
-    say("Storing perturbagen information...")
-    perts <- rp$get("perturbagens")
+    say("Storing condition information...")
+    perts <- rp$get("conditions")
     perts[[db_id]] <- colnames(peps$ES)
-    rp$set("perturbagens", perts)    
+    rp$set("conditions", perts)    
 
     say("Done.")
 }
@@ -1231,7 +1232,7 @@ attachInfo <- function(rp, results)
         db <- rp$get(paste0(dbs[i], "_sets"))
         resmat <- results[[type]][[i]]
 
-        if(type == "PertSEA") {
+        if(type == "CondSEA") {
             modIDs <- rownames(resmat)
             newres[[i]] <- cbind(
                 Pathway = sapply(db[modIDs], get, x="name"),
@@ -1241,7 +1242,7 @@ attachInfo <- function(rp, results)
             )
         } else {
             res <- cbind(
-                Perturbagen = rownames(results[[type]][[i]]),
+                Condition = rownames(results[[type]][[i]]),
                 results[[type]][[i]]
             )
             
@@ -1283,7 +1284,7 @@ checkGEPsFormat <- function(geps)
     
     pnames <- colnames(geps)
     if(is.null(pnames))
-        say("GEPs must have colnames (as perturbagen IDs)", "error")
+        say("GEPs must have colnames (as condition IDs)", "error")
     if(any(duplicated(pnames)))
         say("GEP colnames must be unique", "error")
 

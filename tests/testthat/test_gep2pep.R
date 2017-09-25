@@ -210,10 +210,10 @@ test_that("Column ranking", {
 })
 
 
-context("PertSEA")
+context("CondSEA")
 
 pgset <- c("(+)_chelidonine",  "(+/_)_catechin")
-res <- suppressMessages(PertSEA(rp, pgset))
+res <- suppressMessages(CondSEA(rp, pgset))
 randi <- sample(1:length(testpws), 1)
 pwsid <- testpws[[randi]]$id
 randDB <- dbs[randi]
@@ -222,10 +222,10 @@ inset <- ranked[pwsid, pgset]
 outset <- ranked[pwsid, setdiff(colnames(ranked), pgset)]
 ks <- ks.test.2(inset, outset)
 
-test_that("PertSEA", {
-    expect_equal(unname(res[["PertSEA"]][[randDB]][pwsid, "ES"]),
+test_that("CondSEA", {
+    expect_equal(unname(res[["CondSEA"]][[randDB]][pwsid, "ES"]),
                  ks$ES)
-    expect_equal(unname(res[["PertSEA"]][[randDB]][pwsid, "PV"]),
+    expect_equal(unname(res[["CondSEA"]][[randDB]][pwsid, "PV"]),
                  ks$p.value)
 })
 

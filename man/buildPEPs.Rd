@@ -11,7 +11,7 @@ buildPEPs(rp, geps, parallel = FALSE, collections = "all",
 \item{rp}{A repository created by \code{\link{createRepository}}.}
 
 \item{geps}{A matrix of ranks where each row corresponds to a gene
-and each column to a perturbagen. Each column must include all
+and each column to a condition. Each column must include all
 ranks from 1 to the number of rows. Row and column names must
 be defined. Row names will be matched against gene identifiers
 in the pathways collections, and unrecognized gene names will
@@ -27,7 +27,7 @@ collections in \code{rp} will be used.}
 \item{replace_existing}{What to do if PEPs, identified by column
 names of \code{geps} are already present in the repository. If
 set to TRUE, they will be replaced, otherwise they will be
-skipped and only PEPs of new perturbagens will be computed and
+skipped and only PEPs of new conditions will be computed and
 added. Either ways, will throw a warning.}
 
 \item{progress_bar}{If set to TRUE (default) will show a progress

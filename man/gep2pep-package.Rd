@@ -10,7 +10,7 @@ Pathway Expression Profiles (PEPs) are based on the expression of
 pathways (or generic gene sets) belonging to a collection, as
 opposed to individual genes. \code{gep2pep} supports the conversion
 of gene expression profiles (GEPs) to PEPs and performs enrichment
-analysis of pathways or perturbagens.
+analysis of both pathways and conditions.
 }
 \details{
 \code{gep2pep} creates a local repository of gene sets, which can
@@ -24,11 +24,11 @@ One type of analysis that can be performed on PEPs and that is
 directly supported by \code{gep2pep} is the Drug-Set Enrichment
 Analysis (DSEA [2]). It finds pathways that are consistently
 dysregulated by a set of drugs, as opposed to a background of other
-drugs. Of course PEPs may refer to non-pharmacological perturbagens
-(genetic perturbations, disease states, etc.) for analogous
-analyses. See \code{\link{PertSEA}} function.
+drugs. Of course PEPs may refer to non-pharmacological conditions
+(genetic perturbations, disease states, cell types, etc.) for
+analogous analyses. See \code{\link{CondSEA}} function.
 
-A complementary approach is that of finding perturbagens that
+A complementary approach is that of finding conditions that
 consistently dysregulate a set of pathways. This is the
 pathway-based version of the Gene Set Enrichment Analysis
 (GSEA). As an application example, this approach can be used to
@@ -64,9 +64,9 @@ Naming conventions:
   pathways, as converted from a GEP according to a pathway
   collection.}
 
-  \item{perturbagen: }{any experimental condition (drug, gene
-  knock-out, disease state, cell type, etc.) characterized by an
-  induced GEP and therefore a PEP.}
+  \item{condition: }{any transcriptomic-modelled biological state
+  (drug treatment, gene knock-out, disease state, cell type, etc.)
+  characterized by an induced GEP and therefore a PEP.}
 
   \item{gep2pep repository: }{a pathway database and possibly a
   related database of PEPs as created by the \code{gep2pep}
