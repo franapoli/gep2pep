@@ -12,7 +12,7 @@ output: github_document
 Pathway Expression Profiles (PEPs) are based on the expression of
 pathways (defined as sets of genes) as opposed to individual
 genes. This package converts gene expression profiles to PEPs and
-performs enrichment analysis of modules or perturbagens, such as "drug
+performs enrichment analysis of both pathways and experimental conditions, such as "drug
 set enrichment analysis" and "gene2drug" drug discovery analysis.
 
 A [paper](http://rdcu.be/pklt) about drug set enrichment analysis has
