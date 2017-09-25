@@ -7,7 +7,7 @@ output: github_document
 [1]: http://www.twitter.com/franapoli
 <!-- Grab your social icons from https://github.com/carlsednaoui/gitsocial -->
 
-## Repo
+## gep2pep
 
 Pathway Expression Profiles (PEPs) are based on the expression of
 pathways (defined as sets of genes) as opposed to individual
