@@ -96,14 +96,18 @@ for(i in 1:3) {
   id <- testpws[[testi]]$id
   tomatch <- intersect(rownames(testgep), set)
   inset <- testgep[match(tomatch, rownames(testgep)), testj]
+  names(inset) <- tomatch
   runsum <- rep(-1/(nrow(testgep)-length(inset)), nrow(testgep))
   runsum[inset] <- 1/length(inset)
   runsum <- cumsum(runsum)
   m <- which.max(abs(runsum))
-  if(runsum[m] > 0)
-      leadset <- inset[inset<=m] else leadset <- inset[inset>m]
-  if(length(leadset)<=0)
-      stop()
+  if(runsum[m] > 0) {
+      leadset <- inset[inset<=m]
+      } else leadset <- inset[inset>m]
+  ## if(length(leadset)<=0)
+  ##     stop()
+  ## if(length(leadset)==1)
+  ##     stop()
   ks <- ks.test.2(inset, (1:nrow(testgep))[-inset], maxCombSize=10^10)
   ks_orig <- unname(ks.test(inset, (1:nrow(testgep))[-inset], maxCombSize=10^10)
                     $statistic)

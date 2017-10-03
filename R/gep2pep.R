@@ -308,8 +308,44 @@ checkRepository <- function(rp) {
                 if(!problems)
                     say("ok.")
             }
+
         }
 
+        say("Checking leading sets information...")
+        for(i in 1:length(dbs)) {
+            problems <- FALSE
+            
+            say(paste0("Checking collection", dbs[i], "..."))
+            lname <- paste0(dbs[i], "_lead")
+            if(rp$has(lname)) {
+                leads <- rp$get(lname)
+
+                if(!identical(names(leads), perts[[dbs[i]]])) {
+                    say(paste("Condition names in leading sets information",
+                              "differ from those in the conditions repository"),
+                        "warning")
+                    problems <- TRUE
+                }
+                
+                sets <- rp$get(paste0(dbs[i], "_sets"))
+
+                pwnames <- lapply(leads, names)
+                isok <- all(unlist(lapply(pwnames, identical, x=pwnames[[1]])))
+
+                if(!isok) {
+                    say(paste("Leading sets appear not to have been computed",
+                              "on the same pathways for all the conditions"),
+                        "warning")
+                    problems <- TRUE
+                }
+
+                if(!problems)
+                    say("ok.")
+            }
+
+        }
+        
+        
         say("Summary of common conditions across collections:")
         out <- outer(perts, perts,
                      Vectorize(
