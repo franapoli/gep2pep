@@ -63,29 +63,30 @@ context("creation of peps")
 
 suppressMessages(buildPEPs(rp, testgep, progress_bar=FALSE))
 
-test_that("build first PEPs", {
-  expect_equal(length(rp$entries()), 8)
+
+test_that("PEP items were created", {
+  expect_equal(length(rp$entries()), 11)
   expect_equal(length(dbs), length(testpws))
   expect_true(rp$has(expected_dbs[1]))
   expect_true(rp$has(expected_dbs[2]))
   expect_true(rp$has(expected_dbs[3]))
-
-  expect_equal(names(rp$get(expected_dbs[1])), c("ES", "PV"))
-  expect_equal(names(rp$get(expected_dbs[3])), c("ES", "PV"))
-  
-  expect_equal(nrow(rp$get(expected_dbs[1])[[1]]), 10)
-  expect_equal(nrow(rp$get(expected_dbs[1])[[2]]), 10)
-  expect_equal(nrow(rp$get(expected_dbs[3])[[1]]), 10)
-  expect_equal(nrow(rp$get(expected_dbs[3])[[2]]), 10)
-
-  expect_equal(ncol(rp$get(expected_dbs[1])[[1]]), ncol(testgep))
-  expect_equal(ncol(rp$get(expected_dbs[1])[[2]]), ncol(testgep))
-  expect_equal(ncol(rp$get(expected_dbs[3])[[1]]), ncol(testgep))
-  expect_equal(ncol(rp$get(expected_dbs[3])[[2]]), ncol(testgep))
-
-  expect_failure(expect_warning(suppressMessages(checkRepository(rp))))  
 })
 
+
+udbs <- unique(dbs)
+test_that("PEP item contents are as expected", {  
+    for(i in 1:3) {
+        peps <- rp$get(udbs[i])
+        expect_equal(names(peps), c("ES", "PV"))
+  
+        expect_equal(nrow(peps$ES), 10)
+        expect_equal(nrow(peps$PV), 10)
+
+        expect_equal(ncol(peps$ES), ncol(testgep))
+        expect_equal(ncol(peps$PV), ncol(testgep))
+    }
+    expect_failure(expect_warning(suppressMessages(checkRepository(rp))))
+})
 
 res <- list()
 for(i in 1:3) {
@@ -95,26 +96,36 @@ for(i in 1:3) {
   id <- testpws[[testi]]$id
   tomatch <- intersect(rownames(testgep), set)
   inset <- testgep[match(tomatch, rownames(testgep)), testj]
+  runsum <- rep(-1/(nrow(testgep)-length(inset)), nrow(testgep))
+  runsum[inset] <- 1/length(inset)
+  runsum <- cumsum(runsum)
+  m <- which.max(abs(runsum))
+  if(runsum[m] > 0)
+      leadset <- inset[inset<=m] else leadset <- inset[inset>m]
+  if(length(leadset)<=0)
+      stop()
   ks <- ks.test.2(inset, (1:nrow(testgep))[-inset], maxCombSize=10^10)
+  ks_orig <- unname(ks.test(inset, (1:nrow(testgep))[-inset], maxCombSize=10^10)
+                    $statistic)
   dbi <- dbs[testi]
-  res[[i]] <- list(id=id, testj=testj, ks=ks, dbi=dbi)
+  res[[i]] <- list(id=id, testj=testj, ks=ks, dbi=dbi, ks_orig=ks_orig,
+                   leadset=leadset)
 }
 
 test_that("KS statistics", {
-  i <- 1
-  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
-  expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
-
-  i <- 2
-  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
-  expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
-
-  i <- 3
-  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
-  expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
+    for(i in 1:3) {
+        resi <- res[[i]]
+        expect_equal(resi$ks_orig, abs(resi$ks$ES))
+        ii <- resi$id; jj <- resi$testj
+        dbi <- rp$get(resi$dbi)
+        dbil <- rp$get(paste0(resi$dbi, "_lead"))
+        expect_equal(dbi$ES[ii, jj], resi$ks$ES)
+        expect_equal(dbi$PV[ii, jj], resi$ks$p.value)
+        expect_true(setequal(names(resi$leadset),
+                             names(dbil[[jj]][[ii]])))
+        expect_equal(resi$leadset,
+                     dbil[[jj]][[ii]][names(resi$leadset)])
+    }
 })
 
 context("adding existing peps")

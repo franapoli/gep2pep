@@ -629,14 +629,18 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 
         if(rp$has(dbs[i]))
             curpeps <- perts[[dbs[i]]] else curpeps <- NULL
+                
         newpeps <- setdiff(colnames(geps), curpeps)
         oldpeps <- intersect(colnames(geps), curpeps)
 
         if(length(oldpeps > 0)) {
             msg <- paste0("Existing PEPs will be replaced: ",
                           paste(oldpeps, collapse=", "))
-            if(!replace_existing)
+            if(replace_existing) {
+                newpeps <- c(oldpeps, newpeps)
+            } else {
                 msg <- gsub("replaced", "skipped", msg)
+            }
             say(msg, type="warning")
         }
 
@@ -644,11 +648,12 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
             gepsi <- geps[, newpeps, drop=FALSE]       
             thisdb <- rp$get(paste0(dbs[i], "_sets"))
             peps <- gep2pep(gepsi, thisdb, parallel, progress_bar)
-            storePEPs(rp, dbs[i], peps)
+            storePEPs(rp, dbs[i], peps[c("ES","PV")], peps$leadsets)
         }
     }
 
-    return(perts)
+    ##return(perts)
+    return(invisible(NULL))
 }
 
 
@@ -1069,6 +1074,7 @@ gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
 
         '%dobest%' <- if (parallel) get('%dopar%') else get('%do%')
         set <- NULL ## to cope with R CMD check NOTE
+
         gres <- foreach(set = sets,
                         .export=c("gsea","ks.test.2")) %dobest%
         {
@@ -1076,30 +1082,37 @@ gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
             where <- where[!is.na(where)]
             gsea(where, genematj, FALSE)
         }
+        
         x[[j]] <- gres
+        
     }
     if(pbar) {
         setTxtProgressBar(pb, 1)
         close(pb)
     }
-
+    
     ES <- matrix(NA, length(pathw), ncol(genemat))
     PV <- matrix(NA, length(pathw), ncol(genemat))
+    leadsets <- list()
     
-    for(i in 1:ncol(genemat)){
-        PV[,i] <- sapply(x[[i]], "get", x="p")
-        ES[,i] <- sapply(x[[i]], "get", x="ES")
-    }
-
+    for(i in 1:ncol(genemat)) {
+        PV[,i] <- sapply(x[[i]], get, x="p")
+        ES[,i] <- sapply(x[[i]], get, x="ES")
+        leadsets[[i]] <- sapply(x[[i]], get, x="leadset")
+        names(leadsets[[i]]) <- sapply(pathw, get, x="id")
+    }    
+    
     rownames(ES) <- rownames(PV) <-
-        sapply(pathw, "get", x="id")
+        sapply(pathw, get, x="id")
     colnames(ES) <- colnames(PV) <- colnames(genemat)
+    names(leadsets) <- colnames(genemat)
     
-    return(list(ES=ES, PV=PV))
+    return(list(ES=ES, PV=PV, leadsets=leadsets))
 }
 
 
-gsea <- function(S, ranks_list, check=FALSE, alternative = "two.sided")
+gsea <- function(S, ranks_list, check=FALSE,
+                 alternative = "two.sided")
 {
     S <- S[!(is.na(S))]
     S1 <- ranks_list[S]
@@ -1107,15 +1120,15 @@ gsea <- function(S, ranks_list, check=FALSE, alternative = "two.sided")
 
     if(length(S1)<1 || length(S2)<1 || all(is.na(S1)) || all(is.na(S2)))
         return(list(ES=NA, p=NA))
-
+    
     ks <- ks.test.2(S1, S2, alternative=alternative, maxCombSize=10^10)
 
-    return(list(ES=ks$ES, p=ks$"p.value", edge=ks$edge));
+    return(list(ES=ks$ES, p=ks$"p.value", edge=ks$edge, leadset=ks$leadset));
 }
 
 
-storePEPs <- function(rp, db_id, peps) {
-    
+storePEPs <- function(rp, db_id, peps, leadsets) {
+
     if(rp$has(db_id)) {
         curmat <- rp$get(db_id)
 
@@ -1133,7 +1146,13 @@ storePEPs <- function(rp, db_id, peps) {
         peps$PV <- cbind(curmat$PV, peps$PV[, newpeps, drop=FALSE])
     }
 
-    
+    leadname <- paste0(db_id, "_lead")
+    if(rp$has(leadname)) {
+        curlead <- rp$get(leadname)
+        curlead[oldpeps] <- leadsets[oldpeps]
+        leadsets <- c(curlead, leadsets[newpeps])
+    }
+
     say("Storing pathway expression profiles")
 
     rp$put(peps, db_id,
@@ -1145,6 +1164,17 @@ storePEPs <- function(rp, db_id, peps) {
            depends = paste0(db_id, "_sets"),
            prj = get_repo_prjname(rp))
 
+
+    say("Storing leading set information")
+
+    rp$put(leadsets, leadname,
+           paste0("Leading-set data for collection ", db_id,
+                  ". It contains a lists of leading sets, each corresponding ",
+                  "to a GSEA-like analysis performed to build PEPs."),
+           c("gep2pep", "lead"), replace=TRUE,
+           depends = paste0(db_id, "_sets"),
+           prj = get_repo_prjname(rp))
+    
 
     say("Storing condition information...")
     perts <- rp$get("conditions")
@@ -1171,21 +1201,32 @@ say <- function(txt, type="diagnostic", names=NULL) {
         } else message(msg)
 }
 
-ks.sign <- function (x, y)
+ks.gsea <- function (x, y)
 {
     n.x <- as.double(length(x))
     n.y <- length(y)
 
-    w <- c(x, y)        
-    z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
+    w <- c(x, y)
+    ow <- order(w)
+    direct <- ifelse(ow <= n.x, 1/n.x, -1/n.y)
+    z <- cumsum(direct)
+    m <- which.max(abs(z))
+    s <- sign(z[m])
 
-    return(sign(z[which.max(abs(z))]))
+    return(list(sign=s, edge=m))
 }
 
 
 ks.test.2 <- function(x, y, ...) {
+    
     ks <- ks.test(x, y, ...)
-    ks[["ES"]] <- unname(ks.sign(x, y)*ks$statistic)
+    gsea <- ks.gsea(x, y)
+    
+    ks[["ES"]] <- unname(gsea$sign*ks$statistic)
+    if(gsea$sign > 0) {
+        ks[["leadset"]] <- x[x <= gsea$edge]
+    } else ks[["leadset"]] <- x[x > gsea$edge]
+    
     return(ks)
 }
 
