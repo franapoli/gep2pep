@@ -818,7 +818,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         if(!all(rankingset %in% colnames(peps$ES)))
             say(paste("The following conditions could not be found:",
                       paste(
-                          setdiff(rankingset, colnames(peps)),
+                          setdiff(rankingset, colnames(peps$ES)),
                           collapse = ", ")), "error")
         
         say(paste0("Row-ranking collection"))
