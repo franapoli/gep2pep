@@ -648,7 +648,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
         }
     }
 
-    return(perts)
+##    return(perts)
 }
 
 
@@ -684,7 +684,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 exportSEA <- function(rp, results, outname=NULL)
 {
     type <- names(results)[[1]]
-    if(! tolower(type) %in% c("pertsea", "pathsea"))
+    if(! tolower(type) %in% c("condsea", "pathsea"))
         say("type must be on of: CondSEA, PathSEA", "error")
 
     if(is.null(outname))
@@ -949,10 +949,9 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
         if(length(offcols) > 0)
             say("The following collections are not in the repository:",
                 "error", offcols)
-    }
+    } else collections <- getCollections(rp_peps)
             
-    collections <- intersect(names(pathways),
-                             getCollections(rp_peps))
+    collections <- intersect(names(pathways), collections)
     
     if(length(setdiff(names(pathways), collections)>1)) {
         say(paste("Removing pathways not in specified collections"))
