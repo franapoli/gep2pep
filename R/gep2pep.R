@@ -827,6 +827,9 @@ exportSEA <- function(rp, results, outname=NULL)
 CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
                     details=TRUE)
 {
+    ##:ess-bp-start::browser@nil:##
+browser(expr=is.null(.ESSBP.[["@2@"]]))##:ess-bp-end:##
+    
     dbs <- collections
     if(length(dbs) == 1 && dbs=="all") {
         dbs <- getCollections(rp_peps)
@@ -859,7 +862,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         if(!all(rankingset %in% colnames(peps$ES)))
             say(paste("The following conditions could not be found:",
                       paste(
-                          setdiff(rankingset, colnames(peps)),
+                          setdiff(rankingset, colnames(peps$ES)),
                           collapse = ", ")), "error")
         
         say(paste0("Row-ranking collection"))
