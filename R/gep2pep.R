@@ -90,8 +90,6 @@ NULL
 
 ## repo is for storage of repositories
 #' @import repo
-## XML is to import MSigDB data
-#' @import XML
 ## foreach is for easy parallelization support
 #' @import foreach
 ## utils is for txtProgressBar
@@ -101,29 +99,20 @@ NULL
 NULL
 
 
-
-#' Dummy function for parameter inheritance
-#' @param rp A repository created by \code{\link{createRepository}}.
-#' @param rp_peps A repository created with
-#'     \code{\link{createRepository}}, and containing PEPs created
-#'     with \code{\link{buildPEPs}}.
-#' @param collections A subset of the collection names returned by
-#'     \code{getCollections}. If set to "all" (default), all the
-#'     collections in \code{rp} will be used.
-#' @return Nothing
-dummyFunction <- function(rp, rp_peps, collections) {}
-
-
 #' Imports pathways data from an MSigDB XML file.
 #'
-#' Creates a \code{gep2mep} repository of pathway data using the XML
-#' distribution of the MSigDB (see references).
+#' Creates a \code{GeneSetCollection} object using the XML
+#' distribution of the MSigDB (see references). The returned object
+#' can be passed to \code{createRepository}.
 #'
 #' @param fname Path to an XML file downloaded from MSigDB.
-#' @return A list of pathway entries (see
-#'     \code{\link{createRepository}}).
+#' @return A GeneSetCollection object
 #' @references
 #'     \url{http://software.broadinstitute.org/gsea/downloads.jsp}
+#' @details This function now just calls \code{getBroadSets(fname)}
+#'     from the \code{GSEABase} package. However, it is left for
+#'     backward compatibility and as an entry point to package
+#'     functionalities.
 #' @examples
 #' \dontrun{
 #' 
@@ -137,68 +126,39 @@ dummyFunction <- function(rp, rp_peps, collections) {}
 #'
 #' ## The database is now in an acceptable format to create a local
 #' ## repository using createRepository
-#'
-#' length(db)
-#' ## [1] 18643
-#'
-#' head(names(db))
-#' ## [1] "M3128"  "M11607" "M12599" "M5067"  "M10817" "M16694"
-#'
-#' str(db[[1]], nchar.max=20)
-#' ## List of 8
-#' ##  $ id          : chr "M3128"
-#' ##  $ name        : chr "AAANWWTGC_UNKNOWN"
-#' ##  $ category    : chr "C3"
-#' ##  $ subcategory : chr "TFT"
-#' ##  $ organism    : chr "Homo sapiens"
-#' ##  $ desc        : chr "Genes having at lea"| __truncated__
-#' ##  $ desc_full   : chr "Comprehensive ident"| __truncated__
-#' ##  $ set         : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
-#'
 #' }
 #'
 #' ## A small sample of the MSigDB as imported by importMSigDB.xml is
-#' ## included in gep2pep:
+#' ## included in gep2pep. The following creates (and deletes) a
+#' ## gep2pep repository.
 #'
 #' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 #'
-#' str(db_sample[[1]], nchar.max=20)
-#' ## List of 8
-#' ##  $ id          : chr "M3128"
-#' ##  $ name        : chr "AAANWWTGC_UNKNOWN"
-#' ##  $ db          : chr "C3"
-#' ##  $ subcategory : chr "TFT"
-#' ##  $ organism    : chr "Homo sapiens"
-#' ##  $ desc        : chr "Genes having at lea"| __truncated__
-#' ##  $ desc_full   : chr "Comprehensive ident"| __truncated__
-#' ##  $ set         : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#' rp <- createRepository(repo_path, db)
+#'
+#' ## removing temporary repository
+#' unlink(repo_path, TRUE)
 #' @export
 importMSigDB.xml <- function(fname) {
 
-    xml <- xmlTreeParse(fname, useInternalNodes=TRUE)
-    sets <- xml["/MSIGDB/GENESET"]
-
-    ids <- sapply(sets, function(x) xmlAttrs(x)[["SYSTEMATIC_NAME"]])
-    msigDB <- data.frame(
-        id = ids,
-        name = sapply(sets, function(x) xmlAttrs(x)[["STANDARD_NAME"]]),
-        category = sapply(sets, function(x) xmlAttrs(x)[["CATEGORY_CODE"]]),
-        subcategory = sapply(sets, function(x) {
-            xmlAttrs(x)[["SUB_CATEGORY_CODE"]]}),
-        organism = sapply(sets, function(x) xmlAttrs(x)[["ORGANISM"]]),
-        desc = sapply(sets, function(x) xmlAttrs(x)[["DESCRIPTION_BRIEF"]]),
-        desc_full = sapply(sets, function(x) xmlAttrs(x)[["DESCRIPTION_FULL"]]),
-        set = sapply(sets, function(x) xmlAttrs(x)[["MEMBERS_SYMBOLIZED"]]),
-        stringsAsFactors=FALSE
-    )
-
-    msigDB <- apply(msigDB, 1, as.list)
-    msigDB <- lapply(msigDB, function(x) {
-        x$set <- strsplit(x$set, ",")[[1]]; x})
-    names(msigDB) <- ids
+    sets <- getBroadSets(fname)
     
-    return(msigDB)    
+    return(sets)
 }
+
+
+
+#' Dummy function for parameter inheritance
+#' @param rp A repository created by \code{\link{createRepository}}.
+#' @param rp_peps A repository created with
+#'     \code{\link{createRepository}}, and containing PEPs created
+#'     with \code{\link{buildPEPs}}.
+#' @param collections A subset of the collection names returned by
+#'     \code{getCollections}. If set to "all" (default), all the
+#'     collections in \code{rp} will be used.
+#' @return Nothing
+dummyFunction <- function(rp, rp_peps, collections) {}
 
 
 #' Check an existyng repository for consistency
@@ -268,7 +228,7 @@ checkRepository <- function(rp) {
         for(i in 1:length(dbs)) {
             problems <- FALSE
             
-            say(paste0("Checking collection", dbs[i], "..."))
+            say(paste0("Checking collection: ", dbs[i], "..."))
             if(rp$has(dbs[i])) {
                 peps <- rp$get(dbs[i])
 
@@ -279,8 +239,8 @@ checkRepository <- function(rp) {
                         "warning")
                     problems <- TRUE
                 }
-                
-                sets <- rp$get(paste0(dbs[i], "_sets"))            
+
+                sets <- loadCollection(rp, dbs[i])
 
                 if(!identical(colnames(peps$ES), colnames(peps$PV))) {
                     say(paste("Column names of the ES matrix are not",
@@ -378,30 +338,6 @@ getCollections <- function(rp)
 #' @details \code{sets} must be in the same format as output by
 #'     \code{\link{importMSigDB.xml}}. It is a list where each item
 #'     includes the following fields:
-#'
-#' \itemize{
-#'
-#'   \item{id: }{a unique identifier of the gene set}
-#'
-#'   \item{name: }{a descriptive name of the gene set}
-#'
-#'   \item{category: }{an ID for the category this gene set belongs to
-#'   (for example "GO")}
-#'
-#'   \item{subcategory: }{an ID for the sub-category this gene set
-#'   belongs to (for example "BP")}
-#'
-#'   \item{organism: }{name of the organism (for example
-#'   "homo sapiens")}
-#'
-#'   \item{desc: }{text description of the gene set (typically one
-#'   short sentence)}
-#'
-#'   \item{desc_full: }{a long, detailed description of the gene set}
-#'
-#'   \item{set: }{genes in the set, as a vector of (typically) gene
-#'   symbols}
-#' }
 #' @seealso buildPEPs
 #' @examples
 #'
@@ -425,11 +361,9 @@ getCollections <- function(rp)
 #' @export
 createRepository <- function(path, sets, name=NULL, description=NULL)
 {
-    if(missing(sets))
-        say(paste("sets parameter must be provided, see",
-                  "help(createRepository) for the format)"),
-            "error")
-    
+    if(!is(sets, "GeneSetCollection"))
+        say("sets must be an object of class GeneSetCollection", "error")
+
     if(file.exists(path)) {
         say("Can not create repository in existing folder", "error")
     } else rp <- repo_open(path, TRUE)
@@ -458,7 +392,7 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
     {
         dbi <- subdbs[i]
         say(paste("Storing pathway data for collection:", dbi))
-        rp$put(sets[db_ids == dbi],
+        rp$put(sets[which(db_ids == dbi)],
                paste0(subdbs[i], "_sets"),
                paste("Pathway information for collection", subdbs[i]),
                c("gep2pep", "sets"),
@@ -470,7 +404,7 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
            c("gep2pep", "perts"),
            prj = name)
     
-    return(rp)
+    return(invisible(rp))
 }
 
 
@@ -539,6 +473,10 @@ openRepository <- function(path)
 #'
 #' @export
 makeCollectionIDs <- function(sets) {
+    if(!is(sets, "GeneSetCollection"))
+        say("sets must be an object of class GeneSetCollection")
+    sets <- convertFromGSetClass(sets)
+        
     dbs <- sapply(sets, get, x="category")
     subdbs <- sapply(sets, get, x="subcategory")
     subdbs[subdbs==""] <- dbs[subdbs==""]
@@ -641,8 +579,8 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
         }
 
         if(length(newpeps) > 0) {
-            gepsi <- geps[, newpeps, drop=FALSE]       
-            thisdb <- rp$get(paste0(dbs[i], "_sets"))
+            gepsi <- geps[, newpeps, drop=FALSE]
+            thisdb <- loadCollection(rp, dbs[i])
             peps <- gep2pep(gepsi, thisdb, parallel, progress_bar)
             storePEPs(rp, dbs[i], peps)
         }
@@ -928,6 +866,9 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
                     details=TRUE)
 {
     checkSets(rp_peps, pathways)
+    
+    pathways <- convertFromGSetClass(pathways)
+    
     pathways <- pwList2pwStruct(pathways)
 
     for(i in 1:length(pathways))
@@ -967,7 +908,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
         say(paste0("Working on collection: ", collections[i]))
         gmd <- names(pathways[[collections[i]]])
 
-        allsets <- names(rp_peps$get(paste0(collections[i], "_sets")))
+        allsets <- names(loadCollection(rp_peps, collections[i]))
                  
         if(length(bgsets) == 1 && bgsets=="all") {
             bgset <- allsets
@@ -978,7 +919,6 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
             say("Common pathway sets removed from bgset")
         }
         rankingset <- c(gmd, bgset)
-
         peps <- rp_peps$get(collections[i])
         notok <- rankingset[rankingset %in% rownames(peps)]
         if(length(notok)>0)
@@ -1040,7 +980,7 @@ gene2pathways <- function(rp, gene)
     dbs <- getCollections(rp)
     mods <- list()
     for(i in 1:length(dbs)) {
-        db <- rp$get(paste0(dbs[i], "_sets"))
+        db <- loadCollection(rp, dbs[i])
         w <- sapply(db, function(x) gene %in% x$set)
         mods <- c(mods, db[w])
     }
@@ -1228,7 +1168,7 @@ attachInfo <- function(rp, results)
     dbs <- names(results[[type]])
     newres <- list()
     for(i in 1:length(results[[type]])) {
-        db <- rp$get(paste0(dbs[i], "_sets"))
+        db <- loadCollection(rp, dbs[i])
         resmat <- results[[type]][[i]]
 
         if(type == "CondSEA") {
@@ -1308,8 +1248,8 @@ get_repo_prjname <- function(rp) {
 
 ## splits a flat list of pathways into sublists according to
 ## collections
-pwList2pwStruct <- function(db) {
-    collids <- makeCollectionIDs(db)
+pwList2pwStruct <- function(db, collids) {
+    collids <- .makeCollectionIDs(db)
     colls <- unique(collids)
     out <- list()
     for(i in 1:length(colls))
@@ -1318,13 +1258,6 @@ pwList2pwStruct <- function(db) {
 }
 
 
-getCollection <- function(rp, id) {
-    id_coll <- paste0(id, "_sets")
-    if(! id %in% getCollections(rp))
-        say(paste("Could not find collection:", id), "error")
-    return(rp$get(id_coll))
-}
-
 getPEPs <- function(rp, id) {
     if(! id %in% getCollections(rp))
         say(paste("Could not find PEP collection:", id), "error")
@@ -1332,8 +1265,7 @@ getPEPs <- function(rp, id) {
 }
 
 
-checkSets <- function(rp, sets) {
-
+checkSets <- function(rp, sets) {        
     coll_ids <- makeCollectionIDs(sets)
     ucoll_ids <- unique(coll_ids)
     
@@ -1343,11 +1275,44 @@ checkSets <- function(rp, sets) {
                    paste(off, collapse=", ")), "error")
 
     for(i in 1:length(ucoll_ids)) {
-        sub <- names(sets[coll_ids == ucoll_ids[i]])
-        coll <- getCollection(rp, ucoll_ids[i])
+        sub <- sapply(sets[which(coll_ids == ucoll_ids[i])], setIdentifier)
+        coll <- loadCollection(rp, ucoll_ids[i])
         off <- setdiff(sub, names(coll))
         if(length(off) > 0)
             say(paste0("The following pathways could not be found ",
                       "in collection ", ucoll_ids[i], ": "), "error", off)
-    }            
+    }
+}
+
+convertFromGSetClass <- function(gsets) {
+    res <- list()
+    for(i in 1:length(gsets)) {
+        set <- gsets[[i]]
+        res[[setName(set)]] <- list(
+            id = setIdentifier(set),
+            name = setName(set),
+            category = attributes(collectionType(set))$category,
+            subcategory = attributes(collectionType(set))$subCategory,
+            organism = organism(set),
+            desc = description(set),
+            set = geneIds(set)
+            )
+    }
+    names(res) <- sapply(res, get, x="id")
+    return(res)
+}
+
+loadCollection <- function(rp, db) {
+    thisdb <- rp$get(paste0(db, "_sets"))
+    return(convertFromGSetClass(thisdb))
+}
+
+
+## this calls makeCollectionIDs with the old format
+.makeCollectionIDs <- function(sets) {
+    dbs <- sapply(sets, get, x="category")
+    subdbs <- sapply(sets, get, x="subcategory")
+    subdbs[subdbs==""] <- dbs[subdbs==""]
+    db_ids <- paste(dbs, subdbs, sep="_")
+    return(db_ids)
 }

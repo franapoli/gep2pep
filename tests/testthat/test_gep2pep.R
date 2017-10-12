@@ -17,12 +17,13 @@ create_test_repo <- function(suffix=NULL) {
         )    
 }
 
-
 testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
 testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+testpws_old <- gep2pep:::convertFromGSetClass(testpws)
+
 rp <- create_test_repo()
 dbs <- makeCollectionIDs(testpws)
-expected_dbs <- c("C3_TFT", "C3_MIR", "C4_CGN")
+expected_dbs <- c("c3_TFT", "c3_MIR", "c4_CGN")
 
 
 context("gep format checks")
@@ -45,18 +46,19 @@ context("creation of newdb")
 
 
 test_that("new db creation", {
-  expect_equal(length(dbs), length(testpws))
-  expect_true(setequal(unique(dbs), expected_dbs))
-  expect_true(setequal(getCollections(rp), expected_dbs))
-  expect_true(rp$has(paste0(expected_dbs[1], "_sets")))
-  expect_true(rp$has(paste0(expected_dbs[2], "_sets")))
-  expect_true(rp$has(paste0(expected_dbs[3], "_sets")))
-  expect_true(rp$has("gep2pep repository"))
-  expect_equal(length(rp$entries()), 5)
-  expect_equal(length(rp$get(paste0(expected_dbs[1], "_sets"))), 10)
-  expect_equal(length(rp$get(paste0(expected_dbs[2], "_sets"))), 10)
-  expect_equal(length(rp$get(paste0(expected_dbs[3], "_sets"))), 10)
-  expect_failure(expect_warning(suppressMessages(checkRepository(rp))))
+    expect_error(createRepository(".", testgep))
+    expect_equal(length(dbs), length(testpws))
+    expect_true(setequal(unique(dbs), expected_dbs))
+    expect_true(setequal(getCollections(rp), expected_dbs))
+    expect_true(rp$has(paste0(expected_dbs[1], "_sets")))
+    expect_true(rp$has(paste0(expected_dbs[2], "_sets")))
+    expect_true(rp$has(paste0(expected_dbs[3], "_sets")))
+    expect_true(rp$has("gep2pep repository"))
+    expect_equal(length(rp$entries()), 5)
+    expect_equal(length(rp$get(paste0(expected_dbs[1], "_sets"))), 10)
+    expect_equal(length(rp$get(paste0(expected_dbs[2], "_sets"))), 10)
+    expect_equal(length(rp$get(paste0(expected_dbs[3], "_sets"))), 10)
+    expect_failure(expect_warning(suppressMessages(checkRepository(rp))))
 })
 
 context("creation of peps")
@@ -91,8 +93,8 @@ res <- list()
 for(i in 1:3) {
   testi <- sample(1:length(testpws),1)
   testj <- sample(1:ncol(testgep),1)
-  set <- testpws[[testi]]$set
-  id <- testpws[[testi]]$id
+  set <- testpws_old[[testi]]$set
+  id <- testpws_old[[testi]]$id
   tomatch <- intersect(rownames(testgep), set)
   inset <- testgep[match(tomatch, rownames(testgep)), testj]
   ks <- ks.test.2(inset, (1:nrow(testgep))[-inset], maxCombSize=10^10)
@@ -119,7 +121,7 @@ test_that("KS statistics", {
 
 context("adding existing peps")
 
-oldTFT <- rp$get("C3_TFT")
+oldTFT <- rp$get("c3_TFT")
 test_that("Adding PEPs", {
     expect_warning(
         suppressMessages(buildPEPs(rp, testgep[, 1:3], progress_bar=FALSE))
@@ -127,16 +129,16 @@ test_that("Adding PEPs", {
     expect_failure(expect_warning(suppressMessages(checkRepository(rp))))    
 })
 
-untouchedTFT <- rp$get("C3_TFT")
+untouchedTFT <- rp$get("c3_TFT")
 
 subs <- c(2,4,5)
 smallTFT <- list(ES=oldTFT$ES[, subs],
                  PV=oldTFT$PV[, subs])
 ## the following will create conflicts with
 ## the "perturbagens" item
-rp$set("C3_TFT", smallTFT)
+rp$set("c3_TFT", smallTFT)
 
-rebuiltTFT <- rp$get("C3_TFT")
+rebuiltTFT <- rp$get("c3_TFT")
 test_that("Adding PEPs", {
     expect_warning(
         suppressMessages(buildPEPs(rp, testgep[, 1:3], progress_bar=FALSE))
@@ -148,7 +150,7 @@ test_that("Adding PEPs", {
 })
 
 
-rp$set("C3_TFT", oldTFT)
+rp$set("c3_TFT", oldTFT)
 
 
 context("adding peps one by one")
@@ -160,7 +162,7 @@ for(i in 1:ncol(testgep))
     )
 
 test_that("adding one by one", {
-    expect_true(identical(rp2$get("C3_TFT"), rp$get("C3_TFT")))
+    expect_true(identical(rp2$get("c3_TFT"), rp$get("c3_TFT")))
     expect_failure(expect_warning(suppressMessages(checkRepository(rp2))))    
 })
 
@@ -215,7 +217,7 @@ context("CondSEA")
 pgset <- c("(+)_chelidonine",  "(+/_)_catechin")
 res <- suppressMessages(CondSEA(rp, pgset))
 randi <- sample(1:length(testpws), 1)
-pwsid <- testpws[[randi]]$id
+pwsid <- testpws_old[[randi]]$id
 randDB <- dbs[randi]
 ranked <- rankPEPsByRows(rp$get(randDB))
 inset <- ranked[pwsid, pgset]
@@ -234,23 +236,25 @@ context("PathSEA")
 
 db1 <- expected_dbs[1]
 db3 <- expected_dbs[3]
-pws1 <- names(rp$get(paste0(db1, "_sets")))[c(2,5,6,9)]
-pws3 <- names(rp$get(paste0(db3, "_sets")))[c(1,3,10)]
-subpws <- testpws[c(pws1, pws3)]
-res <- suppressMessages(PathSEA(rp, subpws))
+
+pws1 <- sapply(testpws[makeCollectionIDs(testpws)==db1][c(2,5,6,9)], setName)
+pws3 <- sapply(testpws[makeCollectionIDs(testpws)==db3][c(1,3,10)], setName)
+res <- suppressMessages(PathSEA(rp, testpws[c(pws1, pws3)]))
+setids1 <- sapply(testpws[pws1], setIdentifier)
+setids3 <- sapply(testpws[pws3], setIdentifier)
 
 randj1 <- sample(1:ncol(testgep), 1)
 ranked <- rankPEPsByCols(rp$get(db1))
 peps <- rp$get(db1)
-inset <- ranked[pws1, randj1]
-outset <- ranked[setdiff(rownames(ranked), pws1), randj1]
+inset <- ranked[setids1, randj1]
+outset <- ranked[setdiff(rownames(ranked), setids1), randj1]
 ks1 <- ks.test.2(inset, outset)
 
 randj3 <- sample(1:ncol(testgep), 1)
 ranked <- rankPEPsByCols(rp$get(db3))
 peps <- rp$get(db3)
-inset <- ranked[pws3, randj3]
-outset <- ranked[setdiff(rownames(ranked), pws3), randj3]
+inset <- ranked[setids3, randj3]
+outset <- ranked[setdiff(rownames(ranked), setids3), randj3]
 ks3 <- ks.test.2(inset, outset)
 
 name1 <- colnames(testgep)[randj1]
@@ -271,16 +275,19 @@ test_that("PathSEA", {
 
 
 ## A gene that is found in at least 3 pathways:
-gene <- intersect(intersect(testpws[[3]]$set, testpws[[4]]$set),
-                  testpws[[7]]$set)[1]
+gene <- intersect(intersect(geneIds(testpws[[3]]), geneIds(testpws[[4]])),
+                  geneIds(testpws[[7]]))[1]
 subpw <- gene2pathways(rp, gene)
 ## it is actually found also in a 4th:
-extrapw <- setdiff(names(subpw), names(testpws[c(3,4,7)]))
+extrapw <- setdiff(names(subpw), sapply(testpws[c(3,4,7)], setIdentifier))
 
 test_that("gene2pathways", {
     expect_true(length(subpw) >= 3)
-    expect_true(all(names(testpws[c(3,4,7)]) %in% names(subpw)))
-    expect_true(gene %in% testpws[[extrapw]]$set)
+    expect_true(all(sapply(testpws[c(3,4,7)], setIdentifier)
+                    %in% names(subpw)))
+    expect_true(gene %in%
+                geneIds(testpws[sapply(testpws, setIdentifier) == extrapw])
+                [[1]])
 })
 
 
