@@ -60,6 +60,8 @@ For each condition, all pathways are ranked by how much
     such effect).
 }
 \examples{
+library(GSEABase)
+
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
@@ -69,9 +71,9 @@ buildPEPs(rp, geps)
 
 pathways <- c("M11607", "M10817", "M16694",         ## from C3_TFT
               "M19723", "M5038", "M13419", "M1094") ## from C4_CGN
-subdb <- db[pathways]
+w <- sapply(db, setIdentifier) \%in\% pathways
 
-psea <- PathSEA(rp, subdb)
+psea <- PathSEA(rp, db[w])
 ## [15:35:29] Working on collection: C3_TFT
 ## [15:35:29] Common pathway sets removed from bgset.
 ## [15:35:29] Column-ranking collection...

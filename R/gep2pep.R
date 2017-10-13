@@ -96,6 +96,9 @@ NULL
 #' @import utils
 ## stats is for ks.test
 #' @import stats
+## For gene sets management
+#' @import GSEABase
+#' @importFrom methods is
 NULL
 
 
@@ -135,7 +138,7 @@ NULL
 #' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 #'
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
-#' rp <- createRepository(repo_path, db)
+#' rp <- createRepository(repo_path, db_sample)
 #'
 #' ## removing temporary repository
 #' unlink(repo_path, TRUE)
@@ -828,6 +831,8 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #'     Tool for Pathway-based Rational Drug Repositioning, bioRxiv
 #'     (2017) 192005; doi: https://doi.org/10.1101/192005
 #' @examples
+#' library(GSEABase)
+#'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
@@ -837,9 +842,9 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #'
 #' pathways <- c("M11607", "M10817", "M16694",         ## from C3_TFT
 #'               "M19723", "M5038", "M13419", "M1094") ## from C4_CGN
-#' subdb <- db[pathways]
+#' w <- sapply(db, setIdentifier) %in% pathways
 #'
-#' psea <- PathSEA(rp, subdb)
+#' psea <- PathSEA(rp, db[w])
 #' ## [15:35:29] Working on collection: C3_TFT
 #' ## [15:35:29] Common pathway sets removed from bgset.
 #' ## [15:35:29] Column-ranking collection...
@@ -980,9 +985,9 @@ gene2pathways <- function(rp, gene)
     dbs <- getCollections(rp)
     mods <- list()
     for(i in 1:length(dbs)) {
-        db <- loadCollection(rp, dbs[i])
-        w <- sapply(db, function(x) gene %in% x$set)
-        mods <- c(mods, db[w])
+        db <- .loadCollection(rp, dbs[i])
+        w <- sapply(db, function(s) gene %in% geneIds(s))
+        mods <- GeneSetCollection(c(mods, db[w]))
     }
 
     return(mods)        
@@ -1305,6 +1310,11 @@ convertFromGSetClass <- function(gsets) {
 loadCollection <- function(rp, db) {
     thisdb <- rp$get(paste0(db, "_sets"))
     return(convertFromGSetClass(thisdb))
+}
+
+.loadCollection <- function(rp, db) {
+    thisdb <- rp$get(paste0(db, "_sets"))
+    return(thisdb)
 }
 
 

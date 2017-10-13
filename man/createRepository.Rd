@@ -31,30 +31,6 @@ to be used by \code{gep2pep} functions.
 \code{sets} must be in the same format as output by
     \code{\link{importMSigDB.xml}}. It is a list where each item
     includes the following fields:
-
-\itemize{
-
-  \item{id: }{a unique identifier of the gene set}
-
-  \item{name: }{a descriptive name of the gene set}
-
-  \item{category: }{an ID for the category this gene set belongs to
-  (for example "GO")}
-
-  \item{subcategory: }{an ID for the sub-category this gene set
-  belongs to (for example "BP")}
-
-  \item{organism: }{name of the organism (for example
-  "homo sapiens")}
-
-  \item{desc: }{text description of the gene set (typically one
-  short sentence)}
-
-  \item{desc_full: }{a long, detailed description of the gene set}
-
-  \item{set: }{genes in the set, as a vector of (typically) gene
-  symbols}
-}
 }
 \examples{
 

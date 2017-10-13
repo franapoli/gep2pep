@@ -60,10 +60,13 @@ used.
 
 ## Creating a repository of pathways
 
-In order to use the package, it must be loaded as follows:
+In order to use the package, it must be loaded as follows (the
+GSEABase package will also be used in this vignette to access gene set
+data):
 
 ```{r}
 library(gep2pep)
+library(GSEABase)
 ```
 
 The [MSigDB](http://software.broadinstitute.org/gsea/msigdb) is a
@@ -81,15 +84,18 @@ However, for this vignette a small excerpt will be used:
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 ```
 
-The database includes 30 pathways, each of which is included in one of
-3 different collections. Each collection is identified by a "category"
-and "subcategory" name, which `gep2pep` puts together into a single
-collection identifier using `makeCollectionIDs`.
+The database is in \code{GSEABase::GeneSetCollection} format and
+includes 30 pathways, each of which is included in one of 3 different
+collections. Following Broad conventions, each collection is
+identified by a "bcCategory" and "bcSubCategory" fields, which
+`gep2pep` puts together into a single collection identifier using
+`makeCollectionIDs`.
 
 
 ```{r}
-cats <- sapply(db, get, x="category")
-subcats <- sapply(db, get, x="subcategory")
+colltypes <- sapply(db, collectionType)
+cats <- sapply(colltypes, bcCategory)
+subcats <- sapply(colltypes, bcSubCategory)
 print(cats)
 print(subcats)
 makeCollectionIDs(db)
@@ -106,14 +112,15 @@ rp <- createRepository(repoRoot, db)
 The repository is in `repo` format (see later in this document how to
 access the repository directly). However, knowing `repo` is not
 necessary to use `gep2pep`. The following lists the contents of the
-repository and loads the description of the pathway "M5067" from the
-collection "C3_TFT":
+repository and loads the description of the pathway "E47_01" from the
+collection "c3_TFT":
 
 ```{r}
 rp
-rp$get("C3_TFT_sets")$M5067$desc
+description(rp$get("c3_TFT_sets")[["E47_01"]])
 ```
 
+\code{rp$get} is a \code{repo} command, see later in this vignette.
 
 ## Creating Pathway Expression Profiles
 
@@ -153,8 +160,8 @@ is significantly dysregulated and the sign of the corresponding ES
 indicates the direction (UP- or DOWN-regulation).
 
 ```{r}
-rp$get("C3_TFT")$ES[1:3, 1:3]
-rp$get("C3_TFT")$PV[1:3, 1:3]
+rp$get("c3_TFT")$ES[1:3, 1:3]
+rp$get("c3_TFT")$PV[1:3, 1:3]
 ```
 
 ## Performing Analysis
@@ -182,19 +189,21 @@ list in which each element refers to a pathway collection and is made
 of a 2-columns matrix including ESs and p-values for each pathway.
 
 ```{r}
-psea$CondSEA$C3_TFT
+psea$CondSEA$c3_TFT
 ```
 
 In this dummy example the statistical background is made of only 3
 GEPs (we added 5 in total), thus, as expected, there are no
-significant p-values. For the C3_MIR collection, the pathway most
+significant p-values. For the c3_MIR collection, the pathway most
 UP-regulated by the chosen set of two drugs is M5012, while the most
 DOWN-regulated is M18759. They are respectively described as:
 
 ```{r}
-sets <- rp$get("C3_MIR_sets")
-sets$M5012$desc
-sets$M18759$desc
+sets <- rp$get("c3_MIR_sets")
+wM5012 <- which(sapply(sets, setIdentifier)=="M5012")
+wM18759 <- which(sapply(sets, setIdentifier)=="M18759")
+description(sets[[wM5012]])
+description(sets[[wM18759]])
 ```
 
 The analysis can be exported in XLS format as follows:
@@ -217,15 +226,16 @@ version of the popular Gene Set Enrichment Analysis (GSEA). The
 PathSEA is run independently in each pathway collection.
 
 ```{r, collapse=TRUE}
-pathways <- c("M11607", "M10817", "M16694",         ## from C3_TFT
-              "M19723", "M5038", "M13419", "M1094") ## from C4_CGN
-subdb <- db[pathways]
+pathways <- c("M11607", "M10817", "M16694",         ## from c3_TFT
+              "M19723", "M5038", "M13419", "M1094") ## from c4_CGN
+w <- sapply(db, setIdentifier) %in% pathways
+subdb <- db[w]
 
 psea <- PathSEA(rp, subdb)
 ```
 
 ```{r}
-psea$PathSEA$C3_TFT
+psea$PathSEA$c3_TFT
 ```
 
 PathSEA results are analogous to those of CondSEA, but
@@ -234,6 +244,7 @@ a gene of interest, for example:
 
 ```{r}
 pathways <- gene2pathways(rp, "FAM126A")
+pathways
 ```
 
 Using a gene to obtain the pathways and performing `PathSEA` with
@@ -281,17 +292,17 @@ Gene Ontology collections can be performed as follows:
 ```{r, eval=F}
 csea <- CondSEA(rpBig, c("scriptaid", "trichostatin_a", "valproic_acid",
                       "vorinostat", "hc_toxin", "bufexamac"),
-                collections=c("C5_BP", "C5_MF", "C5_CC"))
-## [16:41:40] Working on collection: C5_BP
+                collections=c("c5_BP", "c5_MF", "c5_CC"))
+## [16:41:40] Working on collection: c5_BP
 ## [16:41:42] Common conditions removed from bgset
 ## [16:41:42] Row-ranking collection
 ## [16:41:48] Computing enrichments
 ## [16:41:58] done
-## [16:41:58] Working on collection: C5_MF
+## [16:41:58] Working on collection: c5_MF
 ## [16:41:58] Row-ranking collection
 ## [16:42:00] Computing enrichments
 ## [16:42:02] done
-## [16:42:02] Working on collection: C5_CC
+## [16:42:02] Working on collection: c5_CC
 ## [16:42:02] Row-ranking collection
 ## [16:42:03] Computing enrichments
 ## [16:42:04] done
@@ -301,7 +312,7 @@ The following code retrieves information about the top 10 pathways
 ranked by CondSEA in GO-MF.
 
 ```{r, eval=F}
-top10 <- rpBig$get("C5_MF_sets")[rownames(csea$CondSEA$C5_MF[1:10,])]
+top10 <- rpBig$get("c5_MF_sets")[rownames(csea$CondSEA$c5_MF[1:10,])]
 sapply(top3, get, x="name")
 ##  [1] "GO_TRANSCRIPTION_FACTOR_ACTIVITY_PROTEIN_BINDING"
 ##  [2] "GO_TRANSCRIPTION_COACTIVATOR_ACTIVITY"           
@@ -337,20 +348,19 @@ pws <- gene2pathways(rpBig, "TFEB")
 The following code runs the PathSEA analysis on the pathways involving
 TFEB. Also in this case the analysis is performed on Gene Ontology
 collections. Note that a warning is thrown as the GO-CC category has
-no annotation for TFEB. This is just a note, as the analaysis in the
-different categories are performed independently.
+no annotation for TFEB (this is ok).
 
 ```{r, eval=F}
-psea <- PathSEA(rpBig, pws, collections=c("C5_BP", "C5_MF", "C5_CC"))
+psea <- PathSEA(rpBig, pws, collections=c("c5_BP", "c5_MF", "c5_CC"))
 ## Warning: [17:17:13] There is at least one selected collections for
 ## which no pathway has been provided
 ## [17:17:13] Removing pathways not in specified collections
-## [17:17:13] Working on collection: C5_BP
+## [17:17:13] Working on collection: c5_BP
 ## [17:17:13] Common pathway sets removed from bgset
 ## [17:17:15] Column-ranking collection
 ## [17:17:22] Computing enrichments
 ## [17:17:29] done
-## [17:17:29] Working on collection: C5_MF
+## [17:17:29] Working on collection: c5_MF
 ## [17:17:29] Common pathway sets removed from bgset
 ## [17:17:29] Column-ranking collection
 ## [17:17:30] Computing enrichments
@@ -360,7 +370,7 @@ psea <- PathSEA(rpBig, pws, collections=c("C5_BP", "C5_MF", "C5_CC"))
 Thus the top 10 drugs causing (or mimicking) TFEB upregulation are:
 
 ```{r, eval=F}
-psea$PathSEA$C5_BP[1:10,]
+psea$PathSEA$c5_BP[1:10,]
 ##                      ES           PV
 ## loperamide    0.7324720 1.504075e-11
 ## proadifen     0.7278256 2.079448e-11
@@ -428,6 +438,7 @@ checkRepository(rp)
 The last check (summary of commond conditions) ensures that the same
 conditions have been computed for all the pathway collections, which
 is however not mandatory.
+
 
 ## Further documentation
 

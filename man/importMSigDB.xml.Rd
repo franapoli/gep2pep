@@ -10,12 +10,18 @@ importMSigDB.xml(fname)
 \item{fname}{Path to an XML file downloaded from MSigDB.}
 }
 \value{
-A list of pathway entries (see
-    \code{\link{createRepository}}).
+A GeneSetCollection object
 }
 \description{
-Creates a \code{gep2mep} repository of pathway data using the XML
-distribution of the MSigDB (see references).
+Creates a \code{GeneSetCollection} object using the XML
+distribution of the MSigDB (see references). The returned object
+can be passed to \code{createRepository}.
+}
+\details{
+This function now just calls \code{getBroadSets(fname)}
+    from the \code{GSEABase} package. However, it is left for
+    backward compatibility and as an entry point to package
+    functionalities.
 }
 \examples{
 \dontrun{
@@ -30,41 +36,19 @@ db <- importMSigDB.xml("msigdb_v6.0.xml")
 
 ## The database is now in an acceptable format to create a local
 ## repository using createRepository
-
-length(db)
-## [1] 18643
-
-head(names(db))
-## [1] "M3128"  "M11607" "M12599" "M5067"  "M10817" "M16694"
-
-str(db[[1]], nchar.max=20)
-## List of 8
-##  $ id          : chr "M3128"
-##  $ name        : chr "AAANWWTGC_UNKNOWN"
-##  $ category    : chr "C3"
-##  $ subcategory : chr "TFT"
-##  $ organism    : chr "Homo sapiens"
-##  $ desc        : chr "Genes having at lea"| __truncated__
-##  $ desc_full   : chr "Comprehensive ident"| __truncated__
-##  $ set         : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
-
 }
 
 ## A small sample of the MSigDB as imported by importMSigDB.xml is
-## included in gep2pep:
+## included in gep2pep. The following creates (and deletes) a
+## gep2pep repository.
 
 db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 
-str(db_sample[[1]], nchar.max=20)
-## List of 8
-##  $ id          : chr "M3128"
-##  $ name        : chr "AAANWWTGC_UNKNOWN"
-##  $ db          : chr "C3"
-##  $ subcategory : chr "TFT"
-##  $ organism    : chr "Homo sapiens"
-##  $ desc        : chr "Genes having at lea"| __truncated__
-##  $ desc_full   : chr "Comprehensive ident"| __truncated__
-##  $ set         : chr [1:193] "MEF2C" "ATP1B1" "RORA" "CITED2" ...
+repo_path <- file.path(tempdir(), "gep2pepTemp")
+rp <- createRepository(repo_path, db_sample)
+
+## removing temporary repository
+unlink(repo_path, TRUE)
 }
 \references{
 \url{http://software.broadinstitute.org/gsea/downloads.jsp}

@@ -279,12 +279,13 @@ gene <- intersect(intersect(geneIds(testpws[[3]]), geneIds(testpws[[4]])),
                   geneIds(testpws[[7]]))[1]
 subpw <- gene2pathways(rp, gene)
 ## it is actually found also in a 4th:
-extrapw <- setdiff(names(subpw), sapply(testpws[c(3,4,7)], setIdentifier))
+extrapw <- setdiff(sapply(subpw, setIdentifier),
+                   sapply(testpws[c(3,4,7)], setIdentifier))
 
 test_that("gene2pathways", {
     expect_true(length(subpw) >= 3)
     expect_true(all(sapply(testpws[c(3,4,7)], setIdentifier)
-                    %in% names(subpw)))
+                    %in% sapply(subpw, setIdentifier)))
     expect_true(gene %in%
                 geneIds(testpws[sapply(testpws, setIdentifier) == extrapw])
                 [[1]])

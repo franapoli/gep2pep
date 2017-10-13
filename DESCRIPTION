@@ -14,10 +14,11 @@ Description: Pathway Expression Profiles (PEPs) are based on the
 License: GPL-3
 Imports:
     repo (>= 2.1.1),
-    XML,
     foreach,
     stats,
-    utils
+    utils,
+    GSEABase,
+    methods
 Suggests:
     WriteXLS,
     testthat,
