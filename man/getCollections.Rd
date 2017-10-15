@@ -27,6 +27,7 @@ Each collection in a database has a "category" and a
 \examples{
 
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)

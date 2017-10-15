@@ -43,7 +43,7 @@ db <- importMSigDB.xml("msigdb_v6.0.xml")
 ## gep2pep repository.
 
 db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
-
+db_sample <- as.CategorizedCollection(db_sample)
 
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 rp <- createRepository(repo_path, db_sample)

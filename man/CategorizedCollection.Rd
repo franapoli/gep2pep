@@ -5,14 +5,17 @@
 \title{Constructor method for objects of class CategorizedCollection.}
 \usage{
 CategorizedCollection(category = "uncategorized",
-  subCategory = "uncategorized", ...)
+  subCategory = "uncategorized")
 }
 \arguments{
 \item{category}{A character defining the main category that the gene
 set belongs to.}
 
-\item{subcategory}{A character defining the secondary category that
+\item{subCategory}{A character defining the secondary category that
 the gene set belongs to.}
+}
+\value{
+An object of class \code{CategorizedCollection}.
 }
 \description{
 See \code{CategorizedCollection-class}.

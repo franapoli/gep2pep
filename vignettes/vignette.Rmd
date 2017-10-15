@@ -75,27 +75,32 @@ downloaded as a single XML file and used by `gep2pep`. The following
 commented code would import the database once downloaded:
 
 ```{r}
-## db <- importMSigDB.xml("msigdb_v6.0.xml")
+## db <- importMSigDB.xml("msigdb_v6.1.xml")
 ```
 
-However, for this vignette a small excerpt will be used:
+However, for this vignette a small excerpt will be used. Gep2pep uses
+a slight variation of the \code{BroadCollection} type used by MSigDB,
+named \code{CategorizedCollection}. Thus a conversion is necessary:
 
 ```{r}
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- as.CategorizedCollection(db)
 ```
 
-The database is in \code{GSEABase::GeneSetCollection} format and
+The database is in `GSEABase::GeneSetCollection` format and
 includes 30 pathways, each of which is included in one of 3 different
-collections. Following Broad conventions, each collection is
-identified by a "bcCategory" and "bcSubCategory" fields, which
-`gep2pep` puts together into a single collection identifier using
-`makeCollectionIDs`.
+collections. Following MSigDB conventions, each collection is
+identified by a "category" and "subCategory" fields. But the
+CategorizedCollection type allows them to be arbitrary strings, as
+opposed to MSigDB categories. This allows for the creation of custom
+collection with categories. `gep2pep` puts together into a
+single collection identifier using `makeCollectionIDs`.
 
 
 ```{r}
 colltypes <- sapply(db, collectionType)
-cats <- sapply(colltypes, bcCategory)
-subcats <- sapply(colltypes, bcSubCategory)
+cats <- sapply(colltypes, attr, "category")
+subcats <- sapply(colltypes, attr, "subCategory")
 print(cats)
 print(subcats)
 makeCollectionIDs(db)

@@ -97,7 +97,7 @@ NULL
 #' @import stats
 ## For gene sets management
 #' @import GSEABase
-#' @importFrom methods is
+#' @importFrom methods is new
 NULL
 
 #' A class to contain categorized gene set collection
@@ -109,7 +109,7 @@ NULL
 #'
 #' @slot category A character defining the main category that the gene
 #'     set belongs to.
-#' @slot subcategory A character defining the secondary category that
+#' @slot subCategory A character defining the secondary category that
 #'     the gene set belongs to.
 #' @name CategorizedCollection-class
 #' @rdname CategorizedCollection-class
@@ -120,9 +120,9 @@ setClass("CategorizedCollection",
              category = "character",
              subCategory = "character"),
          prototype = prototype(
-             type = GSEABase:::mkScalar("Categorized"),
-             category = GSEABase:::mkScalar("uncategorized"),
-             subCategory = GSEABase:::mkScalar("uncategorized")),
+             type = "Categorized",
+             category = "uncategorized",
+             subCategory = "uncategorized"),
          )
 
 #' Constructor method for objects of class CategorizedCollection.
@@ -131,8 +131,9 @@ setClass("CategorizedCollection",
 #'
 #' @param category A character defining the main category that the gene
 #'     set belongs to.
-#' @param subcategory A character defining the secondary category that
+#' @param subCategory A character defining the secondary category that
 #'     the gene set belongs to.
+#' @return An object of class \code{CategorizedCollection}.
 #' @export
 #' @examples
 #'
@@ -140,13 +141,13 @@ setClass("CategorizedCollection",
 #' gs1 <- GeneSet(setName="set1", setIdentifier="101")
 #' collectionType(gs1) <- CategorizedCollection()
 CategorizedCollection <- function(category="uncategorized",
-                                  subCategory="uncategorized", ...) {
+                                  subCategory="uncategorized") {
     if (length(category)!=1)
         stop("category must be a scalar (length = 1)")
     
     new("CategorizedCollection",
-        category=GSEABase:::mkScalar(category),
-        subCategory=GSEABase:::mkScalar(as.character(subCategory)))
+        category=category,
+        subCategory=subCategory)
 }
 
 
@@ -194,7 +195,7 @@ setMethod("show",
 #' ## repository using createRepository
 #' }
 #'
-#' ## A small sample of the MSigDB as imported by importMSigDB.xml is
+#' #' ## A small sample of the MSigDB as imported by importMSigDB.xml is
 #' ## included in gep2pep. The following creates (and deletes) a
 #' ## gep2pep repository.
 #'
@@ -205,6 +206,7 @@ setMethod("show",
 #' ## collections specifying the categories and subcategories once for
 #' ## all the sets:
 #'
+#' library(GSEABase)
 #' mysets <- as.CategorizedCollection(
 #'               GeneSetCollection(
 #'                   list(GeneSet(c("g1", "g2"), setName="set1"),
@@ -230,15 +232,18 @@ as.CategorizedCollection <- function(collection,
     if(!is(collection, "GeneSetCollection"))
         say("collection must be an object of class GeneSetCollection",
             "error")
-        
+
     y <- GeneSetCollection(
         sapply(collection,
                function(g) {
+                   
                    if(is(collectionType(g), "BroadCollection")) {
                        coll <- attributes(collectionType(g))
+                       originalID <- setIdentifier(g)
                        collectionType(g) <-
                            CategorizedCollection(coll$category,
                                                  coll$subCategory)
+                       setIdentifier(g) <- originalID
                    } else if(is(collectionType(g), "CategorizedCollection")) {
                        ## nothing to do
                    } else {
@@ -285,7 +290,7 @@ as.CategorizedCollection <- function(collection,
 #' ## gep2pep repository.
 #'
 #' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
-#'
+#' db_sample <- as.CategorizedCollection(db_sample)
 #' 
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #' rp <- createRepository(repo_path, db_sample)
@@ -328,6 +333,7 @@ dummyFunction <- function(rp, rp_peps, collections) {}
 #' @return Nothing.
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
@@ -456,6 +462,7 @@ checkRepository <- function(rp) {
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
@@ -501,6 +508,7 @@ getCollections <- function(rp)
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
@@ -520,8 +528,6 @@ getCollections <- function(rp)
 #' @export
 createRepository <- function(path, sets, name=NULL, description=NULL)
 {
-##:ess-bp-start::browser@nil:##
-
     if(!is(sets, "GeneSetCollection"))
         say("sets must be an object of class GeneSetCollection", "error")
 
@@ -594,6 +600,7 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
@@ -629,6 +636,7 @@ openRepository <- function(path)
 #' @seealso importMSigDB.xml
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' ids <- makeCollectionIDs(db)
 #'
 #' unique(ids)
@@ -680,6 +688,7 @@ makeCollectionIDs <- function(sets) {
 #' @seealso buildPEPs
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
@@ -771,6 +780,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 #' @examples
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
@@ -851,6 +861,7 @@ exportSEA <- function(rp, results, outname=NULL)
 #'
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
@@ -999,6 +1010,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #' library(GSEABase)
 #'
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
@@ -1133,6 +1145,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
 #' @seealso createRepository, PathSEA
 #' @examples
 #' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)

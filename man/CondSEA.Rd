@@ -60,6 +60,7 @@ For each pathway, all conditions are ranked by how much
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)

@@ -21,6 +21,7 @@ collection from a database.
 }
 \examples{
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- as.CategorizedCollection(db)
 ids <- makeCollectionIDs(db)
 
 unique(ids)

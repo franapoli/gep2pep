@@ -49,7 +49,7 @@ db <- as.CategorizedCollection(db)
 ## repository using createRepository
 }
 
-## A small sample of the MSigDB as imported by importMSigDB.xml is
+#' ## A small sample of the MSigDB as imported by importMSigDB.xml is
 ## included in gep2pep. The following creates (and deletes) a
 ## gep2pep repository.
 
@@ -60,6 +60,7 @@ db_sample <- as.CategorizedCollection(db_sample)
 ## collections specifying the categories and subcategories once for
 ## all the sets:
 
+library(GSEABase)
 mysets <- as.CategorizedCollection(
               GeneSetCollection(
                   list(GeneSet(c("g1", "g2"), setName="set1"),

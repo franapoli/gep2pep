@@ -16,7 +16,7 @@ different from those of the MSigDB.
 \item{\code{category}}{A character defining the main category that the gene
 set belongs to.}
 
-\item{\code{subcategory}}{A character defining the secondary category that
+\item{\code{subCategory}}{A character defining the secondary category that
 the gene set belongs to.}
 }}
 
