@@ -1,4 +1,3 @@
-
 #' gep2pep: creation and analysis of Pathway Expression Profiles
 #'
 #' Pathway Expression Profiles (PEPs) are based on the expression of
@@ -101,6 +100,156 @@ NULL
 #' @importFrom methods is
 NULL
 
+#' A class to contain categorized gene set collection
+#'
+#' This class is a simple generalization of the
+#' \code{BroadCollection} function of \code{GSEABase} to store gene
+#' sets having assigned categories and subcategories that can be
+#' different from those of the MSigDB.
+#'
+#' @slot category A character defining the main category that the gene
+#'     set belongs to.
+#' @slot subcategory A character defining the secondary category that
+#'     the gene set belongs to.
+#' @name CategorizedCollection-class
+#' @rdname CategorizedCollection-class
+#' @export
+setClass("CategorizedCollection",
+         contains = "CollectionType",
+         representation = representation(
+             category = "character",
+             subCategory = "character"),
+         prototype = prototype(
+             type = GSEABase:::mkScalar("Categorized"),
+             category = GSEABase:::mkScalar("uncategorized"),
+             subCategory = GSEABase:::mkScalar("uncategorized")),
+         )
+
+#' Constructor method for objects of class CategorizedCollection.
+#'
+#' See \code{CategorizedCollection-class}.
+#'
+#' @param category A character defining the main category that the gene
+#'     set belongs to.
+#' @param subcategory A character defining the secondary category that
+#'     the gene set belongs to.
+#' @export
+#' @examples
+#'
+#' library(GSEABase)
+#' gs1 <- GeneSet(setName="set1", setIdentifier="101")
+#' collectionType(gs1) <- CategorizedCollection()
+CategorizedCollection <- function(category="uncategorized",
+                                  subCategory="uncategorized", ...) {
+    if (length(category)!=1)
+        stop("category must be a scalar (length = 1)")
+    
+    new("CategorizedCollection",
+        category=GSEABase:::mkScalar(category),
+        subCategory=GSEABase:::mkScalar(as.character(subCategory)))
+}
+
+
+setMethod("show",
+          signature=signature(object="CategorizedCollection"),
+          function(object) {
+              cat("collectionType: ", collectionType(object), "\n",
+                  "  category: ",
+                  attr(object, "category"), "\n",
+                  "  subCategory: ",
+                  attr(object, "subCategory") ,"\n", sep="")
+          })
+
+
+#' Converts GeneSetCollection objects to CategorizedCollection objects.
+#'
+#' @param collection An object of class \code{GeneSetCollection}.
+#' @param category The name of the category that all the gene sets
+#'     will be assigned to (see details).
+#' @param subcategory The name of the subcategory that all the gene
+#'     sets will be assigned to (see details).
+#' @return A CategorizedCollection object
+#' @details This function sets the \code{CollectionType} for each set
+#'     in the collection to {CategorizedCollection}. If
+#'     \code{collection} contains \code{BroadCollection} gene sets,
+#'     their fields \code{category} and \code{subcategory} will be
+#'     used. Otherwise the \code{category} and \code{subcategory}
+#'     fields will be used.
+#' @examples
+#' \dontrun{
+#' 
+#' ## To run this example, first obtain the MSigDB database in XML
+#' ## format (see
+#' ## http://software.broadinstitute.org/gsea/downloads.jsp). It is
+#' ## assumed that the database is locally available as the file
+#' ## "msigdb_v6.0.xml".
+#'
+#' The \code{importMSigDB.xml} function is just a shortcut to the
+#' following:
+#'
+#' db <- getBroadSets("msigdb_v6.1.xml")
+#' db <- as.CategorizedCollection(db)
+#'
+#' ## The database is now in an acceptable format to create a local
+#' ## repository using createRepository
+#' }
+#'
+#' ## A small sample of the MSigDB as imported by importMSigDB.xml is
+#' ## included in gep2pep. The following creates (and deletes) a
+#' ## gep2pep repository.
+#'
+#' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db_sample <- as.CategorizedCollection(db_sample)
+#' 
+#' ## The function can also be used to create arbitrary gene set
+#' ## collections specifying the categories and subcategories once for
+#' ## all the sets:
+#'
+#' mysets <- as.CategorizedCollection(
+#'               GeneSetCollection(
+#'                   list(GeneSet(c("g1", "g2"), setName="set1"),
+#'                        GeneSet(c("g3", "g4"), setName="set2"))
+#'                   ),
+#'               category="mycategory",
+#'               subcategory="mysubcategory"
+#'               )
+#' newCollection <- GeneSetCollection(c(db_sample, mysets))
+#'
+#' ## The created repository will include both the sample gene sets
+#' ## and the two sets just created:
+#' 
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#' rp <- createRepository(repo_path, newCollection)
+#' 
+#' ## removing temporary repository
+#' unlink(repo_path, TRUE)
+#' @export
+as.CategorizedCollection <- function(collection,
+                                     category="uncategorized",
+                                     subcategory="uncategorized") {
+    if(!is(collection, "GeneSetCollection"))
+        say("collection must be an object of class GeneSetCollection",
+            "error")
+        
+    y <- GeneSetCollection(
+        sapply(collection,
+               function(g) {
+                   if(is(collectionType(g), "BroadCollection")) {
+                       coll <- attributes(collectionType(g))
+                       collectionType(g) <-
+                           CategorizedCollection(coll$category,
+                                                 coll$subCategory)
+                   } else if(is(collectionType(g), "CategorizedCollection")) {
+                       ## nothing to do
+                   } else {
+                       collectionType(g) <- CategorizedCollection(
+                           category, subcategory)
+                   }
+                   g
+               })
+    )
+
+}
 
 #' Imports pathways data from an MSigDB XML file.
 #'
@@ -109,7 +258,7 @@ NULL
 #' can be passed to \code{createRepository}.
 #'
 #' @param fname Path to an XML file downloaded from MSigDB.
-#' @return A GeneSetCollection object
+#' @return A CategorizedCollection object
 #' @references
 #'     \url{http://software.broadinstitute.org/gsea/downloads.jsp}
 #' @details This function now just calls \code{getBroadSets(fname)}
@@ -137,6 +286,7 @@ NULL
 #'
 #' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 #'
+#' 
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #' rp <- createRepository(repo_path, db_sample)
 #'
@@ -145,9 +295,15 @@ NULL
 #' @export
 importMSigDB.xml <- function(fname) {
 
+    say("Loading gene sets...")
     sets <- getBroadSets(fname)
+
+    say("Converting gene sets...")
+    y <- as.CategorizedCollection(sets)    
+
+    say("done.")
     
-    return(sets)
+    return(y)
 }
 
 
@@ -330,17 +486,17 @@ getCollections <- function(rp)
 #'
 #' @param path Path to a non-existing directory where the repository
 #'     will be created.
-#' @param sets A database of pathways (or generic gene sets), see
-#'     details.
+#' @param sets An object of class \code{CategorizedCollection}.
 #' @param name Name of the repository. Defaults to \code{NULL} (a
 #'     generic name will be given).
 #' @param description Description of the repository. If NULL
 #'     (default), a generic description will be given.
 #' @return An object of class \code{repo} that can be passed to
 #'     \code{gep2pep} functions.
-#' @details \code{sets} must be in the same format as output by
-#'     \code{\link{importMSigDB.xml}}. It is a list where each item
-#'     includes the following fields:
+#' @details \code{sets} can be created by
+#'     \code{\link{importMSigDB.xml}} or using \code{GSEABase}
+#'     \code{GeneSetCollection} class and then converting it to
+#'     CategorizedCollection. See examples.
 #' @seealso buildPEPs
 #' @examples
 #'
@@ -364,9 +520,18 @@ getCollections <- function(rp)
 #' @export
 createRepository <- function(path, sets, name=NULL, description=NULL)
 {
+##:ess-bp-start::browser@nil:##
+
     if(!is(sets, "GeneSetCollection"))
         say("sets must be an object of class GeneSetCollection", "error")
 
+    types <- sapply(sets, collectionType)
+    allCat <- all(sapply(types, is, class2="CategorizedCollection"))
+    if(!allCat) {
+        say("all sets must be of type CategorizedCollection",
+            "error")
+        }
+    
     if(file.exists(path)) {
         say("Can not create repository in existing folder", "error")
     } else rp <- repo_open(path, TRUE)

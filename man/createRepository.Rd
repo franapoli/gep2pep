@@ -10,8 +10,7 @@ createRepository(path, sets, name = NULL, description = NULL)
 \item{path}{Path to a non-existing directory where the repository
 will be created.}
 
-\item{sets}{A database of pathways (or generic gene sets), see
-details.}
+\item{sets}{An object of class \code{CategorizedCollection}.}
 
 \item{name}{Name of the repository. Defaults to \code{NULL} (a
 generic name will be given).}
@@ -28,9 +27,10 @@ Given a database of collections, stores them in a local repository
 to be used by \code{gep2pep} functions.
 }
 \details{
-\code{sets} must be in the same format as output by
-    \code{\link{importMSigDB.xml}}. It is a list where each item
-    includes the following fields:
+\code{sets} can be created by
+    \code{\link{importMSigDB.xml}} or using \code{GSEABase}
+    \code{GeneSetCollection} class and then converting it to
+    CategorizedCollection. See examples.
 }
 \examples{
 

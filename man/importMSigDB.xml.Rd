@@ -10,7 +10,7 @@ importMSigDB.xml(fname)
 \item{fname}{Path to an XML file downloaded from MSigDB.}
 }
 \value{
-A GeneSetCollection object
+A CategorizedCollection object
 }
 \description{
 Creates a \code{GeneSetCollection} object using the XML
@@ -43,6 +43,7 @@ db <- importMSigDB.xml("msigdb_v6.0.xml")
 ## gep2pep repository.
 
 db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+
 
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 rp <- createRepository(repo_path, db_sample)

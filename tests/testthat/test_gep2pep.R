@@ -18,7 +18,8 @@ create_test_repo <- function(suffix=NULL) {
 }
 
 testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
-testpws <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+testpws <- as.CategorizedCollection(
+    readRDS(system.file("testgmd.RDS", package="gep2pep")))
 testpws_old <- gep2pep:::convertFromGSetClass(testpws)
 
 rp <- create_test_repo()
