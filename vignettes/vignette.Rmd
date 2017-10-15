@@ -66,7 +66,7 @@ data):
 
 ```{r}
 library(gep2pep)
-library(GSEABase)
+library(GSEABase, quietly=TRUE)
 ```
 
 The [MSigDB](http://software.broadinstitute.org/gsea/msigdb) is a
@@ -79,8 +79,8 @@ commented code would import the database once downloaded:
 ```
 
 However, for this vignette a small excerpt will be used. Gep2pep uses
-a slight variation of the \code{BroadCollection} type used by MSigDB,
-named \code{CategorizedCollection}. Thus a conversion is necessary:
+a slight variation of the `BroadCollection` type used by MSigDB,
+named `CategorizedCollection`. Thus a conversion is necessary:
 
 ```{r}
 db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
@@ -125,7 +125,7 @@ rp
 description(rp$get("c3_TFT_sets")[["E47_01"]])
 ```
 
-\code{rp$get} is a \code{repo} command, see later in this vignette.
+`rp$get` is a `repo` command, see later in this vignette.
 
 ## Creating Pathway Expression Profiles
 
@@ -207,7 +207,9 @@ DOWN-regulated is M18759. They are respectively described as:
 sets <- rp$get("c3_MIR_sets")
 wM5012 <- which(sapply(sets, setIdentifier)=="M5012")
 wM18759 <- which(sapply(sets, setIdentifier)=="M18759")
+
 description(sets[[wM5012]])
+
 description(sets[[wM18759]])
 ```
 
