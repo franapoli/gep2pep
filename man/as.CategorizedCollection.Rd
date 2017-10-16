@@ -5,7 +5,7 @@
 \title{Converts GeneSetCollection objects to CategorizedCollection objects.}
 \usage{
 as.CategorizedCollection(collection, category = "uncategorized",
-  subcategory = "uncategorized")
+  subCategory = "uncategorized")
 }
 \arguments{
 \item{collection}{An object of class \code{GeneSetCollection}.}
@@ -13,7 +13,7 @@ as.CategorizedCollection(collection, category = "uncategorized",
 \item{category}{The name of the category that all the gene sets
 will be assigned to (see details).}
 
-\item{subcategory}{The name of the subcategory that all the gene
+\item{subCategory}{The name of the subcategory that all the gene
 sets will be assigned to (see details).}
 }
 \value{
@@ -67,7 +67,7 @@ mysets <- as.CategorizedCollection(
                        GeneSet(c("g3", "g4"), setName="set2"))
                   ),
               category="mycategory",
-              subcategory="mysubcategory"
+              subCategory="mysubcategory"
               )
 newCollection <- GeneSetCollection(c(db_sample, mysets))
 

@@ -18,7 +18,8 @@ Imports:
     stats,
     utils,
     GSEABase,
-    methods
+    methods,
+    Biobase
 Suggests:
     WriteXLS,
     testthat,

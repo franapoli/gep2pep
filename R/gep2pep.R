@@ -97,6 +97,7 @@ NULL
 #' @import stats
 ## For gene sets management
 #' @import GSEABase
+#' @importFrom Biobase mkScalar
 #' @importFrom methods is new
 NULL
 
@@ -118,9 +119,9 @@ setClass("CategorizedCollection",
          contains = "CollectionType",
          representation = representation(
              category = "character",
-             subCategory = "character"),
+             subCategory = "character"),         
          prototype = prototype(
-             type = "Categorized",
+             type = mkScalar("Categorized"),
              category = "uncategorized",
              subCategory = "uncategorized"),
          )
@@ -167,7 +168,7 @@ setMethod("show",
 #' @param collection An object of class \code{GeneSetCollection}.
 #' @param category The name of the category that all the gene sets
 #'     will be assigned to (see details).
-#' @param subcategory The name of the subcategory that all the gene
+#' @param subCategory The name of the subcategory that all the gene
 #'     sets will be assigned to (see details).
 #' @return A CategorizedCollection object
 #' @details This function sets the \code{CollectionType} for each set
@@ -213,7 +214,7 @@ setMethod("show",
 #'                        GeneSet(c("g3", "g4"), setName="set2"))
 #'                   ),
 #'               category="mycategory",
-#'               subcategory="mysubcategory"
+#'               subCategory="mysubcategory"
 #'               )
 #' newCollection <- GeneSetCollection(c(db_sample, mysets))
 #'
@@ -228,7 +229,8 @@ setMethod("show",
 #' @export
 as.CategorizedCollection <- function(collection,
                                      category="uncategorized",
-                                     subcategory="uncategorized") {
+                                     subCategory="uncategorized")
+{
     if(!is(collection, "GeneSetCollection"))
         say("collection must be an object of class GeneSetCollection",
             "error")
@@ -248,7 +250,7 @@ as.CategorizedCollection <- function(collection,
                        ## nothing to do
                    } else {
                        collectionType(g) <- CategorizedCollection(
-                           category, subcategory)
+                           category, subCategory)
                    }
                    g
                })
@@ -870,32 +872,8 @@ exportSEA <- function(rp, results, outname=NULL)
 #'
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 #' psea <- CondSEA(rp, pgset)
-#' ## [16:26:58] Common conditions removed from bgset.
-#' ## [16:26:58] Working on collection: C3_TFT
-#' ## [16:26:58] Row-ranking collection...
-#' ## [16:26:58] Computing enrichments...
-#' ## [16:26:58] done.
-#' ## [16:26:58] Working on collection: C3_MIR
-#' ## [16:26:58] Row-ranking collection...
-#' ## [16:26:58] Computing enrichments...
-#' ## [16:26:58] done.
-#' ## [16:26:58] Working on collection: C4_CGN
-#' ## [16:26:58] Row-ranking collection...
-#' ## [16:26:58] Computing enrichments...
-#' ## [16:26:58] done.
 #'
 #' psea$CondSEA$C3_TFT
-#' ##                ES  PV
-#' ## M5067   1.0000000 0.2
-#' ## M2501   1.0000000 0.2
-#' ## M3128  -0.6666667 0.6
-#' ## M11607  0.6666667 0.6
-#' ## M16694 -0.6666667 0.6
-#' ## M14463  0.6666667 0.6
-#' ## M14686 -0.6666667 0.6
-#' ## M12599  0.5000000 0.9
-#' ## M10817 -0.5000000 0.9
-#' ## M4831   0.3333333 1.0
 #'
 #' unlink(repo_path, TRUE)
 #'

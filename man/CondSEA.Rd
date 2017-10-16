@@ -69,32 +69,8 @@ buildPEPs(rp, geps)
 
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 psea <- CondSEA(rp, pgset)
-## [16:26:58] Common conditions removed from bgset.
-## [16:26:58] Working on collection: C3_TFT
-## [16:26:58] Row-ranking collection...
-## [16:26:58] Computing enrichments...
-## [16:26:58] done.
-## [16:26:58] Working on collection: C3_MIR
-## [16:26:58] Row-ranking collection...
-## [16:26:58] Computing enrichments...
-## [16:26:58] done.
-## [16:26:58] Working on collection: C4_CGN
-## [16:26:58] Row-ranking collection...
-## [16:26:58] Computing enrichments...
-## [16:26:58] done.
 
 psea$CondSEA$C3_TFT
-##                ES  PV
-## M5067   1.0000000 0.2
-## M2501   1.0000000 0.2
-## M3128  -0.6666667 0.6
-## M11607  0.6666667 0.6
-## M16694 -0.6666667 0.6
-## M14463  0.6666667 0.6
-## M14686 -0.6666667 0.6
-## M12599  0.5000000 0.9
-## M10817 -0.5000000 0.9
-## M4831   0.3333333 1.0
 
 unlink(repo_path, TRUE)
 
