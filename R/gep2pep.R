@@ -89,14 +89,22 @@ NULL
 
 ## repo is for storage of repositories
 #' @import repo
+
 ## foreach is for easy parallelization support
 #' @import foreach
+
 ## utils is for txtProgressBar
 #' @import utils
+
 ## stats is for ks.test
 #' @import stats
+
 ## For gene sets management
 #' @import GSEABase
+
+## To parse XML directly when getBroadSets fails:
+#' @import XML
+
 #' @importFrom Biobase mkScalar
 #' @importFrom methods is new
 NULL
@@ -303,14 +311,55 @@ as.CategorizedCollection <- function(collection,
 importMSigDB.xml <- function(fname) {
 
     say("Loading gene sets...")
-    sets <- getBroadSets(fname)
 
-    say("Converting gene sets...")
-    y <- as.CategorizedCollection(sets)    
+    result = tryCatch({
+        stop("fake")
+        sets <- getBroadSets(fname)
+        say("Converting gene sets...")
+        gs <- as.CategorizedCollection(sets)    
+    }, warning = function(w) {
+        print(w)
+    }, error = function(e) {        
+        say(paste("GSEABase::getBroadSets failed with the error:"))
+        print(e)
+        say("Parsing XML with fallback code...")
+        xml <- xmlTreeParse(fname, useInternalNodes=TRUE)   
+        sets <- xml["/MSIGDB/GENESET"]
+
+        ids <- sapply(sets, function(x) xmlAttrs(x)[["SYSTEMATIC_NAME"]])
+        msigDB <- data.frame(
+            id = ids,
+            name = sapply(sets, function(x) xmlAttrs(x)[["STANDARD_NAME"]]),
+            category = sapply(sets, function(x) xmlAttrs(x)[["CATEGORY_CODE"]]),
+            subcategory = sapply(sets, function(x) {
+                xmlAttrs(x)[["SUB_CATEGORY_CODE"]]}),
+            organism = sapply(sets, function(x) xmlAttrs(x)[["ORGANISM"]]),
+            desc = sapply(sets, function(x) xmlAttrs(x)[["DESCRIPTION_BRIEF"]]),
+            desc_full = sapply(sets, function(x) xmlAttrs(x)[["DESCRIPTION_FULL"]]),
+            set = sapply(sets, function(x) xmlAttrs(x)[["MEMBERS_SYMBOLIZED"]]),
+            stringsAsFactors=FALSE
+        )
+
+        say("Converting gene sets...")
+        gs <- list()
+        for(i in 1:nrow(msigDB)) {
+            gs[[i]] <- GeneSet(strsplit(msigDB$set[i], ",")[[1]],
+                               shortDescription = msigDB$desc[i],
+                               longDescription = msigDB$desc_full[i],
+                               setName = msigDB$name[i],
+                               setIdentifier = msigDB$id[i],
+                               organism = msigDB$organism[i],
+                               collectionType = CategorizedCollection(
+                                   category=msigDB$category[i],
+                                   subCategory=msigDB$subcategory[i]
+                               ))
+            }
+        gs <- GeneSetCollection(gs)
+    })
 
     say("done.")
     
-    return(y)
+    return(gs)
 }
 
 
@@ -1414,7 +1463,7 @@ checkGEPsFormat <- function(geps)
         say("GEPs must have colnames (as condition IDs)", "error")
     if(any(duplicated(pnames)))
         say("GEP colnames must be unique", "error")
-
+    
     not_unique <- apply(geps, 2, function(x) {
         any(duplicated(x))})
     mins <- apply(geps, 2, min, na.rm=TRUE)
