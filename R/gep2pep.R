@@ -295,9 +295,8 @@ as.CategorizedCollection <- function(collection,
 #' ## repository using createRepository
 #' }
 #'
-#' ## A small sample of the MSigDB as imported by importMSigDB.xml is
-#' ## included in gep2pep. The following creates (and deletes) a
-#' ## gep2pep repository.
+#' ## A small excerpt from the MSigDB is included in gep2pep. The
+#' ## following creates (and then deletes) a gep2pep repository.
 #'
 #' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
 #' db_sample <- as.CategorizedCollection(db_sample)
@@ -313,12 +312,9 @@ importMSigDB.xml <- function(fname) {
     say("Loading gene sets...")
 
     result = tryCatch({
-        stop("fake")
         sets <- getBroadSets(fname)
         say("Converting gene sets...")
-        gs <- as.CategorizedCollection(sets)    
-    }, warning = function(w) {
-        print(w)
+        as.CategorizedCollection(sets)    
     }, error = function(e) {        
         say(paste("GSEABase::getBroadSets failed with the error:"))
         print(e)
@@ -354,12 +350,12 @@ importMSigDB.xml <- function(fname) {
                                    subCategory=msigDB$subcategory[i]
                                ))
             }
-        gs <- GeneSetCollection(gs)
+        GeneSetCollection(gs)
     })
 
     say("done.")
     
-    return(gs)
+    return(result)
 }
 
 
