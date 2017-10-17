@@ -407,7 +407,7 @@ checkRepository <- function(rp) {
                     problems <- TRUE
                 }
 
-                sets <- loadCollection(rp, dbs[i])
+                sets <- .loadCollection(rp, dbs[i])
 
                 if(!identical(colnames(peps$ES), colnames(peps$PV))) {
                     say(paste("Column names of the ES matrix are not",
@@ -759,7 +759,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 
         if(length(newpeps) > 0) {
             gepsi <- geps[, newpeps, drop=FALSE]
-            thisdb <- loadCollection(rp, dbs[i])
+            thisdb <- .loadCollection(rp, dbs[i])
             peps <- gep2pep(gepsi, thisdb, parallel, progress_bar)
             storePEPs(rp, dbs[i], peps)
         }
@@ -1068,7 +1068,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
         say(paste0("Working on collection: ", collections[i]))
         gmd <- names(pathways[[collections[i]]])
 
-        allsets <- names(loadCollection(rp_peps, collections[i]))
+        allsets <- names(.loadCollection(rp_peps, collections[i]))
                  
         if(length(bgsets) == 1 && bgsets=="all") {
             bgset <- allsets
@@ -1141,7 +1141,7 @@ gene2pathways <- function(rp, gene)
     dbs <- getCollections(rp)
     mods <- list()
     for(i in 1:length(dbs)) {
-        db <- .loadCollection(rp, dbs[i])
+        db <- loadCollection(rp, dbs[i])
         w <- sapply(db, function(s) gene %in% geneIds(s))
         mods <- GeneSetCollection(c(mods, db[w]))
     }
@@ -1149,6 +1149,33 @@ gene2pathways <- function(rp, gene)
     return(mods)        
 }
 
+
+## convert2SummarizedExperiment <- function(rp, res, bg)
+## {
+##     restype <- names(res)[[1]]
+##     SEs <- list()
+##     for(i in 1:length(res)) {
+##         dfi <- t(data.frame(res$CondSEA[[i]], res$details[[i]]))
+##         conds <- data.frame(originalNames=c(
+##                                 colnames(res$CondSEA[[i]]),
+##                                 colnames(res$details[[i]]))
+##                             )                            
+##         coll <- loadCollection(rp, names(df)[i])
+##         w <- match(colnames(dfi), sapply(coll, setIdentifier))
+##         nms <- data.frame(setNames=sapply(coll, setName)[w])
+##         data <- list(list(dfi))
+##         names(data[[1]]) <- names(df)[i]
+##         se <- SummarizedExperiment(data,
+##                                    rowData=conds,
+##                                    colData=nms)
+##         metadata(se) <- list(
+##             set = colnames(res$details[[i]]),
+##             background = bg,
+##             sysinfo=Sys.info()
+##         )
+##         SEs[[i]] <- se
+##     }       
+## }
 
 gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
 
@@ -1329,7 +1356,7 @@ attachInfo <- function(rp, results)
     dbs <- names(results[[type]])
     newres <- list()
     for(i in 1:length(results[[type]])) {
-        db <- loadCollection(rp, dbs[i])
+        db <- .loadCollection(rp, dbs[i])
         resmat <- results[[type]][[i]]
 
         if(type == "CondSEA") {
@@ -1437,7 +1464,7 @@ checkSets <- function(rp, sets) {
 
     for(i in 1:length(ucoll_ids)) {
         sub <- sapply(sets[which(coll_ids == ucoll_ids[i])], setIdentifier)
-        coll <- loadCollection(rp, ucoll_ids[i])
+        coll <- .loadCollection(rp, ucoll_ids[i])
         off <- setdiff(sub, names(coll))
         if(length(off) > 0)
             say(paste0("The following pathways could not be found ",
@@ -1463,12 +1490,12 @@ convertFromGSetClass <- function(gsets) {
     return(res)
 }
 
-loadCollection <- function(rp, db) {
+.loadCollection <- function(rp, db) {
     thisdb <- rp$get(paste0(db, "_sets"))
     return(convertFromGSetClass(thisdb))
 }
 
-.loadCollection <- function(rp, db) {
+loadCollection <- function(rp, db) {
     thisdb <- rp$get(paste0(db, "_sets"))
     return(thisdb)
 }
