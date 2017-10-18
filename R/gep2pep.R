@@ -90,21 +90,13 @@ NULL
 ## repo is for storage of repositories
 #' @import repo
 
-## foreach is for easy parallelization support
-#' @import foreach
-
-## utils is for txtProgressBar
-#' @import utils
-
-## stats is for ks.test
-#' @import stats
-
 ## For gene sets management
 #' @import GSEABase
 
-## To parse XML directly when getBroadSets fails:
-#' @import XML
-
+#' @importFrom foreach foreach %dopar% %do%
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @importFrom stats ks.test
+#' @importFrom XML xmlTreeParse xmlAttrs
 #' @importFrom Biobase mkScalar
 #' @importFrom methods is new
 NULL
@@ -325,14 +317,20 @@ importMSigDB.xml <- function(fname) {
         ids <- sapply(sets, function(x) xmlAttrs(x)[["SYSTEMATIC_NAME"]])
         msigDB <- data.frame(
             id = ids,
-            name = sapply(sets, function(x) xmlAttrs(x)[["STANDARD_NAME"]]),
-            category = sapply(sets, function(x) xmlAttrs(x)[["CATEGORY_CODE"]]),
-            subcategory = sapply(sets, function(x) {
-                xmlAttrs(x)[["SUB_CATEGORY_CODE"]]}),
-            organism = sapply(sets, function(x) xmlAttrs(x)[["ORGANISM"]]),
-            desc = sapply(sets, function(x) xmlAttrs(x)[["DESCRIPTION_BRIEF"]]),
-            desc_full = sapply(sets, function(x) xmlAttrs(x)[["DESCRIPTION_FULL"]]),
-            set = sapply(sets, function(x) xmlAttrs(x)[["MEMBERS_SYMBOLIZED"]]),
+            name = sapply(sets, function(x)
+                xmlAttrs(x)[["STANDARD_NAME"]]),
+            category = sapply(sets, function(x)
+                xmlAttrs(x)[["CATEGORY_CODE"]]),
+            subcategory = sapply(sets, function(x)
+                xmlAttrs(x)[["SUB_CATEGORY_CODE"]]),
+            organism = sapply(sets, function(x)
+                xmlAttrs(x)[["ORGANISM"]]),
+            desc = sapply(sets, function(x)
+                xmlAttrs(x)[["DESCRIPTION_BRIEF"]]),
+            desc_full = sapply(sets, function(x)
+                xmlAttrs(x)[["DESCRIPTION_FULL"]]),
+            set = sapply(sets, function(x)
+                xmlAttrs(x)[["MEMBERS_SYMBOLIZED"]]),
             stringsAsFactors=FALSE
         )
 
