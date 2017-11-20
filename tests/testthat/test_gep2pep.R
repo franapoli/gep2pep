@@ -1,13 +1,12 @@
 
 
-## Workflow:
-if(F) {
-    library(GSEABase)
-    library(devtools)
-    library(DelayedArray)
-    load_all()
-    library(testthat)    
-}
+## ## Workflow:
+## library(GSEABase)
+## library(devtools)
+## library(DelayedArray)
+## load_all()
+## library(testthat)    
+
 
 dbfolder <- file.path(tempdir(), "gep2pepDB")
 
@@ -27,9 +26,10 @@ create_test_repo <- function(suffix=NULL) {
         )    
 }
 
-testgep <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+testgep <- loadSampleGEP()
 testpws <- as.CategorizedCollection(
-    readRDS(system.file("testgmd.RDS", package="gep2pep")))
+    loadSamplePWS()
+)
 testpws_old <- gep2pep:::convertFromGSetClass(testpws)
 
 rp <- create_test_repo()
@@ -70,6 +70,10 @@ test_that("new db creation", {
     expect_equal(length(rp$get(paste0(expected_dbs[2], "_sets"))), 10)
     expect_equal(length(rp$get(paste0(expected_dbs[3], "_sets"))), 10)
     expect_failure(expect_warning(suppressMessages(checkRepository(rp))))
+    expect_error(loadESmatrix(rp, "random name"))
+    expect_error(loadESmatrix(rp, "c3_TFT"))
+    expect_error(loadPVmatrix(rp, "random name"))
+    expect_error(loadPVmatrix(rp, "c3_TFT"))
 })
 
 context("creation of peps")
@@ -97,6 +101,11 @@ test_that("build first PEPs", {
   expect_equal(ncol(rp$get(expected_dbs[3])[[2]]), ncol(testgep))
 
   expect_failure(expect_warning(suppressMessages(checkRepository(rp))))  
+
+  expect_error(loadESmatrix(rp, "random name"))
+  expect_equal(loadESmatrix(rp, "c3_TFT"), rp$get("c3_TFT")$ES)
+  expect_error(loadPVmatrix(rp, "random name"))
+  expect_equal(loadPVmatrix(rp, "c3_TFT"), rp$get("c3_TFT")$PV)
 })
 
 
@@ -236,6 +245,8 @@ outset <- ranked[pwsid, setdiff(colnames(ranked), pgset)]
 ks <- ks.test.2(inset, outset)
 
 test_that("CondSEA", {
+    expect_equal(getDetails(res), res$details)
+    expect_equal(getResults(res), res$CondSEA)
     expect_equal(unname(res[["CondSEA"]][[randDB]][pwsid, "ES"]),
                  ks$ES)
     expect_equal(unname(res[["CondSEA"]][[randDB]][pwsid, "PV"]),
@@ -272,6 +283,8 @@ name1 <- colnames(testgep)[randj1]
 name3 <- colnames(testgep)[randj3]
 
 test_that("PathSEA", {
+    expect_equal(getDetails(res), res$details)
+    expect_equal(getResults(res), res$PathSEA)
     expect_equal(unname(res[["PathSEA"]][[db1]][name1, "ES"]),
                  ks1$ES)
     expect_equal(unname(res[["PathSEA"]][[db1]][name1, "PV"]),
@@ -280,7 +293,7 @@ test_that("PathSEA", {
     expect_equal(unname(res[["PathSEA"]][[db3]][name3, "ES"]),
                  ks3$ES)
     expect_equal(unname(res[["PathSEA"]][[db3]][name3, "PV"]),
-                 ks3$p.value)    
+                 ks3$p.value)
 })
 
 

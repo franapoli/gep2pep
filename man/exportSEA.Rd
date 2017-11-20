@@ -22,12 +22,12 @@ together with additional gene set information for the CondSEA.
 }
 \examples{
 
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)
-geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+geps <- loadSampleGEP()
 buildPEPs(rp, geps)
 
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")

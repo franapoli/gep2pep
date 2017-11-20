@@ -43,25 +43,25 @@ repository, converts GEPs to PEPs and stores the latter in the
 repository.
 }
 \examples{
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)
 ## Repo root created.
 ## Repo created.
-## [15:45:06] Storing pathway data for collection: C3_TFT
-## [15:45:06] Storing pathway data for collection: C3_MIR
-## [15:45:06] Storing pathway data for collection: C4_CGN
+## [15:45:06] Storing pathway data for collection: c3_TFT
+## [15:45:06] Storing pathway data for collection: c3_MIR
+## [15:45:06] Storing pathway data for collection: c4_CGN
 
 rp
 ##          ID   Dims     Size
-## C3_TFT_sets   10   18.16 kB
-## C3_MIR_sets   10   17.25 kB
-## C4_CGN_sets   10     6.9 kB
+## c3_TFT_sets   10   18.16 kB
+## c3_MIR_sets   10   17.25 kB
+## c4_CGN_sets   10     6.9 kB
 
 ## Loading sample gene expression profiles
-geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+geps <- loadSampleGEP()
 
 geps[1:3,1:3]
 ##       (+)_chelidonine (+)_isoprenaline (+/_)_catechin
@@ -73,12 +73,12 @@ buildPEPs(rp, geps)
 
 rp
 ##           ID  Dims     Size
-##   C3_TFT_sets   10 18.16 kB
-##   C3_MIR_sets   10 17.25 kB
-##   C4_CGN_sets   10   6.9 kB
-##        C3_TFT    2  1.07 kB
-##        C3_MIR    2  1.07 kB
-##        C4_CGN    2  1.04 kB
+##   c3_TFT_sets   10 18.16 kB
+##   c3_MIR_sets   10 17.25 kB
+##   c4_CGN_sets   10   6.9 kB
+##        c3_TFT    2  1.07 kB
+##        c3_MIR    2  1.07 kB
+##        c4_CGN    2  1.04 kB
 
 unlink(repo_path, TRUE)
 

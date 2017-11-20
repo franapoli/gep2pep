@@ -27,7 +27,7 @@ This function only calls the \code{repo_open} function
 }
 \examples{
 
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 

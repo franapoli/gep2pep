@@ -59,18 +59,18 @@ For each pathway, all conditions are ranked by how much
     Enrichment Analysis [1].
 }
 \examples{
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)
-geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+geps <- loadSampleGEP()
 buildPEPs(rp, geps)
 
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 psea <- CondSEA(rp, pgset)
 
-psea$CondSEA$C3_TFT
+getResults(psea)["c3_TFT"]
 
 unlink(repo_path, TRUE)
 
@@ -79,4 +79,7 @@ unlink(repo_path, TRUE)
 [1] Napolitano F. et al, Drug-set enrichment analysis: a
     novel tool to investigate drug mode of action. Bioinformatics
     32, 235-241 (2016).
+}
+\seealso{
+getResults, getDetails
 }

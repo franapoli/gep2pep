@@ -22,7 +22,7 @@ collection of the repository. This can be used to define a set of
 pathways for the \code{\link{PathSEA}}.
 }
 \examples{
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 

@@ -151,6 +151,45 @@ CategorizedCollection <- function(category="uncategorized",
         subCategory=subCategory)
 }
 
+#' Loads sample Gene Expression Profiles
+#'
+#' @return Sample gene expression data
+#' @export
+#' @examples
+#'
+#' geps <- loadSampleGEP()
+#' dim(geps)
+#' ## [1] 485   5
+loadSampleGEP <- function() {
+    return(
+        readRDS(system.file("extdata", "testgep.RDS",
+                            package="gep2pep"))
+    )
+}
+
+#' Loads sample pathway collections
+#'
+#' @return Sample pathway collections in \code{GeneSetCollection}
+#'     format
+#' @export
+#' @examples
+#'
+#' geps <- loadSampleGEP()
+#' geps
+#' ## GeneSetCollection
+#' ##   names: AAANWWTGC_UNKNOWN, AAAYRNCTG_UNKNOWN, ..., MORF_BUB3 (30 total)
+#' ##   unique identifiers: MEF2C, ATP1B1, ..., SLBP (5778 total)
+#' ##   types in collection:
+#' ##     geneIdType: SymbolIdentifier (1 total)
+#' ##     collectionType: BroadCollection (1 total)
+#'
+loadSamplePWS <- function() {
+    return(
+        readRDS(system.file("extdata", "testgmd.RDS",
+                            package="gep2pep"))
+    )
+}
+
 
 setMethod("show",
           signature=signature(object="CategorizedCollection"),
@@ -200,7 +239,7 @@ setMethod("show",
 #' ## included in gep2pep. The following creates (and deletes) a
 #' ## gep2pep repository.
 #'
-#' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db_sample <- loadSamplePWS()
 #' db_sample <- as.CategorizedCollection(db_sample)
 #' 
 #' ## The function can also be used to create arbitrary gene set
@@ -290,7 +329,7 @@ as.CategorizedCollection <- function(collection,
 #' ## A small excerpt from the MSigDB is included in gep2pep. The
 #' ## following creates (and then deletes) a gep2pep repository.
 #'
-#' db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db_sample <- loadSamplePWS()
 #' db_sample <- as.CategorizedCollection(db_sample)
 #' 
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
@@ -336,7 +375,7 @@ importMSigDB.xml <- function(fname) {
 
         say("Converting gene sets...")
         gs <- list()
-        for(i in 1:nrow(msigDB)) {
+        for(i in seq_len(nrow(msigDB))) {
             gs[[i]] <- GeneSet(strsplit(msigDB$set[i], ",")[[1]],
                                shortDescription = msigDB$desc[i],
                                longDescription = msigDB$desc_full[i],
@@ -367,6 +406,7 @@ importMSigDB.xml <- function(fname) {
 #'     \code{getCollections}. If set to "all" (default), all the
 #'     collections in \code{rp} will be used.
 #' @return Nothing
+#' @keywords internal
 dummyFunction <- function(rp, rp_peps, collections) {}
 
 
@@ -377,7 +417,7 @@ dummyFunction <- function(rp, rp_peps, collections) {}
 #' @inheritParams dummyFunction
 #' @return Nothing.
 #' @examples
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
@@ -435,7 +475,7 @@ checkRepository <- function(rp) {
     if(length(perts)>0) {
 
         say("Checking PEPs...")
-        for(i in 1:length(dbs)) {
+        for(i in seq_along(dbs)) {
             problems <- FALSE
             
             say(paste0("Checking collection: ", dbs[i], "..."))
@@ -503,31 +543,25 @@ checkRepository <- function(rp) {
 #'     \code{buildPEPs} was not run, throws an error.
 #' @examples
 #'
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
-#' ## Repo root created.
-#' ## Repo created.
-#' ## [15:45:06] Storing pathway data for collection: C3_TFT
-#' ## [15:45:06] Storing pathway data for collection: C3_MIR
-#' ## [15:45:06] Storing pathway data for collection: C4_CGN
+#' geps <- loadSampleGEP()
+#' buildPEPs(rp, geps)
 #'
-#' getCollections(rp)
-#' ## [1] "C3_TFT" "C3_MIR" "C4_CGN"
-#'
-#' getESmatrix(rp, "C3_TFT")
+#' loadESmatrix(rp, "c3_TFT")[1:5,1:2]
 #'
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-getESmatrix <- function(rp, collection)
+loadESmatrix <- function(rp, collection)
 {
     if(!is(collection, "character") || length(collection) > 1)
         say("Please provide a single collection name", "error")
     
-    res <- rp$getPEPs(collection)$ES
+    res <- getPEPs(rp, collection)$ES
     return(res)
 }
 
@@ -544,31 +578,55 @@ getESmatrix <- function(rp, collection)
 #'     \code{buildPEPs} was not run, throws an error.
 #' @examples
 #'
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
-#' ## Repo root created.
-#' ## Repo created.
-#' ## [15:45:06] Storing pathway data for collection: C3_TFT
-#' ## [15:45:06] Storing pathway data for collection: C3_MIR
-#' ## [15:45:06] Storing pathway data for collection: C4_CGN
+#' geps <- loadSampleGEP()
+#' buildPEPs(rp, geps)
 #'
-#' getCollections(rp)
-#' ## [1] "C3_TFT" "C3_MIR" "C4_CGN"
-#'
-#' getPVmatrix(rp, "C3_TFT")
+#' loadPVmatrix(rp, "c3_TFT")
 #'
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-getPVmatrix <- function(rp, collection)
+loadPVmatrix <- function(rp, collection)
 {
     if(!is(collection, "character") || length(collection) > 1)
         say("Please provide a single collection name", "error")
     
-    res <- rp$getPEPs(collection)$PV
+    res <- getPEPs(rp, collection)$PV
+    return(res)
+}
+
+#' Loads a collection of pathways from the repository
+#'
+#' @inheritParams dummyFunction
+#' @param collection One of the collection names listed by
+#'     \code{getCollections}.
+#' @return a \code{GeneSetCollection} object loaded from the
+#'     repository \code{rp}.
+#' @examples
+#'
+#' db <- loadSamplePWS()
+#' db <- as.CategorizedCollection(db)
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#' geps <- loadSampleGEP()
+#' 
+#' loadCollection(rp, "c3_TFT")
+#'
+#' unlink(repo_path, TRUE)
+#'
+#' @export
+loadCollection <- function(rp, collection)
+{
+    if(!is(collection, "character") || length(collection) > 1)
+        say("Please provide a single collection name", "error")
+    
+    res <- loadCollection(rp, collection)
     return(res)
 }
 
@@ -589,19 +647,19 @@ getPVmatrix <- function(rp, collection)
 #'     \code{rp} (entries that are tagged with "sets").
 #' @examples
 #'
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
 #' ## Repo root created.
 #' ## Repo created.
-#' ## [15:45:06] Storing pathway data for collection: C3_TFT
-#' ## [15:45:06] Storing pathway data for collection: C3_MIR
-#' ## [15:45:06] Storing pathway data for collection: C4_CGN
+#' ## [15:45:06] Storing pathway data for collection: c3_TFT
+#' ## [15:45:06] Storing pathway data for collection: c3_MIR
+#' ## [15:45:06] Storing pathway data for collection: c4_CGN
 #'
 #' getCollections(rp)
-#' ## [1] "C3_TFT" "C3_MIR" "C4_CGN"
+#' ## [1] "c3_TFT" "c3_MIR" "c4_CGN"
 #'
 #' unlink(repo_path, TRUE)
 #'
@@ -635,22 +693,22 @@ getCollections <- function(rp)
 #' @seealso buildPEPs
 #' @examples
 #'
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
 #' ## Repo root created.
 #' ## Repo created.
-#' ## [15:45:06] Storing pathway data for collection: C3_TFT
-#' ## [15:45:06] Storing pathway data for collection: C3_MIR
-#' ## [15:45:06] Storing pathway data for collection: C4_CGN
+#' ## [15:45:06] Storing pathway data for collection: c3_TFT
+#' ## [15:45:06] Storing pathway data for collection: c3_MIR
+#' ## [15:45:06] Storing pathway data for collection: c4_CGN
 #'
 #' rp
 #' ##         ID    Dims     Size
-#' ## C3_TFT_sets   10 18.16 kB
-#' ## C3_MIR_sets   10 17.25 kB
-#' ## C4_CGN_sets   10   6.9 kB
+#' ## c3_TFT_sets   10 18.16 kB
+#' ## c3_MIR_sets   10 17.25 kB
+#' ## c4_CGN_sets   10   6.9 kB
 #'
 #' unlink(repo_path, TRUE)
 #' @export
@@ -690,7 +748,7 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
     db_ids <- makeCollectionIDs(sets)
     subdbs <- unique(db_ids)
 
-    for(i in 1:length(subdbs))
+    for(i in seq_along(subdbs))
     {
         dbi <- subdbs[i]
         say(paste("Storing pathway data for collection:", dbi))
@@ -727,7 +785,7 @@ createRepository <- function(path, sets, name=NULL, description=NULL)
 #' @seealso createRepository
 #' @examples
 #'
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
@@ -763,14 +821,14 @@ openRepository <- function(path)
 #'     "category_subcategory".
 #' @seealso importMSigDB.xml
 #' @examples
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' ids <- makeCollectionIDs(db)
 #'
 #' unique(ids)
-#' ## [1] "C3_TFT" "C3_MIR" "C4_CGN"
+#' ## [1] "c3_TFT" "c3_MIR" "c4_CGN"
 #'
-#' db <- db[ids=="C3_MIR"]
+#' db <- db[ids=="c3_MIR"]
 #'
 #' length(db)
 #' ## [1] 10
@@ -815,25 +873,25 @@ makeCollectionIDs <- function(sets) {
 #'     repository.
 #' @seealso buildPEPs
 #' @examples
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
 #' ## Repo root created.
 #' ## Repo created.
-#' ## [15:45:06] Storing pathway data for collection: C3_TFT
-#' ## [15:45:06] Storing pathway data for collection: C3_MIR
-#' ## [15:45:06] Storing pathway data for collection: C4_CGN
+#' ## [15:45:06] Storing pathway data for collection: c3_TFT
+#' ## [15:45:06] Storing pathway data for collection: c3_MIR
+#' ## [15:45:06] Storing pathway data for collection: c4_CGN
 #'
 #' rp
 #' ##          ID   Dims     Size
-#' ## C3_TFT_sets   10   18.16 kB
-#' ## C3_MIR_sets   10   17.25 kB
-#' ## C4_CGN_sets   10     6.9 kB
+#' ## c3_TFT_sets   10   18.16 kB
+#' ## c3_MIR_sets   10   17.25 kB
+#' ## c4_CGN_sets   10     6.9 kB
 #'
 #' ## Loading sample gene expression profiles
-#' geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+#' geps <- loadSampleGEP()
 #'
 #' geps[1:3,1:3]
 #' ##       (+)_chelidonine (+)_isoprenaline (+/_)_catechin
@@ -845,12 +903,12 @@ makeCollectionIDs <- function(sets) {
 #'
 #' rp
 #' ##           ID  Dims     Size
-#' ##   C3_TFT_sets   10 18.16 kB
-#' ##   C3_MIR_sets   10 17.25 kB
-#' ##   C4_CGN_sets   10   6.9 kB
-#' ##        C3_TFT    2  1.07 kB
-#' ##        C3_MIR    2  1.07 kB
-#' ##        C4_CGN    2  1.04 kB
+#' ##   c3_TFT_sets   10 18.16 kB
+#' ##   c3_MIR_sets   10 17.25 kB
+#' ##   c4_CGN_sets   10   6.9 kB
+#' ##        c3_TFT    2  1.07 kB
+#' ##        c3_MIR    2  1.07 kB
+#' ##        c4_CGN    2  1.04 kB
 #'
 #' unlink(repo_path, TRUE)
 #'
@@ -865,7 +923,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
         dbs <- getCollections(rp)
         } else dbs <- collections
 
-    for(i in 1:length(dbs))
+    for(i in seq_along(dbs))
     {
         say(paste0("Working on collection: ", dbs[i],
                    " (", i, "/", length(dbs), ")" ))
@@ -895,6 +953,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 }
 
 
+
 #' Export CondSEA or PathSEA results to XLS format
 #'
 #' The XLS output includes the full CondSEA or PathSEA results,
@@ -907,12 +966,12 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 #' @seealso CondSEA, PathSEA
 #' @examples
 #'
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
-#' geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+#' geps <- loadSampleGEP()
 #' buildPEPs(rp, geps)
 #'
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
@@ -943,6 +1002,89 @@ exportSEA <- function(rp, results, outname=NULL)
         stop("The suggested package WriteXLS is not installed.")
     }              
 }
+
+
+#' Extracts the results matrix from \code{CondSEA} or \code{PathSEA}
+#' output
+#'
+#' @param analysis The output of either \code{CondSEA} or
+#'     \code{PathSEA}.
+#' @return A 2-columns matrix including ESs and
+#'     p-values (see details) for each pathway database and
+#'     condition.
+#' @seealso CondSEA, PathSEA
+#' @examples
+#' db <- loadSamplePWS()
+#' db <- as.CategorizedCollection(db)
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#' geps <- loadSampleGEP()
+#' buildPEPs(rp, geps)
+#'
+#' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
+#' psea <- CondSEA(rp, pgset)
+#'
+#' getResults(psea)["c3_TFT"]
+#'
+#' unlink(repo_path, TRUE)
+#'
+#' @export
+getResults <- function(analysis)
+{
+    what <- c("CondSEA", "PathSEA") %in% names(analysis)
+    if(
+        !is(analysis, "list") ||
+        !any(what) ||
+        !("details" %in% names(analysis))
+    ) say("analysis does not look like the output of CondSEA or PathSEA",
+          "error")
+
+    wanalysis <- c("CondSEA", "PathSEA")[what]
+    return(analysis[[wanalysis]])
+}
+
+
+#' Extracts the details matrix from \code{CondSEA} or \code{PathSEA}
+#' output
+#'
+#' @param analysis The output of either \code{CondSEA} or
+#'     \code{PathSEA}.
+#' @return A matrix including the ranks of each pathway (over rows)
+#'     and each condition (over columns) used as input to
+#'     \code{CondSEA} or \code{PathSEA}.
+#' @seealso CondSEA, PathSEA
+#' @examples
+#' db <- loadSamplePWS()
+#' db <- as.CategorizedCollection(db)
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#' geps <- loadSampleGEP()
+#' buildPEPs(rp, geps)
+#'
+#' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
+#' psea <- CondSEA(rp, pgset)
+#'
+#' getDetails(psea)["c3_TFT"]
+#'
+#' unlink(repo_path, TRUE)
+#'
+#' @export
+getDetails <- function(analysis)
+{
+    what <- c("CondSEA", "PathSEA") %in% names(analysis)
+    if(
+        !is(analysis, "list") ||
+        !any(what) ||
+        !("details" %in% names(analysis))
+    ) say("analysis does not look like the output of CondSEA or PathSEA",
+          "error")
+
+    return(analysis[["details"]])
+}
+
+
 
 #' Performs Condition Set Enrichment Analysis
 #'
@@ -981,6 +1123,7 @@ exportSEA <- function(rp, results, outname=NULL)
 #'     When PEPs are obtained from drug-induced gene expression
 #'     profiles, \code{PathSEA} can be used to perform Drug-Set
 #'     Enrichment Analysis [1].
+#' @seealso getResults, getDetails
 #' @references
 #'
 #' [1] Napolitano F. et al, Drug-set enrichment analysis: a
@@ -988,18 +1131,18 @@ exportSEA <- function(rp, results, outname=NULL)
 #'     32, 235-241 (2016).
 #'
 #' @examples
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
-#' geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+#' geps <- loadSampleGEP()
 #' buildPEPs(rp, geps)
 #'
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 #' psea <- CondSEA(rp, pgset)
 #'
-#' psea$CondSEA$C3_TFT
+#' getResults(psea)["c3_TFT"]
 #'
 #' unlink(repo_path, TRUE)
 #'
@@ -1021,7 +1164,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         thedetails <- list() else thedetails <- NULL
     
     res <- list()
-    for(i in 1:length(dbs)) {        
+    for(i in seq_along(dbs)) {        
         say(paste0("Working on collection: ", dbs[i]))
 
         peps <- rp_peps$get(dbs[i])
@@ -1107,26 +1250,27 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #'     \code{gene2pathways} to perform gene2drug [1] analysis, which
 #'     predicts which drugs may target a gene of interest (or mimick
 #'     such effect).
+#' @seealso getResults, getDetails
 #' @references [1] Napolitano F. et al, gene2drug: a Computational
 #'     Tool for Pathway-based Rational Drug Repositioning, bioRxiv
 #'     (2017) 192005; doi: https://doi.org/10.1101/192005
 #' @examples
 #' library(GSEABase)
 #'
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
 #' rp <- createRepository(repo_path, db)
-#' geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+#' geps <- loadSampleGEP()
 #' buildPEPs(rp, geps)
 #'
-#' pathways <- c("M11607", "M10817", "M16694",         ## from C3_TFT
-#'               "M19723", "M5038", "M13419", "M1094") ## from C4_CGN
+#' pathways <- c("M11607", "M10817", "M16694",         ## from c3_TFT
+#'               "M19723", "M5038", "M13419", "M1094") ## from c4_CGN
 #' w <- sapply(db, setIdentifier) %in% pathways
 #'
 #' psea <- PathSEA(rp, db[w])
-#' ## [15:35:29] Working on collection: C3_TFT
+#' ## [15:35:29] Working on collection: c3_TFT
 #' ## [15:35:29] Common pathway sets removed from bgset.
 #' ## [15:35:29] Column-ranking collection...
 #' ## [15:35:29] Computing enrichments...
@@ -1137,7 +1281,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #' ## [15:35:29] Computing enrichments...
 #' ## [15:35:29] done.
 #'
-#' psea$PathSEA$C3_TFT
+#' getResults(psea)["c3_TFT"]
 #' ##                         ES        PV
 #' ## (_)_mk_801       0.7142857 0.1666667
 #' ## (_)_atenolol     0.7142857 0.1666667
@@ -1157,7 +1301,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
     
     pathways <- pwList2pwStruct(pathways)
 
-    for(i in 1:length(pathways))
+    for(i in seq_along(pathways))
         if(!rp_peps$has(names(pathways)[i]))
             say("Cold not find PEPs: ", "error", names(pathways)[i])
 
@@ -1189,7 +1333,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
         thedetails <- list() else thedetails <- NULL     
     
     res <- list()
-    for(i in 1:length(pathways))
+    for(i in seq_along(pathways))
     {
         say(paste0("Working on collection: ", collections[i]))
         gmd <- names(pathways[[collections[i]]])
@@ -1248,7 +1392,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
 #'     \code{\link{PathSEA}}.
 #' @seealso createRepository, PathSEA
 #' @examples
-#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
 #' repo_path <- file.path(tempdir(), "gep2pepTemp")
 #'
@@ -1266,7 +1410,7 @@ gene2pathways <- function(rp, gene)
 {
     dbs <- getCollections(rp)
     mods <- list()
-    for(i in 1:length(dbs)) {
+    for(i in seq_along(dbs)) {
         db <- loadCollection(rp, dbs[i])
         w <- sapply(db, function(s) gene %in% geneIds(s))
         mods <- GeneSetCollection(c(mods, db[w]))
@@ -1314,7 +1458,7 @@ gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
 
     if(pbar)
         pb <- txtProgressBar()
-    for(j in 1:ncol(genemat))
+    for(j in seq_len(ncol(genemat)))
     {
         if(pbar)
             setTxtProgressBar(pb, (j-1)/ncol(genemat))
@@ -1339,7 +1483,7 @@ gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
     ES <- matrix(NA, length(pathw), ncol(genemat))
     PV <- matrix(NA, length(pathw), ncol(genemat))
     
-    for(i in 1:ncol(genemat)){
+    for(i in seq_len(ncol(genemat))){
         PV[,i] <- sapply(x[[i]], "get", x="p")
         ES[,i] <- sapply(x[[i]], "get", x="ES")
     }
@@ -1455,11 +1599,11 @@ rankPEPsByCols <- function(peps, rankingset="all")
     }
 
     if(length(rankingset) == 1 && rankingset == "all")
-        rankingset <- 1:nrow(peps[["ES"]])
+        rankingset <- seq_len(nrow(peps[["ES"]]))
     
     PVs <- peps[["PV"]][rankingset, ]
     ESs <- peps[["ES"]][rankingset, ]
-    x <- sapply(1:ncol(PVs), function(i) rankPEP(PVs[,i], ESs[,i]))
+    x <- sapply(seq_len(ncol(PVs)), function(i) rankPEP(PVs[,i], ESs[,i]))
     colnames(x) <- colnames(PVs)
     rownames(x) <- rownames(PVs)
     return(x)
@@ -1469,7 +1613,7 @@ rankPEPsByCols <- function(peps, rankingset="all")
 rankPEPsByRows <- function(peps, rankingset="all")
 {
     if(length(rankingset) == 1 && rankingset == "all")
-        rankingset <- 1:ncol(peps[["ES"]])
+        rankingset <- seq_len(ncol(peps[["ES"]]))
 
     ESs <- peps[["ES"]][, rankingset, drop=FALSE]
     x <- t(apply(-ESs, 1, rank, ties.method = "random", na.last="keep"))
@@ -1481,7 +1625,7 @@ attachInfo <- function(rp, results)
     type <- names(results)[[1]]
     dbs <- names(results[[type]])
     newres <- list()
-    for(i in 1:length(results[[type]])) {
+    for(i in seq_along(results[[type]])) {
         db <- .loadCollection(rp, dbs[i])
         resmat <- results[[type]][[i]]
 
@@ -1566,7 +1710,7 @@ pwList2pwStruct <- function(db, collids) {
     collids <- .makeCollectionIDs(db)
     colls <- unique(collids)
     out <- list()
-    for(i in 1:length(colls))
+    for(i in seq_along(colls))
         out[[colls[[i]]]] <- db[collids == colls[[i]]]
     return(out)
 }
@@ -1574,7 +1718,11 @@ pwList2pwStruct <- function(db, collids) {
 
 getPEPs <- function(rp, id) {
     if(! id %in% getCollections(rp))
-        say(paste("Could not find PEP collection:", id), "error")
+        say(paste("Collection is not one of getCollections():", id), "error")
+
+    if(! rp$has(id))
+        say(paste("No PEP found for collection:", id), "error")
+    
     return(rp$get(id))
 }
 
@@ -1588,7 +1736,7 @@ checkSets <- function(rp, sets) {
         say(paste0("The following collections could not be found: ",
                    paste(off, collapse=", ")), "error")
 
-    for(i in 1:length(ucoll_ids)) {
+    for(i in seq_along(ucoll_ids)) {
         sub <- sapply(sets[which(coll_ids == ucoll_ids[i])], setIdentifier)
         coll <- .loadCollection(rp, ucoll_ids[i])
         off <- setdiff(sub, names(coll))
@@ -1600,7 +1748,7 @@ checkSets <- function(rp, sets) {
 
 convertFromGSetClass <- function(gsets) {
     res <- list()
-    for(i in 1:length(gsets)) {
+    for(i in seq_along(gsets)) {
         set <- gsets[[i]]
         res[[setName(set)]] <- list(
             id = setIdentifier(set),

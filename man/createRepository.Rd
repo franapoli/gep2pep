@@ -34,22 +34,22 @@ to be used by \code{gep2pep} functions.
 }
 \examples{
 
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)
 ## Repo root created.
 ## Repo created.
-## [15:45:06] Storing pathway data for collection: C3_TFT
-## [15:45:06] Storing pathway data for collection: C3_MIR
-## [15:45:06] Storing pathway data for collection: C4_CGN
+## [15:45:06] Storing pathway data for collection: c3_TFT
+## [15:45:06] Storing pathway data for collection: c3_MIR
+## [15:45:06] Storing pathway data for collection: c4_CGN
 
 rp
 ##         ID    Dims     Size
-## C3_TFT_sets   10 18.16 kB
-## C3_MIR_sets   10 17.25 kB
-## C4_CGN_sets   10   6.9 kB
+## c3_TFT_sets   10 18.16 kB
+## c3_MIR_sets   10 17.25 kB
+## c4_CGN_sets   10   6.9 kB
 
 unlink(repo_path, TRUE)
 }

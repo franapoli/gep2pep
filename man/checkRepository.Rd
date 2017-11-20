@@ -17,7 +17,7 @@ Check both repository data consistency (see \code{repo_check} from
 the \code{repo} package) and specific gep2pep data consistency.
 }
 \examples{
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 

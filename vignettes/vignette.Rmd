@@ -83,7 +83,7 @@ a slight variation of the `BroadCollection` type used by MSigDB,
 named `CategorizedCollection`. Thus a conversion is necessary:
 
 ```{r}
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 ```
 
@@ -149,7 +149,7 @@ considered as a dummy example, as it only includes 500 genes for 5
 conditions. It can be loaded as follows:
 
 ```{r}
-geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+geps <- loadSampleGEP()
 dim(geps)
 geps[1:5, 1:3]
 ```
@@ -168,8 +168,8 @@ is significantly dysregulated and the sign of the corresponding ES
 indicates the direction (UP- or DOWN-regulation).
 
 ```{r}
-rp$get("c3_TFT")$ES[1:3, 1:3]
-rp$get("c3_TFT")$PV[1:3, 1:3]
+loadESmatrix(rp, "c3_TFT")[1:3, 1:3]
+loadPVmatrix(rp, "c3_TFT")[1:3, 1:3]
 ```
 
 ## Performing Analysis
@@ -197,7 +197,7 @@ list in which each element refers to a pathway collection and is made
 of a 2-columns matrix including ESs and p-values for each pathway.
 
 ```{r}
-psea$CondSEA$c3_TFT
+getResults(psea)["c3_TFT"]
 ```
 
 In this dummy example the statistical background is made of only 3
@@ -245,7 +245,7 @@ psea <- PathSEA(rp, subdb)
 ```
 
 ```{r}
-psea$PathSEA$c3_TFT
+getResults(psea)["c3_TFT"]
 ```
 
 PathSEA results are analogous to those of CondSEA, but
@@ -275,7 +275,7 @@ follows:
 
 ```{r, eval=F}
 download.file("http://dsea.tigem.it/data/Cmap_MSigDB_v6.1_PEPs.tar.gz",
-  "Cmap_MsigDB_v6.1_PEPs.tar.gz")
+  "Cmap_MSigDB_v6.1_PEPs.tar.gz")
 
 untar("Cmap_MSigDB_v6.1_PEPs.tar.gz")
 
@@ -323,9 +323,10 @@ ranked by CondSEA in GO-MF.
 
 ```{r, eval=F}
 library(GSEABase)
-setids <- sapply(rpBig$get("C5_MF_sets"), setIdentifier)
-w <- match(rownames(csea$CondSEA$C5_MF[1:10,]), setids)
-top10 <- rpBig$get("C5_MF_sets")[w]
+setids <- sapply(loadCollection(rpBig, "C5_MF"), setIdentifier)
+MFresults <- getResults(csea)[["C5_MF"]]
+w <- match(rownames(MFresults)[1:10]), setids)
+top10 <- loadCollection(rpBig, "C5_MF")[w]
 sapply(top10, setName)
 ##  [1] "GO_TRANSCRIPTION_FACTOR_ACTIVITY_PROTEIN_BINDING"
 ##  [2] "GO_TRANSCRIPTION_COACTIVATOR_ACTIVITY"           
@@ -383,7 +384,7 @@ psea <- PathSEA(rpBig, pws, collections=c("C5_BP", "C5_MF", "C5_CC"))
 Thus the top 10 drugs causing (or mimicking) TFEB upregulation are:
 
 ```{r, eval=F}
-psea$PathSEA$C5_BP[1:10,]
+getResults(psea)[["C5_BP"]][1:10,]
 ##                      ES           PV
 ## loperamide    0.7324720 1.504075e-11
 ## proadifen     0.7278256 2.079448e-11

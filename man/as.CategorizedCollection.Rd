@@ -53,7 +53,7 @@ db <- as.CategorizedCollection(db)
 ## included in gep2pep. The following creates (and deletes) a
 ## gep2pep repository.
 
-db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db_sample <- loadSamplePWS()
 db_sample <- as.CategorizedCollection(db_sample)
 
 ## The function can also be used to create arbitrary gene set

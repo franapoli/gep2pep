@@ -26,19 +26,19 @@ Each collection in a database has a "category" and a
 }
 \examples{
 
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)
 ## Repo root created.
 ## Repo created.
-## [15:45:06] Storing pathway data for collection: C3_TFT
-## [15:45:06] Storing pathway data for collection: C3_MIR
-## [15:45:06] Storing pathway data for collection: C4_CGN
+## [15:45:06] Storing pathway data for collection: c3_TFT
+## [15:45:06] Storing pathway data for collection: c3_MIR
+## [15:45:06] Storing pathway data for collection: c4_CGN
 
 getCollections(rp)
-## [1] "C3_TFT" "C3_MIR" "C4_CGN"
+## [1] "c3_TFT" "c3_MIR" "c4_CGN"
 
 unlink(repo_path, TRUE)
 

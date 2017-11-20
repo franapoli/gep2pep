@@ -20,14 +20,14 @@ create a vector of collection identifiers. Useful to extract a
 collection from a database.
 }
 \examples{
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 ids <- makeCollectionIDs(db)
 
 unique(ids)
-## [1] "C3_TFT" "C3_MIR" "C4_CGN"
+## [1] "c3_TFT" "c3_MIR" "c4_CGN"
 
-db <- db[ids=="C3_MIR"]
+db <- db[ids=="c3_MIR"]
 
 length(db)
 ## [1] 10

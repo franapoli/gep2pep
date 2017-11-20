@@ -62,20 +62,20 @@ For each condition, all pathways are ranked by how much
 \examples{
 library(GSEABase)
 
-db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db <- loadSamplePWS()
 db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)
-geps <- readRDS(system.file("testgep.RDS", package="gep2pep"))
+geps <- loadSampleGEP()
 buildPEPs(rp, geps)
 
-pathways <- c("M11607", "M10817", "M16694",         ## from C3_TFT
-              "M19723", "M5038", "M13419", "M1094") ## from C4_CGN
+pathways <- c("M11607", "M10817", "M16694",         ## from c3_TFT
+              "M19723", "M5038", "M13419", "M1094") ## from c4_CGN
 w <- sapply(db, setIdentifier) \%in\% pathways
 
 psea <- PathSEA(rp, db[w])
-## [15:35:29] Working on collection: C3_TFT
+## [15:35:29] Working on collection: c3_TFT
 ## [15:35:29] Common pathway sets removed from bgset.
 ## [15:35:29] Column-ranking collection...
 ## [15:35:29] Computing enrichments...
@@ -86,7 +86,7 @@ psea <- PathSEA(rp, db[w])
 ## [15:35:29] Computing enrichments...
 ## [15:35:29] done.
 
-psea$PathSEA$C3_TFT
+getResults(psea)["c3_TFT"]
 ##                         ES        PV
 ## (_)_mk_801       0.7142857 0.1666667
 ## (_)_atenolol     0.7142857 0.1666667
@@ -101,4 +101,7 @@ unlink(repo_path, TRUE)
 [1] Napolitano F. et al, gene2drug: a Computational
     Tool for Pathway-based Rational Drug Repositioning, bioRxiv
     (2017) 192005; doi: https://doi.org/10.1101/192005
+}
+\seealso{
+getResults, getDetails
 }

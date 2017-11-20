@@ -41,7 +41,7 @@ db <- importMSigDB.xml("msigdb_v6.0.xml")
 ## A small excerpt from the MSigDB is included in gep2pep. The
 ## following creates (and then deletes) a gep2pep repository.
 
-db_sample <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+db_sample <- loadSamplePWS()
 db_sample <- as.CategorizedCollection(db_sample)
 
 repo_path <- file.path(tempdir(), "gep2pepTemp")
