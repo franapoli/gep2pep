@@ -192,12 +192,11 @@ psea <- CondSEA(rp, pgset)
 ```
 
 The result is a list of of 2 elements, named "CondSEA" and "details",
-the most important of which is the former. The "CondSEA" entry is a
-list in which each element refers to a pathway collection and is made
-of a 2-columns matrix including ESs and p-values for each pathway.
+the most important of which is the former. Per-collection results can
+be accessed as follows:
 
 ```{r}
-getResults(psea)["c3_TFT"]
+getResults(psea, "c3_TFT")
 ```
 
 In this dummy example the statistical background is made of only 3
@@ -245,7 +244,7 @@ psea <- PathSEA(rp, subdb)
 ```
 
 ```{r}
-getResults(psea)["c3_TFT"]
+getResults(psea, "c3_TFT")
 ```
 
 PathSEA results are analogous to those of CondSEA, but
@@ -324,8 +323,8 @@ ranked by CondSEA in GO-MF.
 ```{r, eval=F}
 library(GSEABase)
 setids <- sapply(loadCollection(rpBig, "C5_MF"), setIdentifier)
-MFresults <- getResults(csea)[["C5_MF"]]
-w <- match(rownames(MFresults)[1:10]), setids)
+MFresults <- getResults(csea, "C5_MF")
+w <- match(rownames(MFresults)[1:10], setids)
 top10 <- loadCollection(rpBig, "C5_MF")[w]
 sapply(top10, setName)
 ##  [1] "GO_TRANSCRIPTION_FACTOR_ACTIVITY_PROTEIN_BINDING"
@@ -384,7 +383,7 @@ psea <- PathSEA(rpBig, pws, collections=c("C5_BP", "C5_MF", "C5_CC"))
 Thus the top 10 drugs causing (or mimicking) TFEB upregulation are:
 
 ```{r, eval=F}
-getResults(psea)[["C5_BP"]][1:10,]
+getResults(psea, "C5_BP")[1:10,]
 ##                      ES           PV
 ## loperamide    0.7324720 1.504075e-11
 ## proadifen     0.7278256 2.079448e-11

@@ -70,7 +70,7 @@ buildPEPs(rp, geps)
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 psea <- CondSEA(rp, pgset)
 
-getResults(psea)["c3_TFT"]
+getResults(psea, "c3_TFT")
 
 unlink(repo_path, TRUE)
 

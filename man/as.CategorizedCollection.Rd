@@ -4,11 +4,11 @@
 \alias{as.CategorizedCollection}
 \title{Converts GeneSetCollection objects to CategorizedCollection objects.}
 \usage{
-as.CategorizedCollection(collection, category = "uncategorized",
+as.CategorizedCollection(GScollection, category = "uncategorized",
   subCategory = "uncategorized")
 }
 \arguments{
-\item{collection}{An object of class \code{GeneSetCollection}.}
+\item{GScollection}{An object of class \code{GeneSetCollection}.}
 
 \item{category}{The name of the category that all the gene sets
 will be assigned to (see details).}
@@ -25,7 +25,7 @@ Converts GeneSetCollection objects to CategorizedCollection objects.
 \details{
 This function sets the \code{CollectionType} for each set
     in the collection to {CategorizedCollection}. If
-    \code{collection} contains \code{BroadCollection} gene sets,
+    \code{GScollection} contains \code{BroadCollection} gene sets,
     their fields \code{category} and \code{subcategory} will be
     used. Otherwise the \code{category} and \code{subcategory}
     fields will be used.

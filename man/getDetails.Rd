@@ -5,11 +5,14 @@
 \title{Extracts the details matrix from \code{CondSEA} or \code{PathSEA}
 output}
 \usage{
-getDetails(analysis)
+getDetails(analysis, collection)
 }
 \arguments{
 \item{analysis}{The output of either \code{CondSEA} or
 \code{PathSEA}.}
+
+\item{collection}{One of the names returned by
+\code{getCollections}.}
 }
 \value{
 A matrix including the ranks of each pathway (over rows)
@@ -32,7 +35,7 @@ buildPEPs(rp, geps)
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 psea <- CondSEA(rp, pgset)
 
-getDetails(psea)["c3_TFT"]
+getDetails(psea, "c3_TFT")
 
 unlink(repo_path, TRUE)
 

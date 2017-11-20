@@ -3,9 +3,8 @@
 ## ## Workflow:
 ## library(GSEABase)
 ## library(devtools)
-## library(DelayedArray)
+## library(testthat)
 ## load_all()
-## library(testthat)    
 
 
 dbfolder <- file.path(tempdir(), "gep2pepDB")
@@ -86,22 +85,17 @@ test_that("build first PEPs", {
   expect_true(rp$has(expected_dbs[1]))
   expect_true(rp$has(expected_dbs[2]))
   expect_true(rp$has(expected_dbs[3]))
-
   expect_equal(names(rp$get(expected_dbs[1])), c("ES", "PV"))
   expect_equal(names(rp$get(expected_dbs[3])), c("ES", "PV"))
-  
   expect_equal(nrow(rp$get(expected_dbs[1])[[1]]), 10)
   expect_equal(nrow(rp$get(expected_dbs[1])[[2]]), 10)
   expect_equal(nrow(rp$get(expected_dbs[3])[[1]]), 10)
   expect_equal(nrow(rp$get(expected_dbs[3])[[2]]), 10)
-
   expect_equal(ncol(rp$get(expected_dbs[1])[[1]]), ncol(testgep))
   expect_equal(ncol(rp$get(expected_dbs[1])[[2]]), ncol(testgep))
   expect_equal(ncol(rp$get(expected_dbs[3])[[1]]), ncol(testgep))
   expect_equal(ncol(rp$get(expected_dbs[3])[[2]]), ncol(testgep))
-
   expect_failure(expect_warning(suppressMessages(checkRepository(rp))))  
-
   expect_error(loadESmatrix(rp, "random name"))
   expect_equal(loadESmatrix(rp, "c3_TFT"), rp$get("c3_TFT")$ES)
   expect_error(loadPVmatrix(rp, "random name"))
@@ -127,12 +121,10 @@ test_that("KS statistics", {
   id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
   expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
   expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
-
   i <- 2
   id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
   expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
   expect_equal(rp$get(dbi)$PV[id, testj], ks$p.value)
-
   i <- 3
   id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
   expect_equal(rp$get(dbi)$ES[id, testj], ks$ES)
@@ -221,13 +213,11 @@ if(any(ESs<0)) {
 test_that("Column ranking", {
     expect_true(all(apply(ColRanked1, 2, setequal, 1:10)))
     expect_true(all(apply(ColRanked3, 2, setequal, 1:10)))
-
     expect_equal(ColRanked1[2,1], 1)
     expect_equal(ColRanked1[1,1], 10)
     expect_equal(ColRanked3[8,3], 1)
     expect_equal(ColRanked3[10,3], 10)
     expect_equal(ColRanked3[4,5], 10)
-
     expect_equal(ColRanked1[lastid, randj], 10)    
 })
 
@@ -245,8 +235,8 @@ outset <- ranked[pwsid, setdiff(colnames(ranked), pgset)]
 ks <- ks.test.2(inset, outset)
 
 test_that("CondSEA", {
-    expect_equal(getDetails(res), res$details)
-    expect_equal(getResults(res), res$CondSEA)
+    expect_equal(getDetails(res, "c3_TFT"), res$details[["c3_TFT"]])   
+    expect_equal(getResults(res, "c3_TFT"), res$CondSEA[["c3_TFT"]])
     expect_equal(unname(res[["CondSEA"]][[randDB]][pwsid, "ES"]),
                  ks$ES)
     expect_equal(unname(res[["CondSEA"]][[randDB]][pwsid, "PV"]),
@@ -283,8 +273,9 @@ name1 <- colnames(testgep)[randj1]
 name3 <- colnames(testgep)[randj3]
 
 test_that("PathSEA", {
-    expect_equal(getDetails(res), res$details)
-    expect_equal(getResults(res), res$PathSEA)
+    expect_equal(getDetails(res, "c3_TFT"), res$details[["c3_TFT"]])   
+    expect_equal(getResults(res, "c3_TFT"), res$PathSEA[["c3_TFT"]])   
+
     expect_equal(unname(res[["PathSEA"]][[db1]][name1, "ES"]),
                  ks1$ES)
     expect_equal(unname(res[["PathSEA"]][[db1]][name1, "PV"]),

@@ -9,7 +9,7 @@ loadPVmatrix(rp, collection)
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
 
-\item{collection}{One of the collection names listed by
+\item{collection}{One of the names returned by
 \code{getCollections}.}
 }
 \value{

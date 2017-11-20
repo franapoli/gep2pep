@@ -204,7 +204,7 @@ setMethod("show",
 
 #' Converts GeneSetCollection objects to CategorizedCollection objects.
 #'
-#' @param collection An object of class \code{GeneSetCollection}.
+#' @param GScollection An object of class \code{GeneSetCollection}.
 #' @param category The name of the category that all the gene sets
 #'     will be assigned to (see details).
 #' @param subCategory The name of the subcategory that all the gene
@@ -212,7 +212,7 @@ setMethod("show",
 #' @return A CategorizedCollection object
 #' @details This function sets the \code{CollectionType} for each set
 #'     in the collection to {CategorizedCollection}. If
-#'     \code{collection} contains \code{BroadCollection} gene sets,
+#'     \code{GScollection} contains \code{BroadCollection} gene sets,
 #'     their fields \code{category} and \code{subcategory} will be
 #'     used. Otherwise the \code{category} and \code{subcategory}
 #'     fields will be used.
@@ -266,16 +266,16 @@ setMethod("show",
 #' ## removing temporary repository
 #' unlink(repo_path, TRUE)
 #' @export
-as.CategorizedCollection <- function(collection,
+as.CategorizedCollection <- function(GScollection,
                                      category="uncategorized",
                                      subCategory="uncategorized")
 {
-    if(!is(collection, "GeneSetCollection"))
+    if(!is(GScollection, "GeneSetCollection"))
         say("collection must be an object of class GeneSetCollection",
             "error")
 
     y <- GeneSetCollection(
-        sapply(collection,
+        sapply(GScollection,
                function(g) {
                    
                    if(is(collectionType(g), "BroadCollection")) {
@@ -405,6 +405,8 @@ importMSigDB.xml <- function(fname) {
 #' @param collections A subset of the collection names returned by
 #'     \code{getCollections}. If set to "all" (default), all the
 #'     collections in \code{rp} will be used.
+#' @param collection One of the names returned by
+#'     \code{getCollections}.
 #' @return Nothing
 #' @keywords internal
 dummyFunction <- function(rp, rp_peps, collections) {}
@@ -534,8 +536,6 @@ checkRepository <- function(rp) {
 #' Loads the matrix of Enrichment Scores for a collection
 #'
 #' @inheritParams dummyFunction
-#' @param collection One of the collection names listed by
-#'     \code{getCollections}.
 #' @return The matrix of Enrichment Scores (ES) of the
 #'     Kolmogorov-Smirnov statistic for the pathway collection, if
 #'     previously computed with \code{buildPEPs}. The entry \code{i,j}
@@ -569,8 +569,6 @@ loadESmatrix <- function(rp, collection)
 #' Loads the matrix of p-values for a collection
 #'
 #' @inheritParams dummyFunction
-#' @param collection One of the collection names listed by
-#'     \code{getCollections}.
 #' @return The matrix of p-values (PV) of the
 #'     Kolmogorov-Smirnov statistic for the pathway collection, if
 #'     previously computed with \code{buildPEPs}. The entry \code{i,j}
@@ -603,8 +601,6 @@ loadPVmatrix <- function(rp, collection)
 #' Loads a collection of pathways from the repository
 #'
 #' @inheritParams dummyFunction
-#' @param collection One of the collection names listed by
-#'     \code{getCollections}.
 #' @return a \code{GeneSetCollection} object loaded from the
 #'     repository \code{rp}.
 #' @examples
@@ -625,8 +621,9 @@ loadCollection <- function(rp, collection)
 {
     if(!is(collection, "character") || length(collection) > 1)
         say("Please provide a single collection name", "error")
-    
-    res <- loadCollection(rp, collection)
+
+    res <- rp$get(paste0(collection, "_sets"))
+
     return(res)
 }
 
@@ -1007,6 +1004,7 @@ exportSEA <- function(rp, results, outname=NULL)
 #' Extracts the results matrix from \code{CondSEA} or \code{PathSEA}
 #' output
 #'
+#' @inheritParams dummyFunction
 #' @param analysis The output of either \code{CondSEA} or
 #'     \code{PathSEA}.
 #' @return A 2-columns matrix including ESs and
@@ -1025,13 +1023,16 @@ exportSEA <- function(rp, results, outname=NULL)
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 #' psea <- CondSEA(rp, pgset)
 #'
-#' getResults(psea)["c3_TFT"]
+#' getResults(psea, "c3_TFT")
 #'
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-getResults <- function(analysis)
+getResults <- function(analysis, collection)
 {
+    if(!is(collection, "character") || length(collection) > 1)
+        say("Please provide a single collection name", "error")
+
     what <- c("CondSEA", "PathSEA") %in% names(analysis)
     if(
         !is(analysis, "list") ||
@@ -1041,13 +1042,17 @@ getResults <- function(analysis)
           "error")
 
     wanalysis <- c("CondSEA", "PathSEA")[what]
-    return(analysis[[wanalysis]])
+    if(! collection %in% names(analysis[[wanalysis]]))
+        say(paste("There are no results for the collection:", collection),
+            "error")
+
+    return(analysis[[wanalysis]][[collection]])
 }
 
 
 #' Extracts the details matrix from \code{CondSEA} or \code{PathSEA}
 #' output
-#'
+#' @inheritParams dummyFunction
 #' @param analysis The output of either \code{CondSEA} or
 #'     \code{PathSEA}.
 #' @return A matrix including the ranks of each pathway (over rows)
@@ -1066,13 +1071,16 @@ getResults <- function(analysis)
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 #' psea <- CondSEA(rp, pgset)
 #'
-#' getDetails(psea)["c3_TFT"]
+#' getDetails(psea, "c3_TFT")
 #'
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-getDetails <- function(analysis)
+getDetails <- function(analysis, collection)
 {
+    if(!is(collection, "character") || length(collection) > 1)
+        say("Please provide a single collection name", "error")
+
     what <- c("CondSEA", "PathSEA") %in% names(analysis)
     if(
         !is(analysis, "list") ||
@@ -1081,7 +1089,12 @@ getDetails <- function(analysis)
     ) say("analysis does not look like the output of CondSEA or PathSEA",
           "error")
 
-    return(analysis[["details"]])
+    wanalysis <- c("CondSEA", "PathSEA")[what]
+    if(! collection %in% names(analysis[[wanalysis]]))
+        say(paste("There are no results for the collection:", collection),
+            "error")    
+    
+    return(analysis[["details"]][[collection]])
 }
 
 
@@ -1142,7 +1155,7 @@ getDetails <- function(analysis)
 #' pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 #' psea <- CondSEA(rp, pgset)
 #'
-#' getResults(psea)["c3_TFT"]
+#' getResults(psea, "c3_TFT")
 #'
 #' unlink(repo_path, TRUE)
 #'
@@ -1281,7 +1294,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #' ## [15:35:29] Computing enrichments...
 #' ## [15:35:29] done.
 #'
-#' getResults(psea)["c3_TFT"]
+#' getResults(psea, "c3_TFT")
 #' ##                         ES        PV
 #' ## (_)_mk_801       0.7142857 0.1666667
 #' ## (_)_atenolol     0.7142857 0.1666667
@@ -1769,10 +1782,10 @@ convertFromGSetClass <- function(gsets) {
     return(convertFromGSetClass(thisdb))
 }
 
-loadCollection <- function(rp, db) {
-    thisdb <- rp$get(paste0(db, "_sets"))
-    return(thisdb)
-}
+## loadCollection <- function(rp, db) {
+##     thisdb <- rp$get(paste0(db, "_sets"))
+##     return(thisdb)
+## }
 
 
 ## this calls makeCollectionIDs with the old format

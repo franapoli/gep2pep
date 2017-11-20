@@ -5,11 +5,14 @@
 \title{Extracts the results matrix from \code{CondSEA} or \code{PathSEA}
 output}
 \usage{
-getResults(analysis)
+getResults(analysis, collection)
 }
 \arguments{
 \item{analysis}{The output of either \code{CondSEA} or
 \code{PathSEA}.}
+
+\item{collection}{One of the names returned by
+\code{getCollections}.}
 }
 \value{
 A 2-columns matrix including ESs and
@@ -32,7 +35,7 @@ buildPEPs(rp, geps)
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 psea <- CondSEA(rp, pgset)
 
-getResults(psea)["c3_TFT"]
+getResults(psea, "c3_TFT")
 
 unlink(repo_path, TRUE)
 

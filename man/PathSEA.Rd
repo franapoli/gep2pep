@@ -86,7 +86,7 @@ psea <- PathSEA(rp, db[w])
 ## [15:35:29] Computing enrichments...
 ## [15:35:29] done.
 
-getResults(psea)["c3_TFT"]
+getResults(psea, "c3_TFT")
 ##                         ES        PV
 ## (_)_mk_801       0.7142857 0.1666667
 ## (_)_atenolol     0.7142857 0.1666667
