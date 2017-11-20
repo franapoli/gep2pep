@@ -66,7 +66,7 @@ data):
 
 ```{r}
 library(gep2pep)
-library(GSEABase, quietly=TRUE)
+suppressMessages(library(GSEABase))
 ```
 
 The [MSigDB](http://software.broadinstitute.org/gsea/msigdb) is a
@@ -117,12 +117,15 @@ rp <- createRepository(repoRoot, db)
 The repository is in `repo` format (see later in this document how to
 access the repository directly). However, knowing `repo` is not
 necessary to use `gep2pep`. The following lists the contents of the
-repository and loads the description of the pathway "E47_01" from the
-collection "c3_TFT":
+repository, loads the `GeneSetCollection` object containing all the
+TFT database gene sets and finally shows the description of the
+pathway "E47_01":
 
 ```{r}
 rp
-description(rp$get("c3_TFT_sets")[["E47_01"]])
+TFTsets <- rp$get("c3_TFT_sets")
+TFTsets
+description(TFTsets[["E47_01"]])
 ```
 
 `rp$get` is a `repo` command, see later in this vignette.

@@ -491,6 +491,89 @@ checkRepository <- function(rp) {
     
 
 
+#' Loads the matrix of Enrichment Scores for a collection
+#'
+#' @inheritParams dummyFunction
+#' @param collection One of the collection names listed by
+#'     \code{getCollections}.
+#' @return The matrix of Enrichment Scores (ES) of the
+#'     Kolmogorov-Smirnov statistic for the pathway collection, if
+#'     previously computed with \code{buildPEPs}. The entry \code{i,j}
+#'     reports the ES for the pathway \code{i}, condition{j}. If
+#'     \code{buildPEPs} was not run, throws an error.
+#' @examples
+#'
+#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#' ## Repo root created.
+#' ## Repo created.
+#' ## [15:45:06] Storing pathway data for collection: C3_TFT
+#' ## [15:45:06] Storing pathway data for collection: C3_MIR
+#' ## [15:45:06] Storing pathway data for collection: C4_CGN
+#'
+#' getCollections(rp)
+#' ## [1] "C3_TFT" "C3_MIR" "C4_CGN"
+#'
+#' getESmatrix(rp, "C3_TFT")
+#'
+#' unlink(repo_path, TRUE)
+#'
+#' @export
+getESmatrix <- function(rp, collection)
+{
+    if(!is(collection, "character") || length(collection) > 1)
+        say("Please provide a single collection name", "error")
+    
+    res <- rp$getPEPs(collection)$ES
+    return(res)
+}
+
+
+#' Loads the matrix of p-values for a collection
+#'
+#' @inheritParams dummyFunction
+#' @param collection One of the collection names listed by
+#'     \code{getCollections}.
+#' @return The matrix of p-values (PV) of the
+#'     Kolmogorov-Smirnov statistic for the pathway collection, if
+#'     previously computed with \code{buildPEPs}. The entry \code{i,j}
+#'     reports the PV for the pathway \code{i}, condition{j}. If
+#'     \code{buildPEPs} was not run, throws an error.
+#' @examples
+#'
+#' db <- readRDS(system.file("testgmd.RDS", package="gep2pep"))
+#' db <- as.CategorizedCollection(db)
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#' ## Repo root created.
+#' ## Repo created.
+#' ## [15:45:06] Storing pathway data for collection: C3_TFT
+#' ## [15:45:06] Storing pathway data for collection: C3_MIR
+#' ## [15:45:06] Storing pathway data for collection: C4_CGN
+#'
+#' getCollections(rp)
+#' ## [1] "C3_TFT" "C3_MIR" "C4_CGN"
+#'
+#' getPVmatrix(rp, "C3_TFT")
+#'
+#' unlink(repo_path, TRUE)
+#'
+#' @export
+getPVmatrix <- function(rp, collection)
+{
+    if(!is(collection, "character") || length(collection) > 1)
+        say("Please provide a single collection name", "error")
+    
+    res <- rp$getPEPs(collection)$PV
+    return(res)
+}
+
+
+
 #' Returns the names of the pathway collections in a repository.
 #'
 #' Given a \code{gep2pep} repository, returns the names of the

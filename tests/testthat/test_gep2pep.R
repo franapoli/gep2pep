@@ -1,4 +1,14 @@
 
+
+## Workflow:
+if(F) {
+    library(GSEABase)
+    library(devtools)
+    library(DelayedArray)
+    load_all()
+    library(testthat)    
+}
+
 dbfolder <- file.path(tempdir(), "gep2pepDB")
 
 clear_test_repo <- function(suffix=NULL) {
