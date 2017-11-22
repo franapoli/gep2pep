@@ -123,7 +123,7 @@ pathway "E47_01":
 
 ```{r}
 rp
-TFTsets <- rp$get("c3_TFT_sets")
+TFTsets <- loadCollection(rp, "c3_TFT")
 TFTsets
 description(TFTsets[["E47_01"]])
 ```
@@ -206,7 +206,7 @@ UP-regulated by the chosen set of two drugs is M5012, while the most
 DOWN-regulated is M18759. They are respectively described as:
 
 ```{r}
-sets <- rp$get("c3_MIR_sets")
+sets <- loadCollection(rp, "c3_MIR")
 wM5012 <- which(sapply(sets, setIdentifier)=="M5012")
 wM18759 <- which(sapply(sets, setIdentifier)=="M18759")
 
