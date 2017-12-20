@@ -866,9 +866,27 @@ makeCollectionIDs <- function(sets) {
 #'     added. Either ways, will throw a warning.
 #' @param progress_bar If set to TRUE (default) will show a progress
 #'     bar updated after coversion of each column of \code{geps}.
+#' @param rawmode_suffix A character vector to be appended to files
+#'     produced in raw mode (see details). All non-alphanumeric
+#'     characters will be replaced by an underscore (_). If set to
+#'     NULL (default), raw mode is turned off.
+#' @param rawmode_outdir A charater vector specifying the destination
+#'     path for files produced in raw mode (by the fault it is
+#'     ROOT/raw, where ROOT is the root of the repository). Ignored if
+#'     \code{rawmode_suffix} is NULL.
 #' @return Nothing. The computed PEPs will be available in the
 #'     repository.
 #' @seealso buildPEPs
+#' @details By deault, output is written to the repository as new
+#'     items named using the collection name. However, it is possible
+#'     to avoid the repository and write the output to regular files
+#'     turning 'raw mode' on through the \code{rawmode_suffix} and
+#'     \code{rawmode_outdir} parameters. This is particuarly useful
+#'     when dealing with very large corpora of GEPs, and conversions
+#'     are split into independent jobs submitted to a scheduler. At
+#'     the end, the data will need to be reconstructed and put into
+#'     the repository manually in order to perform \code{CondSEA} or
+#'     \code{PathSEA} analysis.
 #' @examples
 #' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
@@ -911,10 +929,13 @@ makeCollectionIDs <- function(sets) {
 #'
 #' @export
 buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
-                      replace_existing=FALSE, progress_bar=TRUE)
+                      replace_existing=FALSE, progress_bar=TRUE,
+                      rawmode_suffix=NULL,
+                      rawmode_outdir=path(rp$root(), "raw"))   
 {
     checkGEPsFormat(geps)
     perts <- rp$get("conditions")
+    rawmode <- !is.null(rawmode_suffix)
     
     if(length(collections) == 1 && collections == "all") {
         dbs <- getCollections(rp)
@@ -931,22 +952,28 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
         oldpeps <- intersect(colnames(geps), curpeps)
 
         if(length(oldpeps > 0)) {
-            msg <- paste0("Existing PEPs will be replaced: ",
-                          paste(oldpeps, collapse=", "))
-            if(!replace_existing)
-                msg <- gsub("replaced", "skipped", msg)
-            say(msg, type="warning")
+            if(rawmode) {
+                say(paste0("Existing PEPs found, ",
+                           "but this will be ignored in rawmode: ",
+                           paste(oldpeps, collapse=", ")))
+                newpeps <- colnames(geps)
+            } else {
+                msg <- paste0("Existing PEPs will be replaced: ",
+                              paste(oldpeps, collapse=", "))
+                if(!replace_existing)
+                    msg <- gsub("replaced", "skipped", msg)
+                say(msg, type="warning")
+            }
         }
 
         if(length(newpeps) > 0) {
             gepsi <- geps[, newpeps, drop=FALSE]
             thisdb <- .loadCollection(rp, dbs[i])
             peps <- gep2pep(gepsi, thisdb, parallel, progress_bar)
-            storePEPs(rp, dbs[i], peps)
+            storePEPs(rp, dbs[i], peps, rawmode_suffix,
+                      rawmode_outdir)
         }
     }
-
-##    return(perts)
 }
 
 
@@ -1524,9 +1551,12 @@ gsea <- function(S, ranks_list, check=FALSE, alternative = "two.sided")
 }
 
 
-storePEPs <- function(rp, db_id, peps) {
-    
-    if(rp$has(db_id)) {
+storePEPs <- function(rp, db_id, peps, rawmode_suffix,
+                      rawmode_outdir)
+{
+    rawmode <- !is.null(rawmode_suffix)
+        
+    if(rp$has(db_id) && !rawmode) {
         curmat <- rp$get(db_id)
 
         ## checking what's new and what's old
@@ -1542,24 +1572,31 @@ storePEPs <- function(rp, db_id, peps) {
         peps$ES <- cbind(curmat$ES, peps$ES[, newpeps, drop=FALSE])
         peps$PV <- cbind(curmat$PV, peps$PV[, newpeps, drop=FALSE])
     }
-
     
     say("Storing pathway expression profiles")
 
-    rp$put(peps, db_id,
-           paste0("Pathway data for collection ", db_id,
-                  ". It contains 2 matrices: 1 for enrichement scores ",
-                  "(signed Kolmogorov Smirnov statistic) and one for ",
-                  "the corresponding p-values."),
-           c("gep2pep", "pep"), replace=TRUE,
-           depends = paste0(db_id, "_sets"),
-           prj = get_repo_prjname(rp))
+    if(!rawmode) {
+        rp$put(peps, db_id,
+               paste0("Pathway data for collection ", db_id,
+                      ". It contains 2 matrices: 1 for enrichement scores ",
+                      "(signed Kolmogorov Smirnov statistic) and one for ",
+                      "the corresponding p-values."),
+               c("gep2pep", "pep"), replace=TRUE,
+               depends = paste0(db_id, "_sets"),
+               prj = get_repo_prjname(rp))
 
-
-    say("Storing condition information...")
-    perts <- rp$get("conditions")
-    perts[[db_id]] <- colnames(peps$ES)
-    rp$set("conditions", perts)    
+        say("Storing condition information...")
+        perts <- rp$get("conditions")
+        perts[[db_id]] <- colnames(peps$ES)
+        rp$set("conditions", perts)
+    } else {
+        rawmode_suffix <- gsub("[^[:alnum:]]", "_", rawmode_suffix)
+        fname <- paste0(db_id, rawmode_suffix, ".RDS")
+        fname <- file.path(rawmode_outdir, fname)
+                           
+        say(paste0("Storing PEPs to: ", fname))
+        saveRDS(peps, fname)
+    }
 
     say("Done.")
 }

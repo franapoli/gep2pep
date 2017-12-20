@@ -103,6 +103,23 @@ test_that("build first PEPs", {
 })
 
 
+context("creation of RAW peps")
+
+suppressMessages(
+    buildPEPs(rp, testgep[,1:2], progress_bar=FALSE,
+              rawmode_suffix="RAW:test")
+)
+
+outfiles <- paste0(getCollections(rp), "RAW_test.RDS")
+f1 <- readRDS(paste0(file.path(rp$root(), outfiles[1])))
+
+test_that("build first PEPs", {
+    expect_true(all(sapply(outfiles, `%in%`, list.files(rp$root()))))
+    expect_equal(f1$ES[,1], rp$get("c3_TFT")$ES[,1])
+    expect_equal(f1$ES[,2], rp$get("c3_TFT")$ES[,2])
+})
+
+
 res <- list()
 for(i in 1:3) {
   testi <- sample(1:length(testpws),1)
