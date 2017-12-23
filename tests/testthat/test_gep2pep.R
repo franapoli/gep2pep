@@ -107,18 +107,56 @@ context("creation of RAW peps")
 
 suppressMessages(
     buildPEPs(rp, testgep[,1:2], progress_bar=FALSE,
-              rawmode_suffix="RAW:test")
+              rawmode_suffix="_1")
+)
+suppressMessages(
+    buildPEPs(rp, testgep[,3:5], progress_bar=FALSE,
+              rawmode_suffix="_2")
 )
 
-outfiles <- paste0(getCollections(rp), "RAW_test.RDS")
-f1 <- readRDS(paste0(file.path(rp$root(), outfiles[1])))
+outfiles1 <- paste0(getCollections(rp), "_1.RDS")
+outfiles2 <- paste0(getCollections(rp), "_2.RDS")
+outfiles <- c(outfiles1, outfiles2)
+outdir <- file.path(rp$root(), "raw")
+f1 <- readRDS(paste0(file.path(outdir, outfiles[1])))
 
-test_that("build first PEPs", {
-    expect_true(all(sapply(outfiles, `%in%`, list.files(rp$root()))))
+test_that("build hdf5 PEPs", {
+    expect_true(all(sapply(outfiles, `%in%`, list.files(outdir))))
     expect_equal(f1$ES[,1], rp$get("c3_TFT")$ES[,1])
+    expect_equal(f1$PV[,1], rp$get("c3_TFT")$PV[,1])
     expect_equal(f1$ES[,2], rp$get("c3_TFT")$ES[,2])
+    expect_equal(f1$PV[,2], rp$get("c3_TFT")$PV[,2])
 })
 
+
+colls <- getCollections(rp)
+
+oldpep2 <- rp$get(colls[2])
+rp$rm(tags="pep", force=T)
+importFromRawMode(rp)
+
+pep2 <- list(ES=h5read(rp$get(colls[2]), "ES"),
+             PV=h5read(rp$get(colls[2]), "PV"))
+rownames(pep2$ES) <- rownames(pep2$PV) <- h5read(rp$get(colls[2]), "rownames")
+colnames(pep2$ES) <- colnames(pep2$PV) <- h5read(rp$get(colls[2]), "colnames")
+
+test_that("check hdf5 PEPss", {
+
+## rownames(pep2$ES)
+##  [1] "M7785"  "M6394"  "M18759" "M10635" "M14709" "M4820"  "M7677"  "M11751"
+##  [9] "M10105" "M5012" 
+## rownames(oldpep2$ES)
+##    M7785    M6394   M18759   M10635   M14709    M4820    M7677   M11751 
+##  "M7785"  "M6394" "M18759" "M10635" "M14709"  "M4820"  "M7677" "M11751" 
+##   M10105    M5012 
+## "M10105"  "M5012"     
+    expect_true(all(oldpep2$ES==pep2$ES))
+    expect_true(all(oldpep2$PV==pep2$PV))
+    expect_true(all(rownames(oldpep2$ES)==rownames(pep2$ES)))
+    expect_true(all(rownames(oldpep2$PV)==rownames(pep2$PV)))
+    expect_true(all(colnames(oldpep2$ES)==colnames(pep2$ES)))
+    expect_true(all(colnames(oldpep2$PV)==colnames(pep2$PV)))
+})
 
 res <- list()
 for(i in 1:3) {

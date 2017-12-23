@@ -297,6 +297,75 @@ as.CategorizedCollection <- function(GScollection,
 
 }
 
+#' Compose raw PEPs into a matrix
+#'
+#' @return Sample gene expression data
+#' @export
+#' @examples
+importFromRawMode <- function(rp, path=file.path(rp$root(), "raw")) {
+  allfiles <- list.files(path)
+  say(paste0("Found ", length(allfiles), " raw files."))
+  ids <- as.numeric(gsub(".+_|[.]RDS", "", allfiles))
+  say(paste0("Found ", length(unique(ids)), " unique IDs."))
+  dbs <- gsub("_.[.]RDS", "", outfiles)
+  say(paste0("Found ", length(unique(dbs)), " collection names."))
+
+  library(rhdf5)
+
+  ## extracting chunk size
+  fname <- paste0(dbs[1], "_", min(ids), ".RDS")
+  Nchunk <- ncol(readRDS(file.path(path, fname))$ES)
+  fname <- paste0(dbs[1], "_", max(ids), ".RDS")
+  NlastChunk <- ncol(readRDS(file.path(path, fname))$ES)
+  Ncol <- Nchunk*(length(unique(ids))-1) + NlastChunk
+  say(paste0("Expected profiles: ", Ncol, " in ", Nchunk, " chunks."))
+  
+  for(i in 1:length(unique(dbs))) {
+      dbi <- unique(dbs)[i]
+
+      if(rp$has(dbi)) {
+          say(paste0("A collection named ", dbi,
+                     " is already in the repository ",
+                     "and will be skipped in raw mode"), "warning")
+          next
+      }
+      
+      say(paste0("Working on collection: ", dbi))
+
+      fl <- tempfile()
+      say(paste0("Using temporary file: ", fl))
+      print(fl)
+      h5createFile(fl)
+
+      fname <- paste0(dbi, "_", min(ids), ".RDS")
+      x <- readRDS(file.path(path, fname))$ES
+      Nrow <- nrow(x)
+      h5createDataset(fl, "ES", c(Nrow, Ncol))
+      h5createDataset(fl, "PV", c(Nrow, Ncol))
+      h5createDataset(fl, "rownames", Nrow, storage.mode="character", size=256)
+      h5createDataset(fl, "colnames", Ncol, storage.mode="character", size=256)
+      h5write(rownames(x), fl, "rownames")
+
+      pb <- txtProgressBar()
+      for(j in 1:length(unique(ids))) {
+          fname <- paste0(dbi, "_", unique(ids)[j], ".RDS")
+          x <- readRDS(file.path(path, fname))
+          startCol <- (j-1)*Nchunk+1
+          h5write(x$ES, fl, "ES", start=c(1,startCol))
+          h5write(x$PV, fl, "PV", start=c(1,startCol))
+          h5write(colnames(x$ES), fl, "colnames", start=startCol)
+          setTxtProgressBar(pb, j/length(unique(ids)))
+      }
+
+      say("\nStoring into the repository...")
+      rp$put(fl, dbi, asattach=T, tags=c("pep", "#hdf5"))
+      #rp$untag(dbi, "hide") ## <- repo bug, gives error
+      say("Clearing temporary file...")
+      file.remove(fl)
+      say("Done.")
+  }
+}
+
 #' Imports pathways data from an MSigDB XML file.
 #'
 #' Creates a \code{GeneSetCollection} object using the XML
@@ -931,7 +1000,7 @@ makeCollectionIDs <- function(sets) {
 buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
                       replace_existing=FALSE, progress_bar=TRUE,
                       rawmode_suffix=NULL,
-                      rawmode_outdir=path(rp$root(), "raw"))   
+                      rawmode_outdir=file.path(rp$root(), "raw"))   
 {
     checkGEPsFormat(geps)
     perts <- rp$get("conditions")
@@ -1555,7 +1624,7 @@ storePEPs <- function(rp, db_id, peps, rawmode_suffix,
                       rawmode_outdir)
 {
     rawmode <- !is.null(rawmode_suffix)
-        
+    
     if(rp$has(db_id) && !rawmode) {
         curmat <- rp$get(db_id)
 
@@ -1591,8 +1660,12 @@ storePEPs <- function(rp, db_id, peps, rawmode_suffix,
         rp$set("conditions", perts)
     } else {
         rawmode_suffix <- gsub("[^[:alnum:]]", "_", rawmode_suffix)
-        fname <- paste0(db_id, rawmode_suffix, ".RDS")
+        fdb <- gsub("[^[:alnum:]]", "_", db_id)
+        fname <- paste0(fdb, rawmode_suffix, ".RDS")
         fname <- file.path(rawmode_outdir, fname)
+
+        if(!dir.exists(rawmode_outdir))
+            dir.create(rawmode_outdir)
                            
         say(paste0("Storing PEPs to: ", fname))
         saveRDS(peps, fname)
