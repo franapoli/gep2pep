@@ -135,14 +135,10 @@ oldpep2 <- rp$get(colls[2])
 rp$rm(tags="pep", force=T)
 importFromRawMode(rp)
 
-library(DelayedArray)
-
 pep2 <- list(ES=h5read(rp$get(colls[2]), "ES"),
              PV=h5read(rp$get(colls[2]), "PV"))
 rownames(pep2$ES) <- rownames(pep2$PV) <- h5read(rp$get(colls[2]), "rownames")
 colnames(pep2$ES) <- colnames(pep2$PV) <- h5read(rp$get(colls[2]), "colnames")
-
-test_that("check hdf5 PEPss", {
 
 ## rownames(pep2$ES)
 ##  [1] "M7785"  "M6394"  "M18759" "M10635" "M14709" "M4820"  "M7677"  "M11751"
@@ -152,6 +148,8 @@ test_that("check hdf5 PEPss", {
 ##  "M7785"  "M6394" "M18759" "M10635" "M14709"  "M4820"  "M7677" "M11751" 
 ##   M10105    M5012 
 ## "M10105"  "M5012"     
+
+test_that("check hdf5 PEPss", {
     expect_true(all(oldpep2$ES==pep2$ES))
     expect_true(all(oldpep2$PV==pep2$PV))
     expect_true(all(rownames(oldpep2$ES)==rownames(pep2$ES)))

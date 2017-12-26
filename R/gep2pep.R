@@ -302,8 +302,8 @@ as.CategorizedCollection <- function(GScollection,
 #' @return Sample gene expression data
 #' @export
 #' @examples
-importFromRawMode <- function(rp, path=file.path(rp$root(), "raw",
-                                    collections="all")) {
+importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
+                                    collections="all") {
   
   allfiles <- list.files(path)
   say(paste0("Found ", length(allfiles), " raw files."))
@@ -330,9 +330,7 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw",
           say(paste0("Collection: ", dbi, " was not selected and will be skipped."))
           next
         }
-      }
-  
-      
+      }      
 
       if(rp$has(dbi)) {
           say(paste0("A collection named ", dbi,
@@ -343,9 +341,11 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw",
       
       say(paste0("Working on collection: ", dbi))
 
+      say(paste0("Creating repository entry."))
       fl <- tempfile()
-      say(paste0("Using temporary file: ", fl))
       h5createFile(fl)
+      rp$put(fl, dbi, asattach=T, tags=c("pep", "#hdf5"))
+      fl <- rp$get(dbi)
 
       fname <- paste0(dbi, "_", min(ids), ".RDS")
       x <- readRDS(file.path(path, fname))$ES
@@ -367,12 +367,7 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw",
           setTxtProgressBar(pb, j/length(unique(ids)))
       }
 
-      say("\nStoring into the repository...")
-      rp$put(fl, dbi, asattach=T, tags=c("pep", "#hdf5"))
-      #rp$untag(dbi, "hide") ## <- repo bug, gives error
-      say("Clearing temporary file...")
-      file.remove(fl)
-      say("Done.")
+      say("\nDone.")
   }
 }
 
