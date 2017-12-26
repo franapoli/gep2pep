@@ -302,12 +302,14 @@ as.CategorizedCollection <- function(GScollection,
 #' @return Sample gene expression data
 #' @export
 #' @examples
-importFromRawMode <- function(rp, path=file.path(rp$root(), "raw")) {
+importFromRawMode <- function(rp, path=file.path(rp$root(), "raw",
+                                    collections="all")) {
+  
   allfiles <- list.files(path)
   say(paste0("Found ", length(allfiles), " raw files."))
   ids <- as.numeric(gsub(".+_|[.]RDS", "", allfiles))
   say(paste0("Found ", length(unique(ids)), " unique IDs."))
-  dbs <- gsub("_.[.]RDS", "", outfiles)
+  dbs <- gsub("_[^_]+[.]RDS", "", allfiles)
   say(paste0("Found ", length(unique(dbs)), " collection names."))
 
   library(rhdf5)
@@ -318,10 +320,19 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw")) {
   fname <- paste0(dbs[1], "_", max(ids), ".RDS")
   NlastChunk <- ncol(readRDS(file.path(path, fname))$ES)
   Ncol <- Nchunk*(length(unique(ids))-1) + NlastChunk
-  say(paste0("Expected profiles: ", Ncol, " in ", Nchunk, " chunks."))
+  say(paste0("Expected profiles: ", Ncol, " in chunks of size: ", Nchunk))
   
   for(i in 1:length(unique(dbs))) {
       dbi <- unique(dbs)[i]
+
+      if(!(length(collections==1) && collections=="all")) {
+        if(! dbi %in% collections) {
+          say(paste0("Collection: ", dbi, " was not selected and will be skipped."))
+          next
+        }
+      }
+  
+      
 
       if(rp$has(dbi)) {
           say(paste0("A collection named ", dbi,
@@ -334,7 +345,6 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw")) {
 
       fl <- tempfile()
       say(paste0("Using temporary file: ", fl))
-      print(fl)
       h5createFile(fl)
 
       fname <- paste0(dbi, "_", min(ids), ".RDS")
