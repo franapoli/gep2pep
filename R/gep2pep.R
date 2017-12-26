@@ -1194,6 +1194,18 @@ getDetails <- function(analysis, collection)
 }
 
 
+.loadPerts <- function(rp, coll) {
+    return(colnames(rp$get(coll)$ES))
+}
+
+.loadPEPs <- function(rp, coll, subset) {
+    peps <- list(
+        ES = rp$get(coll)$ES[, subset, drop=F],
+        PV = rp$get(coll)$PV[, subset, drop=F]
+    )
+    return(peps)
+}
+
 
 #' Performs Condition Set Enrichment Analysis
 #'
@@ -1276,10 +1288,10 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
     for(i in seq_along(dbs)) {        
         say(paste0("Working on collection: ", dbs[i]))
 
-        peps <- rp_peps$get(dbs[i])
+        allperts <- .loadPerts(rp, dbs[i])
 
         if(length(bgset) == 1 && bgset=="all")
-            bgset <- colnames(peps[[1]])
+            bgset <- allperts
         
         if(length(intersect(pgset, bgset))>0) {
             bgset <- setdiff(bgset, pgset)
@@ -1288,14 +1300,15 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         
         rankingset <- c(bgset, pgset)
 
-        if(!all(rankingset %in% colnames(peps$ES)))
+        if(!all(rankingset %in% allperts))
             say(paste("The following conditions could not be found:",
                       paste(
                           setdiff(rankingset, colnames(peps$ES)),
                           collapse = ", ")), "error")
-        
+
+        peps <- .loadPEPs(rp_peps, dbs[i], rankingset)
         say(paste0("Row-ranking collection"))
-        ranked <- rankPEPsByRows(peps, rankingset)
+        ranked <- rankPEPsByRows(peps)
         say(paste0("Computing enrichments"))
         
         ks <- apply(ranked, 1, function(row) {
@@ -1458,7 +1471,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
             say("Common pathway sets removed from bgset")
         }
         rankingset <- c(gmd, bgset)
-        peps <- rp_peps$get(collections[i])
+        peps <- .loadPEPs(rp_peps$get, collections[i])
         notok <- rankingset[rankingset %in% rownames(peps)]
         if(length(notok)>0)
             say(paste0("Pathway set ids not found in ", collections[i], ": ",
@@ -1733,12 +1746,9 @@ rankPEPsByCols <- function(peps, rankingset="all")
 }
 
 
-rankPEPsByRows <- function(peps, rankingset="all")
+rankPEPsByRows <- function(peps)
 {
-    if(length(rankingset) == 1 && rankingset == "all")
-        rankingset <- seq_len(ncol(peps[["ES"]]))
-
-    ESs <- peps[["ES"]][, rankingset, drop=FALSE]
+    ESs <- peps[["ES"]]
     x <- t(apply(-ESs, 1, rank, ties.method = "random", na.last="keep"))
     return(x)
 }
@@ -1905,4 +1915,10 @@ convertFromGSetClass <- function(gsets) {
     subdbs[subdbs==""] <- dbs[subdbs==""]
     db_ids <- paste(dbs, subdbs, sep="_")
     return(db_ids)
+}
+
+.extractWorkingPEPs <- function(rp, coll, fgset, bgset) {
+    ishdf5 <- "#rhdf5" %in% rp$tags(coll)
+
+    
 }

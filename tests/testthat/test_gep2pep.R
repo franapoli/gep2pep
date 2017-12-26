@@ -135,6 +135,8 @@ oldpep2 <- rp$get(colls[2])
 rp$rm(tags="pep", force=T)
 importFromRawMode(rp)
 
+library(DelayedArray)
+
 pep2 <- list(ES=h5read(rp$get(colls[2]), "ES"),
              PV=h5read(rp$get(colls[2]), "PV"))
 rownames(pep2$ES) <- rownames(pep2$PV) <- h5read(rp$get(colls[2]), "rownames")
@@ -330,12 +332,10 @@ name3 <- colnames(testgep)[randj3]
 test_that("PathSEA", {
     expect_equal(getDetails(res, "c3_TFT"), res$details[["c3_TFT"]])   
     expect_equal(getResults(res, "c3_TFT"), res$PathSEA[["c3_TFT"]])   
-
     expect_equal(unname(res[["PathSEA"]][[db1]][name1, "ES"]),
                  ks1$ES)
     expect_equal(unname(res[["PathSEA"]][[db1]][name1, "PV"]),
                  ks1$p.value)
-
     expect_equal(unname(res[["PathSEA"]][[db3]][name3, "ES"]),
                  ks3$ES)
     expect_equal(unname(res[["PathSEA"]][[db3]][name3, "PV"]),
