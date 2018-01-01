@@ -1,10 +1,10 @@
 
 
-## ## Workflow:
-## library(GSEABase)
-## library(devtools)
-## library(testthat)
-## load_all()
+## Workflow:
+library(GSEABase)
+library(devtools)
+library(testthat)
+load_all()
 
 
 dbfolder <- file.path(tempdir(), "gep2pepDB")
@@ -107,15 +107,15 @@ context("creation of RAW peps")
 
 suppressMessages(
     buildPEPs(rp, testgep[,1:2], progress_bar=FALSE,
-              rawmode_suffix="_1")
+              rawmode_id=1)
 )
 suppressMessages(
     buildPEPs(rp, testgep[,3:5], progress_bar=FALSE,
-              rawmode_suffix="_2")
+              rawmode_id=2)
 )
 
-outfiles1 <- paste0(getCollections(rp), "_1.RDS")
-outfiles2 <- paste0(getCollections(rp), "_2.RDS")
+outfiles1 <- paste0(getCollections(rp), "#1.RDS")
+outfiles2 <- paste0(getCollections(rp), "#2.RDS")
 outfiles <- c(outfiles1, outfiles2)
 outdir <- file.path(rp$root(), "raw")
 f1 <- readRDS(paste0(file.path(outdir, outfiles[1])))

@@ -307,17 +307,17 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
   
   allfiles <- list.files(path)
   say(paste0("Found ", length(allfiles), " raw files."))
-  ids <- as.numeric(gsub(".+_|[.]RDS", "", allfiles))
+  ids <- as.numeric(gsub(".+#|[.]RDS", "", allfiles))
   say(paste0("Found ", length(unique(ids)), " unique IDs."))
-  dbs <- gsub("_[^_]+[.]RDS", "", allfiles)
+  dbs <- gsub("#.+[.]RDS", "", allfiles)
   say(paste0("Found ", length(unique(dbs)), " collection names."))
 
   library(rhdf5)
 
   ## extracting chunk size
-  fname <- paste0(dbs[1], "_", min(ids), ".RDS")
+  fname <- paste0(dbs[1], "#", min(ids), ".RDS")
   Nchunk <- ncol(readRDS(file.path(path, fname))$ES)
-  fname <- paste0(dbs[1], "_", max(ids), ".RDS")
+  fname <- paste0(dbs[1], "#", max(ids), ".RDS")
   NlastChunk <- ncol(readRDS(file.path(path, fname))$ES)
   Ncol <- Nchunk*(length(unique(ids))-1) + NlastChunk
   say(paste0("Expected profiles: ", Ncol, " in chunks of size: ", Nchunk))
@@ -327,7 +327,8 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
 
       if(!(length(collections==1) && collections=="all")) {
         if(! dbi %in% collections) {
-          say(paste0("Collection: ", dbi, " was not selected and will be skipped."))
+          say(paste0("Collection: ", dbi,
+                     " was not selected and will be skipped."))
           next
         }
       }      
@@ -341,30 +342,31 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
       
       say(paste0("Working on collection: ", dbi))
 
-      say(paste0("Creating repository entry."))
+      say(paste0("Creatiing a repository entry."))
       fl <- tempfile()
       h5createFile(fl)
       rp$put(fl, dbi, asattach=T, tags=c("pep", "#hdf5"))
       fl <- rp$get(dbi)
 
-      fname <- paste0(dbi, "_", min(ids), ".RDS")
+      fname <- paste0(dbi, "#", min(ids), ".RDS")
       x <- readRDS(file.path(path, fname))$ES
       Nrow <- nrow(x)
-      h5createDataset(fl, "ES", c(Nrow, Ncol))
-      h5createDataset(fl, "PV", c(Nrow, Ncol))
-      h5createDataset(fl, "rownames", Nrow, storage.mode="character", size=256)
-      h5createDataset(fl, "colnames", Ncol, storage.mode="character", size=256)
-      h5write(rownames(x), fl, "rownames")
+      say(paste0("Creating an HDF5 dataset of size: ", 2*Nrow, "x", Ncol))
+      h5createDataset(fl, "ES-PV", c(Nrow*2, Ncol), chunk=c(Nrow*2, Nchunk))
 
-      pb <- txtProgressBar()
-      for(j in 1:length(unique(ids))) {
-          fname <- paste0(dbi, "_", unique(ids)[j], ".RDS")
-          x <- readRDS(file.path(path, fname))
+      say("Adding chunks...")
+      uids <- sort(unique(ids))
+      for(j in 1:length(uids)) {
+          fsize <- utils:::format.object_size(file.size(fl), "auto")
+          fname <- paste0(dbi, "#", uids[j], ".RDS")
+          ifile <- file.path(path, fname)
+          x <- readRDS(ifile)
+          ifsize <- utils:::format.object_size(file.size(ifile), "auto")
           startCol <- (j-1)*Nchunk+1
-          h5write(x$ES, fl, "ES", start=c(1,startCol))
-          h5write(x$PV, fl, "PV", start=c(1,startCol))
-          h5write(colnames(x$ES), fl, "colnames", start=startCol)
-          setTxtProgressBar(pb, j/length(unique(ids)))
+          h5write(rbind(x$ES, x$PV), fl, "ES-PV", start=c(1,startCol),
+                  createnewfile=F)
+          cat("Current file size: ", fsize, " (chunks ", j, " of ",
+              length(uids), ", ", ifsize, ")\r", sep="")
       }
 
       say("\nDone.")
@@ -940,27 +942,26 @@ makeCollectionIDs <- function(sets) {
 #'     added. Either ways, will throw a warning.
 #' @param progress_bar If set to TRUE (default) will show a progress
 #'     bar updated after coversion of each column of \code{geps}.
-#' @param rawmode_suffix A character vector to be appended to files
-#'     produced in raw mode (see details). All non-alphanumeric
-#'     characters will be replaced by an underscore (_). If set to
-#'     NULL (default), raw mode is turned off.
+#' @param rawmode_id An integer to be appended to files produced in
+#'     raw mode (see details). If set to NULL (default), raw mode is
+#'     turned off.
 #' @param rawmode_outdir A charater vector specifying the destination
 #'     path for files produced in raw mode (by the fault it is
 #'     ROOT/raw, where ROOT is the root of the repository). Ignored if
-#'     \code{rawmode_suffix} is NULL.
+#'     \code{rawmode_id} is NULL.
 #' @return Nothing. The computed PEPs will be available in the
 #'     repository.
 #' @seealso buildPEPs
 #' @details By deault, output is written to the repository as new
 #'     items named using the collection name. However, it is possible
 #'     to avoid the repository and write the output to regular files
-#'     turning 'raw mode' on through the \code{rawmode_suffix} and
+#'     turning 'raw mode' on through the \code{rawmode_id} and
 #'     \code{rawmode_outdir} parameters. This is particuarly useful
 #'     when dealing with very large corpora of GEPs, and conversions
 #'     are split into independent jobs submitted to a scheduler. At
 #'     the end, the data will need to be reconstructed and put into
-#'     the repository manually in order to perform \code{CondSEA} or
-#'     \code{PathSEA} analysis.
+#'     the repository using \code{importFromRawMode} in order to
+#'     perform \code{CondSEA} or \code{PathSEA} analysis.
 #' @examples
 #' db <- loadSamplePWS()
 #' db <- as.CategorizedCollection(db)
@@ -1004,12 +1005,15 @@ makeCollectionIDs <- function(sets) {
 #' @export
 buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
                       replace_existing=FALSE, progress_bar=TRUE,
-                      rawmode_suffix=NULL,
-                      rawmode_outdir=file.path(rp$root(), "raw"))   
+                      rawmode_id=NULL,
+                      rawmode_outdir=file.path(rp$root(), "raw"))
 {
     checkGEPsFormat(geps)
     perts <- rp$get("conditions")
-    rawmode <- !is.null(rawmode_suffix)
+    rawmode <- !is.null(rawmode_id)
+
+    if(rawmode && rawmode_id %% 1 != 0)
+        say("rawmode_id must be an integer number", type="error")
     
     if(length(collections) == 1 && collections == "all") {
         dbs <- getCollections(rp)
@@ -1044,7 +1048,7 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
             gepsi <- geps[, newpeps, drop=FALSE]
             thisdb <- .loadCollection(rp, dbs[i])
             peps <- gep2pep(gepsi, thisdb, parallel, progress_bar)
-            storePEPs(rp, dbs[i], peps, rawmode_suffix,
+            storePEPs(rp, dbs[i], peps, rawmode_id,
                       rawmode_outdir)
         }
     }
@@ -1660,9 +1664,9 @@ storePEPs <- function(rp, db_id, peps, rawmode_suffix,
         peps$PV <- cbind(curmat$PV, peps$PV[, newpeps, drop=FALSE])
     }
     
-    say("Storing pathway expression profiles")
-
     if(!rawmode) {
+        say("Storing PEPs to the repository...")
+    
         rp$put(peps, db_id,
                paste0("Pathway data for collection ", db_id,
                       ". It contains 2 matrices: 1 for enrichement scores ",
@@ -1677,9 +1681,11 @@ storePEPs <- function(rp, db_id, peps, rawmode_suffix,
         perts[[db_id]] <- colnames(peps$ES)
         rp$set("conditions", perts)
     } else {
-        rawmode_suffix <- gsub("[^[:alnum:]]", "_", rawmode_suffix)
         fdb <- gsub("[^[:alnum:]]", "_", db_id)
-        fname <- paste0(fdb, rawmode_suffix, ".RDS")
+        fname <- paste0(fdb,
+                        "#",
+                        format(rawmode_suffix, scientific=FALSE),
+                        ".RDS")
         fname <- file.path(rawmode_outdir, fname)
 
         if(!dir.exists(rawmode_outdir))
