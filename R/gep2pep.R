@@ -371,6 +371,8 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
 
       say("\nDone.")
   }
+
+    H5close()
 }
 
 #' Imports pathways data from an MSigDB XML file.
@@ -1208,10 +1210,24 @@ getDetails <- function(analysis, collection)
 }
 
 .loadPEPs <- function(rp, coll, subset) {
-    peps <- list(
-        ES = rp$get(coll)$ES[, subset, drop=F],
-        PV = rp$get(coll)$PV[, subset, drop=F]
-    )
+    ish5 <- "#hdf5" %in% rp$tags(coll)
+
+    if(ish5) {
+        if(missing(subset))
+            subset <- NULL
+        fname <- rp$get(coll)
+        data <- h5read(fname, "ES-PV", index=list(NULL, subset))
+        peps <- list(
+            ES = data[1:(nrow(data)/2),],
+            PV = data[(nrow(data)/2 + 1):nrow(data),]
+        )        
+    } else {
+        peps <- list(
+            ES = rp$get(coll)$ES[, subset, drop=F],
+            PV = rp$get(coll)$PV[, subset, drop=F]
+        )
+    }
+    
     return(peps)
 }
 
