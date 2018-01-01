@@ -351,9 +351,16 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
       fname <- paste0(dbi, "#", min(ids), ".RDS")
       x <- readRDS(file.path(path, fname))$ES
       Nrow <- nrow(x)
-      say(paste0("Creating an HDF5 dataset of size: ", 2*Nrow, "x", Ncol))
-      h5createDataset(fl, "ES-PV", c(Nrow*2, Ncol), chunk=c(Nrow*2, Nchunk))
-
+      say(paste0("Creating 2 HDF5 dataset of size: ", Nrow, "x", Ncol))
+      ## h5createDataset(fl, "ES-PV", c(Nrow*2, Ncol), chunk=c(Nrow*2, Nchunk))
+      h5createDataset(fl, "ES", c(Nrow, Ncol), chunk=c(Nrow, Nchunk))
+      h5createDataset(fl, "PV", c(Nrow, Ncol), chunk=c(Nrow, Nchunk))
+      h5createDataset(fl, "rownames", Nrow, storage.mode="character", size=256,
+                      chunk=Nrow)
+      h5createDataset(fl, "colnames", Ncol, storage.mode="character", size=256,
+                      chunk=Ncol)
+      h5write(rownames(x), fl, "rownames")      
+       
       say("Adding chunks...")
       uids <- sort(unique(ids))
       for(j in 1:length(uids)) {
@@ -363,8 +370,14 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
           x <- readRDS(ifile)
           ifsize <- utils:::format.object_size(file.size(ifile), "auto")
           startCol <- (j-1)*Nchunk+1
-          h5write(rbind(x$ES, x$PV), fl, "ES-PV", start=c(1,startCol),
+          ## h5write(rbind(x$ES, x$PV), fl, "ES-PV", start=c(1,startCol),
+          ##         createnewfile=F)
+          h5write(x$ES, fl, "ES", start=c(1,startCol),
                   createnewfile=F)
+          h5write(x$PV, fl, "PV", start=c(1,startCol),
+                  createnewfile=F)
+          h5write(colnames(x$ES), fl, "colnames", start=startCol)
+
           cat("Current file size: ", fsize, " (chunks ", j, " of ",
               length(uids), ", ", ifsize, ")\r", sep="")
       }
