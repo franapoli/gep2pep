@@ -342,7 +342,7 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
       
       say(paste0("Working on collection: ", dbi))
 
-      say(paste0("Creatiing a repository entry."))
+      say(paste0("Creating a repository entry."))
       fl <- tempfile()
       h5createFile(fl)
       rp$put(fl, dbi, asattach=T, tags=c("pep", "#hdf5"))
@@ -352,13 +352,13 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
       x <- readRDS(file.path(path, fname))$ES
       Nrow <- nrow(x)
       say(paste0("Creating 2 HDF5 dataset of size: ", Nrow, "x", Ncol))
-      ## h5createDataset(fl, "ES-PV", c(Nrow*2, Ncol), chunk=c(Nrow*2, Nchunk))
+
       h5createDataset(fl, "ES", c(Nrow, Ncol), chunk=c(Nrow, Nchunk))
       h5createDataset(fl, "PV", c(Nrow, Ncol), chunk=c(Nrow, Nchunk))
       h5createDataset(fl, "rownames", Nrow, storage.mode="character", size=256,
                       chunk=Nrow)
       h5createDataset(fl, "colnames", Ncol, storage.mode="character", size=256,
-                      chunk=Ncol)
+                      chunk=Nchunk)
       h5write(rownames(x), fl, "rownames")      
        
       say("Adding chunks...")
@@ -370,8 +370,7 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
           x <- readRDS(ifile)
           ifsize <- utils:::format.object_size(file.size(ifile), "auto")
           startCol <- (j-1)*Nchunk+1
-          ## h5write(rbind(x$ES, x$PV), fl, "ES-PV", start=c(1,startCol),
-          ##         createnewfile=F)
+
           h5write(x$ES, fl, "ES", start=c(1,startCol),
                   createnewfile=F)
           h5write(x$PV, fl, "PV", start=c(1,startCol),
@@ -429,12 +428,19 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
 #' ## removing temporary repository
 #' unlink(repo_path, TRUE)
 #' @export
-importMSigDB.xml <- function(fname) {
+importMSigDB.xml <- function(fname, organism="Homo Sapiens") {
 
     say("Loading gene sets...")
 
     result = tryCatch({
         sets <- getBroadSets(fname)
+        say(paste0("Loaded ", length(sets), " sets."))
+        orgs <- sapply(sets, function(s) attributes(s)$organism)        
+        if(organism != "all") {
+            w <- tolower(orgs) == tolower(organism)
+            sets <- sets[w]
+            say(paste0("Selected ", length(sets), " sets for: ", organism))
+        }
         say("Converting gene sets...")
         as.CategorizedCollection(sets)    
     }, error = function(e) {        
@@ -466,18 +472,22 @@ importMSigDB.xml <- function(fname) {
 
         say("Converting gene sets...")
         gs <- list()
+        k <- 1
         for(i in seq_len(nrow(msigDB))) {
-            gs[[i]] <- GeneSet(strsplit(msigDB$set[i], ",")[[1]],
-                               shortDescription = msigDB$desc[i],
-                               longDescription = msigDB$desc_full[i],
-                               setName = msigDB$name[i],
-                               setIdentifier = msigDB$id[i],
-                               organism = msigDB$organism[i],
-                               collectionType = CategorizedCollection(
-                                   category=msigDB$category[i],
-                                   subCategory=msigDB$subcategory[i]
-                               ))
+            if(tolower(msigDB[[i]]$organism) == organism) {
+                gs[[i]] <- GeneSet(strsplit(msigDB$set[i], ",")[[1]],
+                                   shortDescription = msigDB$desc[i],
+                                   longDescription = msigDB$desc_full[i],
+                                   setName = msigDB$name[i],
+                                   setIdentifier = msigDB$id[i],
+                                   organism = msigDB$organism[i],
+                                   collectionType = CategorizedCollection(
+                                       category=msigDB$category[i],
+                                       subCategory=msigDB$subcategory[i]
+                                   ))
+                k <- k+1
             }
+        }
         GeneSetCollection(gs)
     })
 
@@ -929,7 +939,9 @@ makeCollectionIDs <- function(sets) {
         
     dbs <- sapply(sets, get, x="category")
     subdbs <- sapply(sets, get, x="subcategory")
-    subdbs[subdbs==""] <- dbs[subdbs==""]
+    w <- which(subdbs=="" | is.na(subdbs)) 
+    if(length(w)>0)
+      subdbs[w] <- dbs[w]
     db_ids <- paste(dbs, subdbs, sep="_")
     return(db_ids)
 }
@@ -1018,7 +1030,8 @@ makeCollectionIDs <- function(sets) {
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
+buildPEPs <- function(rp, geps, min_size=3, max_size=500,
+                      parallel=FALSE, collections="all",
                       replace_existing=FALSE, progress_bar=TRUE,
                       rawmode_id=NULL,
                       rawmode_outdir=file.path(rp$root(), "raw"))
@@ -1046,15 +1059,19 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
 
         if(length(oldpeps > 0)) {
             if(rawmode) {
-                say(paste0("Existing PEPs found, ",
+                say(paste0(length(oldpeps),
+                           " existing PEPs found, ",
                            "but this will be ignored in rawmode: ",
                            paste(oldpeps, collapse=", ")))
                 newpeps <- colnames(geps)
             } else {
-                msg <- paste0("Existing PEPs will be replaced: ",
+                msg <- paste0(length(oldpeps),
+                              " existing PEPs will be skipped: ",
                               paste(oldpeps, collapse=", "))
-                if(!replace_existing)
-                    msg <- gsub("replaced", "skipped", msg)
+                if(replace_existing) {
+                    msg <- gsub("skipped", "replaced", msg)
+                    newpeps <- colnames(geps)
+                  }
                 say(msg, type="warning")
             }
         }
@@ -1062,7 +1079,8 @@ buildPEPs <- function(rp, geps, parallel=FALSE, collections="all",
         if(length(newpeps) > 0) {
             gepsi <- geps[, newpeps, drop=FALSE]
             thisdb <- .loadCollection(rp, dbs[i])
-            peps <- gep2pep(gepsi, thisdb, parallel, progress_bar)
+            peps <- gep2pep(gepsi, thisdb, min_size, max_size,
+                            parallel, progress_bar)
             storePEPs(rp, dbs[i], peps, rawmode_id,
                       rawmode_outdir)
         }
@@ -1229,11 +1247,14 @@ getDetails <- function(analysis, collection)
         if(missing(subset))
             subset <- NULL
         fname <- rp$get(coll)
-        data <- h5read(fname, "ES-PV", index=list(NULL, subset))
         peps <- list(
-            ES = data[1:(nrow(data)/2),],
-            PV = data[(nrow(data)/2 + 1):nrow(data),]
-        )        
+            ES = h5read(fname, "ES", index=list(NULL, subset)),
+            PV = h5read(fname, "PV", index=list(NULL, subset))
+        )
+        rownames(peps$ES) <- rownames(peps$PV) <-
+            h5read(fname, "rownames")
+        colnames(peps$ES) <- colnames(peps$PV) <-
+            h5read(fname, "colnames", index=list(subset))
     } else {
         peps <- list(
             ES = rp$get(coll)$ES[, subset, drop=F],
@@ -1307,7 +1328,7 @@ getDetails <- function(analysis, collection)
 #'
 #' @export
 CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
-                    details=TRUE)
+                    details=TRUE, rankingFun = rankPEPsByRows.ES)
 {
     dbs <- collections
     if(length(dbs) == 1 && dbs=="all") {
@@ -1326,7 +1347,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
     for(i in seq_along(dbs)) {        
         say(paste0("Working on collection: ", dbs[i]))
 
-        allperts <- .loadPerts(rp, dbs[i])
+        allperts <- .loadPerts(rp_peps, dbs[i])
 
         if(length(bgset) == 1 && bgset=="all")
             bgset <- allperts
@@ -1346,7 +1367,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 
         peps <- .loadPEPs(rp_peps, dbs[i], rankingset)
         say(paste0("Row-ranking collection"))
-        ranked <- rankPEPsByRows(peps)
+        ranked <- rankingFun(peps)
         say(paste0("Computing enrichments"))
         
         ks <- apply(ranked, 1, function(row) {
@@ -1453,17 +1474,13 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 #'
 #' @export
 PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
-                    details=TRUE)
+                    details=TRUE, rankingFun=rankPEPsByCols.SPV)
 {
     checkSets(rp_peps, pathways)
     
     pathways <- convertFromGSetClass(pathways)
     
     pathways <- pwList2pwStruct(pathways)
-
-    for(i in seq_along(pathways))
-        if(!rp_peps$has(names(pathways)[i]))
-            say("Cold not find PEPs: ", "error", names(pathways)[i])
 
     if(length(bgsets)==1 && bgsets != "all") {
         checkSets(bgsets)
@@ -1481,7 +1498,13 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
             say("The following collections are not in the repository:",
                 "error", offcols)
     } else collections <- getCollections(rp_peps)
-            
+
+    for(i in seq_along(pathways)) {
+        dbi <- names(pathways)[i]
+        if(dbi %in% collections && !rp_peps$has(dbi))
+            say("Could not find PEPs: ", "error", names(pathways)[i])
+        }
+    
     collections <- intersect(names(pathways), collections)
     
     if(length(setdiff(names(pathways), collections)>1)) {
@@ -1509,18 +1532,27 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
             say("Common pathway sets removed from bgset")
         }
         rankingset <- c(gmd, bgset)
-        peps <- .loadPEPs(rp_peps$get, collections[i])
+        peps <- .loadPEPs(rp_peps, collections[i])
         notok <- rankingset[rankingset %in% rownames(peps)]
         if(length(notok)>0)
             say(paste0("Pathway set ids not found in ", collections[i], ": ",
                        paste(notok, collapse=", ")), "error")
 
         say(paste0("Column-ranking collection"))
-        ranked <- rankPEPsByCols(peps, rankingset)
+        ranked <- rankingFun(peps, rankingset)
         say(paste0("Computing enrichments"))
 
-        ks <- apply(ranked, 2, function(col) ks.test.2(col[gmd], col[bgset]))
-
+        ks <- apply(ranked, 2, function(col) {
+            inset <- col[gmd]
+            inset <- inset[!is.na(inset)]
+            outset <- col[bgset]
+            outset <- outset[!is.na(outset)]
+            if(length(inset)>1 && length(outset)>1) {
+                res <- ks.test.2(inset, outset, maxCombSize=10^10)
+            } else res <- list(ES=NA, p.value=NA)
+            res
+        })
+        
         PVs <- sapply(ks, get, x="p.value")
         sorter <- order(PVs)
         
@@ -1607,8 +1639,9 @@ gene2pathways <- function(rp, gene)
 ##     }       
 ## }
 
-gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
-
+gep2pep <- function(geps, sets, min_size, max_size, parallel=FALSE,
+                    pbar=TRUE) {
+  
     pathw <- sets
     genemat <- geps
     genes <- rownames(genemat)
@@ -1631,8 +1664,10 @@ gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
         {
             where <- match(set, genes)
             where <- where[!is.na(where)]
-            gsea(where, genematj, FALSE)
+            gsea(where, genematj, min_size, max_size)
         }
+        if(all(is.na(sapply(gres, "get", x="ES"))))
+          say(paste0("All NAs in PEP for profile: ", colnames(genemat)[j]), "warning")
         x[[j]] <- gres
     }
     if(pbar) {
@@ -1656,13 +1691,15 @@ gep2pep <- function(geps, sets, parallel=FALSE, pbar=TRUE) {
 }
 
 
-gsea <- function(S, ranks_list, check=FALSE, alternative = "two.sided")
+gsea <- function(S, ranks_list, min_size, max_size, alternative = "two.sided")
 {
     S <- S[!(is.na(S))]
     S1 <- ranks_list[S]
     S2 <- ranks_list[-S]
 
-    if(length(S1)<1 || length(S2)<1 || all(is.na(S1)) || all(is.na(S2)))
+    if(length(S1) < min_size || length(S1) > max_size ||
+       length(S2) < min_size ||
+       all(is.na(S1)) || all(is.na(S2)))
         return(list(ES=NA, p=NA))
 
     ks <- ks.test.2(S1, S2, alternative=alternative, maxCombSize=10^10)
@@ -1692,8 +1729,8 @@ storePEPs <- function(rp, db_id, peps, rawmode_suffix,
         peps$ES <- cbind(curmat$ES, peps$ES[, newpeps, drop=FALSE])
         peps$PV <- cbind(curmat$PV, peps$PV[, newpeps, drop=FALSE])
     }
-    
-    if(!rawmode) {
+
+    if(!rawmode) {        
         say("Storing PEPs to the repository...")
     
         rp$put(peps, db_id,
@@ -1763,7 +1800,7 @@ ks.test.2 <- function(x, y, ...) {
 }
 
 
-rankPEPsByCols <- function(peps, rankingset="all")
+rankPEPsByCols.SPV <- function(peps, rankingset="all")
 {
     rankPEP <- function(PVs, ESs)
     {
@@ -1785,8 +1822,23 @@ rankPEPsByCols <- function(peps, rankingset="all")
     return(x)
 }
 
+rankPEPsByCols.NES <- function(peps)
+{
+    ESs <- t(scale(t(peps$ES)))
+    attr(ESs, "scaled:center") <- NULL
+    attr(ESs, "scaled:scale") <- NULL
+    x <- apply(-ESs, 2, rank, ties.method = "random", na.last="keep")
+    return(x)
+}
 
-rankPEPsByRows <- function(peps)
+rankPEPsByCols.ES <- function(peps)
+{
+    x <- apply(-peps$ES, 2, rank, ties.method = "random", na.last="keep")
+    return(x)
+}
+
+
+rankPEPsByRows.ES <- function(peps)
 {
     ESs <- peps[["ES"]]
     x <- t(apply(-ESs, 1, rank, ties.method = "random", na.last="keep"))
@@ -1865,7 +1917,7 @@ checkGEPsFormat <- function(geps)
     
     if(any(mins != 1) || any(maxs != dims[1]) || any(not_unique))
         say(paste("GEP columns must be ranks. Check",
-                  "that each column is made of numbers from 1",
+                  "that each column is made of integer numbers from 1",
                   "to the number of rows."), "error")
         
 }
@@ -1952,13 +2004,10 @@ convertFromGSetClass <- function(gsets) {
 .makeCollectionIDs <- function(sets) {
     dbs <- sapply(sets, get, x="category")
     subdbs <- sapply(sets, get, x="subcategory")
-    subdbs[subdbs==""] <- dbs[subdbs==""]
+    w <- which(subdbs=="" | is.na(subdbs))
+    if(length(w)>0)
+      subdbs[w] <- dbs[w]
     db_ids <- paste(dbs, subdbs, sep="_")
     return(db_ids)
 }
 
-.extractWorkingPEPs <- function(rp, coll, fgset, bgset) {
-    ishdf5 <- "#rhdf5" %in% rp$tags(coll)
-
-    
-}

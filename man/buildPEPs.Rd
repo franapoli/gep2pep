@@ -5,7 +5,8 @@
 \title{Build PEPs from GEPs and stores them in the repository.}
 \usage{
 buildPEPs(rp, geps, parallel = FALSE, collections = "all",
-  replace_existing = FALSE, progress_bar = TRUE)
+  replace_existing = FALSE, progress_bar = TRUE, rawmode_id = NULL,
+  rawmode_outdir = file.path(rp$root(), "raw"))
 }
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
@@ -32,6 +33,15 @@ added. Either ways, will throw a warning.}
 
 \item{progress_bar}{If set to TRUE (default) will show a progress
 bar updated after coversion of each column of \code{geps}.}
+
+\item{rawmode_id}{An integer to be appended to files produced in
+raw mode (see details). If set to NULL (default), raw mode is
+turned off.}
+
+\item{rawmode_outdir}{A charater vector specifying the destination
+path for files produced in raw mode (by the fault it is
+ROOT/raw, where ROOT is the root of the repository). Ignored if
+\code{rawmode_id} is NULL.}
 }
 \value{
 Nothing. The computed PEPs will be available in the
@@ -41,6 +51,18 @@ Nothing. The computed PEPs will be available in the
 Given a matrix of ranked lists of genes (GEPs) and a \code{gep2pep}
 repository, converts GEPs to PEPs and stores the latter in the
 repository.
+}
+\details{
+By deault, output is written to the repository as new
+    items named using the collection name. However, it is possible
+    to avoid the repository and write the output to regular files
+    turning 'raw mode' on through the \code{rawmode_id} and
+    \code{rawmode_outdir} parameters. This is particuarly useful
+    when dealing with very large corpora of GEPs, and conversions
+    are split into independent jobs submitted to a scheduler. At
+    the end, the data will need to be reconstructed and put into
+    the repository using \code{importFromRawMode} in order to
+    perform \code{CondSEA} or \code{PathSEA} analysis.
 }
 \examples{
 db <- loadSamplePWS()
