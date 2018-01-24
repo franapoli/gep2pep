@@ -332,3 +332,58 @@ test_that("gene2pathways", {
 })
 
 
+context("Merging")
+
+peps <- loadPEPs(rp, "c3_MIR")
+
+pgA <- sample(colnames(peps$ES), sample(1:5, 1))
+pgB <- sample(colnames(peps$ES), sample(1:5, 1))
+pgC <- sample(colnames(peps$ES), sample(1:5, 1))
+
+bgX <- sample(colnames(peps$ES), sample(1:5, 1))
+bgY <- sample(colnames(peps$ES), sample(1:5, 1))
+
+pgset <- list(A=pgA, B=pgB, C=pgC)
+bgset <- list(X=bgX, Y=bgY)
+allset <- c(pgset, bgset)
+
+mergedPEPs <- .mergePEPs(peps, pgset, bgset)
+
+manualMergedES <- matrix(NA, 10, 5)
+manualMergedPV <- matrix(NA, 10, 5)
+for(i in 1:5) {
+    manualMergedES[,i] <- apply(peps$ES[,allset[[i]],drop=F], 1, mean)
+    manualMergedPV[,i] <- apply(peps$PV[,allset[[i]],drop=F], 1, mean)
+    }
+colnames(manualMergedES) <-
+    colnames(manualMergedPV) <-
+    c("A", "B", "C", "X", "Y")
+rownames(manualMergedES) <-
+    rownames(manualMergedPV) <-
+    rownames(peps$ES)
+
+test_that("merging ok", {
+    expect_equal(colnames(mergedPEPs$ES), c("A", "B", "C", "X", "Y"))
+    expect_equal(colnames(mergedPEPs$PV), c("A", "B", "C", "X", "Y"))
+    for(i in 1:5) {
+        expect_equal(mergedPEPs$ES[,i], manualMergedES[,i])
+        expect_equal(mergedPEPs$PV[,i], manualMergedPV[,i])
+    }
+})
+
+cond <- CondSEA(rp, pgset, bgset, collections="c3_MIR")
+mergedRanked <- rankPEPsByRows.ES(mergedPEPs)[
+    rownames(cond$details$c3_MIR),]
+
+test_that("merged CondSEA ok", {
+    expect_equal(mergedRanked[,c("A","B","C")],
+                 cond$details$c3_MIR)
+})
+
+
+dig <- digest(list(pgset=pgset, bgset=bgset))
+test_that("Cached merging", {
+    expect_message(.cachedMergePEPs(rp, peps, pgset, bgset), ".*Caching.*")
+    expect_true(rp$has(dig))
+    expect_message(.cachedMergePEPs(rp, peps, pgset, bgset), ".*Loading.*")
+})

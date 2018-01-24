@@ -93,6 +93,9 @@ NULL
 ## For gene sets management
 #' @import GSEABase
 
+## Digest is needed to cache merged profiles
+#' @import digest
+
 #' @importFrom foreach foreach %dopar% %do%
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom stats ks.test
@@ -1330,6 +1333,22 @@ getDetails <- function(analysis, collection)
 CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
                     details=TRUE, rankingFun = rankPEPsByRows.ES)
 {
+    pgList <- NULL
+    if(is.list(pgset)) {
+        say(paste0("pgset is a list: ", length(pgset),
+                   " merged profiles will be built."))
+        pgList <- pgset
+        pgset <- unlist(pgset)
+    }    
+
+    bgList <- NULL    
+    if(is.list(bgset)) {
+        say(paste0("bgset is a list: ", length(bgset),
+                   " merged profiles will be built."))
+        bgList <- bgset
+        bgset <- unlist(bgset)
+    }    
+    
     dbs <- collections
     if(length(dbs) == 1 && dbs=="all") {
         dbs <- getCollections(rp_peps)
@@ -1367,16 +1386,26 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
 
         peps <- .loadPEPs(rp_peps, dbs[i], rankingset)
         say(paste0("Row-ranking collection"))
+
+        if(is.list(pgList) || is.list(bgList)) {
+            peps <- .mergePEPs(peps, pgList, bgList)
+            mergedPGset <- names(pgList)
+            mergedBGset <- names(bgList)
+        } else {
+            mergedPGset <- pgset
+            mergedBGset <- bgset
+        }
+        
         ranked <- rankingFun(peps)
         say(paste0("Computing enrichments"))
         
         ks <- apply(ranked, 1, function(row) {
-            inset <- row[pgset]
+            inset <- row[mergedPGset]
             inset <- inset[!is.na(inset)]
-            outset <- row[bgset]
+            outset <- row[mergedBGset]
             outset <- outset[!is.na(outset)]
             if(length(inset)>1 && length(outset)>1) {
-                res <- ks.test.2(row[pgset], row[bgset], maxCombSize=10^10)
+                res <- ks.test.2(row[mergedPGset], row[mergedBGset], maxCombSize=10^10)
             } else res <- list(ES=NA, p.value=NA)
             return(res)
         })
@@ -1385,7 +1414,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         res[[dbs[i]]] <- data.frame(ES = sapply(ks, get, x="ES"),
                                     PV = PVs)[sorter, ]
         if(details)
-            thedetails[[dbs[i]]] <- ranked[sorter, pgset]
+            thedetails[[dbs[i]]] <- ranked[sorter, mergedPGset]
         say("done")
     }
 
@@ -2011,3 +2040,40 @@ convertFromGSetClass <- function(gsets) {
     return(db_ids)
 }
 
+
+.cachedMergePEPs <- function(rp, peps, pgList, bgList)
+{
+    mergemeta <- list(pgset=pgList, bgset=bgList)
+    dig <- digest(mergemeta)
+    if(rp$has(dig)) {
+        say("Loading cached merge")
+        cached <- rp$get(dig)
+        mergedPEPs <- cached$PEPs
+    } else {
+        say("Performing merge")
+        mergedPEPs <- .mergePEPs(peps, pgList, bgList)
+        say(paste0("Caching to repository as: ",
+                   dig))
+        rp$stash(list(PEPs = mergedPEPs,
+                      mergemeta = mergemeta), rename=dig)
+    }
+    return(mergedPEPs)
+}
+
+.mergePEPs <- function(peps, pgList, bgList) {
+
+    mlist <- c(pgList, bgList)    
+    outpeps <- list(
+        ES=matrix(NA, nrow(peps[[1]]), length(mlist),
+                  dimnames=list(rownames(peps[[1]]), names(mlist))),
+        PV=matrix(NA, nrow(peps[[1]]), length(mlist),
+                  dimnames=list(rownames(peps[[1]]), names(mlist)))
+    )
+
+    for(i in 1:length(mlist)) {
+        outpeps$ES[,i] <- apply(peps$ES[, mlist[[i]]], 1, mean)
+        outpeps$PV[,i] <- apply(peps$PV[, mlist[[i]]], 1, mean)
+    }
+
+    return(outpeps)
+}
