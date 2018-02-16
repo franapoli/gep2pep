@@ -454,9 +454,9 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
             startCol <- (j-1)*Nchunk+1
 
             h5write(x$ES, fl, "ES", start=c(1,startCol),
-                    createnewfile=F)
+                    createnewfile=FALSE)
             h5write(x$PV, fl, "PV", start=c(1,startCol),
-                    createnewfile=F)
+                    createnewfile=FALSE)
             h5write(colnames(x$ES), fl, "colnames", start=startCol)
 
             cat("Chunk ", j, " of ",
@@ -1355,8 +1355,8 @@ getDetails <- function(analysis, collection)
             hcolnames[subset]
     } else {
         peps <- list(
-            ES = rp$get(coll)$ES[, subset, drop=F],
-            PV = rp$get(coll)$PV[, subset, drop=F]
+            ES = rp$get(coll)$ES[, subset, drop=FALSE],
+            PV = rp$get(coll)$PV[, subset, drop=FALSE]
         )
     }
     
@@ -1529,7 +1529,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
     return(list(CondSEA=res, details=thedetails))
 }
 
-.doPSEA <- function(ranked, backgroundSize, parallel=F) {
+.doPSEA <- function(ranked, backgroundSize, parallel=FALSE) {
     nas <- attributes(ranked)$nas
 
     '%dobest%' <- if (parallel) get('%dopar%') else get('%do%')
@@ -1604,7 +1604,7 @@ clearCache <- function(rp_peps)
 
 .getPEPRanks <- function(rp_peps, coll, rankingset,
                          subrows, subcols,
-                         rankingFun, usecache=F)
+                         rankingFun, usecache=FALSE)
 {
     if(!is.character(rankingset) ||
        !is.character(subcols))
@@ -1640,7 +1640,7 @@ clearCache <- function(rp_peps)
         }
         ## clean this
         nas <- attr(ranked, "nas")
-        ranked <- ranked[subrows, subcols, drop=F]
+        ranked <- ranked[subrows, subcols, drop=FALSE]
         attr(ranked, "nas") <- nas
     }
     return(ranked)
@@ -2281,9 +2281,46 @@ convertFromGSetClass <- function(gsets) {
 }
 
 
+#' Merge multiple PEPs to build a repository of consensus PEPs
+#' @inheritParams dummyFunction
+#' @param rpIn_path path to existing gep2pep repository
+#' @param rpOut_path path where the new merged repository will be
+#' created
+#' @param mergestr a named list of character vectors, each one
+#' including a set of PEP names. For each list entry, a consensus PEP
+#' will be created and assigned the entry name.
+#' @param progressBar if TRUE, show a progress bar
+#' @details The merging is performed as follows. Given N PEPs, the
+#' corresponding consensus PEP will get as enrichement score the
+#' average enrichment scores of the N PEPs, and as p-value the
+#' composition of the N PEP p-values by Fisher's method.
+#' @return Nothing, used for side effects.
+#' @export
+#' @examples
+#'
+#' db <- loadSamplePWS()
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#' rp <- createRepository(repo_path, db)
+#' geps <- loadSampleGEP()
+#' buildPEPs(rp, geps)
+#'
+#' mergestr <- list(
+#'     che_iso = c("(+)_chelidonine", "(+)_isoprenaline"),
+#'     cat_mk = c("(+/_)_catechin", "(_)_mk_801")
+#' )
+#'
+#' merged_path <- file.path(tempdir(), "gep2pepTempMerged")
+#'
+#' createMergedRepository(repo_path, merged_path, mergestr)
+#'
+#' unlink(repo_path, TRUE)
+#' unlink(merged_path, TRUE)
 createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
-                                   progressBar=TRUE, collections="all",
-                                   mergeFunc= "mean", parallel=F) {
+                                   progressBar=TRUE, collections="all") {
+  ## the following are hidden parameters
+  mergeFunc <- "mean"
+  parallel <- FALSE
+
     if(!is.list(mergestr)) {
         say(
             paste("mergestr parameter must be a list of character",

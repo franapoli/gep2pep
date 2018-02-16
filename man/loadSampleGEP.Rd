@@ -15,6 +15,5 @@ Loads sample Gene Expression Profiles
 \examples{
 
 geps <- loadSampleGEP()
-dim(geps)
-## [1] 485   5
+
 }

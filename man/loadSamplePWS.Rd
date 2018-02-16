@@ -16,12 +16,5 @@ Loads sample pathway collections
 \examples{
 
 geps <- loadSampleGEP()
-geps
-## GeneSetCollection
-##   names: AAANWWTGC_UNKNOWN, AAAYRNCTG_UNKNOWN, ..., MORF_BUB3 (30 total)
-##   unique identifiers: MEF2C, ATP1B1, ..., SLBP (5778 total)
-##   types in collection:
-##     geneIdType: SymbolIdentifier (1 total)
-##     collectionType: BroadCollection (1 total)
 
 }

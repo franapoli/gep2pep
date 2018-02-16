@@ -4,10 +4,13 @@
 \alias{importMSigDB.xml}
 \title{Imports pathways data from an MSigDB XML file.}
 \usage{
-importMSigDB.xml(fname)
+importMSigDB.xml(fname, organism = "Homo Sapiens")
 }
 \arguments{
 \item{fname}{Path to an XML file downloaded from MSigDB.}
+
+\item{organism}{Select only gene sets for a given organism. Default
+is "Homo Sapiens".}
 }
 \value{
 A CategorizedCollection object
@@ -42,7 +45,6 @@ db <- importMSigDB.xml("msigdb_v6.0.xml")
 ## following creates (and then deletes) a gep2pep repository.
 
 db_sample <- loadSamplePWS()
-db_sample <- as.CategorizedCollection(db_sample)
 
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 rp <- createRepository(repo_path, db_sample)

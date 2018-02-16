@@ -22,7 +22,6 @@ Loads a collection of pathways from the repository
 \examples{
 
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)

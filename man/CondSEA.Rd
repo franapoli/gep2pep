@@ -5,7 +5,8 @@
 \title{Performs Condition Set Enrichment Analysis}
 \usage{
 CondSEA(rp_peps, pgset, bgset = "all", collections = "all",
-  details = TRUE)
+  details = TRUE, rankingFun = rankPEPsByRows.ES, usecache = FALSE,
+  sortoutput = TRUE)
 }
 \arguments{
 \item{rp_peps}{A repository created with
@@ -27,13 +28,23 @@ collections in \code{rp} will be used.}
 
 \item{details}{If TRUE (default) rank details will be reported for
 each condition in \code{pgset}.}
+
+\item{rankingFun}{The function used to rank PEPs column-wise. By
+default \code{rankPEPsByRows.ES} is used, which ranks using gene
+set enrichment scores (see details).}
+
+\item{usecache}{If set to TRUE, the computed ranked matrix will be
+stored in the the repository (see details). FALSE by default.}
+
+\item{sortoutput}{If TRUE (default) the output gene sets will be
+sorted in order of increasing p-value.}
 }
 \value{
 A list of 2, by names "CondSEA" and "details". The
-    "CondSEA" entry is a 2-columns matrix including ESs and
-    p-values (see details) for each pathway database and
-    condition. The "details" entry reports the rank of each
-    condition in \code{pgset} for each pathway.
+"CondSEA" entry is a 2-columns matrix including ESs and p-values
+(see details) for each pathway database and condition. The
+"details" entry reports the rank of each condition in \code{pgset}
+for each pathway.
 }
 \description{
 Condition Set Enrichment Analysis (CondSEA) can be seen as a
@@ -45,22 +56,35 @@ background of other conditions.
 }
 \details{
 For each pathway, all conditions are ranked by how much
-    they dysregulate it (from the most UP-regulating to the most
-    DOWN-regulating). Then, a Kolmogorov-Smirnov (KS) test is
-    performed to compare the ranks assigned to conditions in
-    \code{pgset} against the ranks assigned to conditions in
-    \code{bgset}. A positive (negative) Enrichment Score (ES) of
-    the KS test indicates whether each pathway is UP- (DOWN-)
-    regulated by \code{pgset} as compared to \code{bgset}. A
-    p-value is associated to the ES.
+they dysregulate it (from the most UP-regulating to the most
+DOWN-regulating). Then, a Kolmogorov-Smirnov (KS) test is performed
+to compare the ranks assigned to conditions in \code{pgset} against
+the ranks assigned to conditions in \code{bgset}. A positive
+(negative) Enrichment Score (ES) of the KS test indicates whether
+each pathway is UP- (DOWN-) regulated by \code{pgset} as compared
+to \code{bgset}. A p-value is associated to the ES.
 
-    When PEPs are obtained from drug-induced gene expression
-    profiles, \code{PathSEA} can be used to perform Drug-Set
-    Enrichment Analysis [1].
+When PEPs are obtained from drug-induced gene expression profiles,
+\code{PathSEA} is the Drug-Set Enrichment Analysis [1].
+
+The \code{rankingFun} must take in input PEPs like those loaded
+from the repository and return a matrix of row-wise ranks. Each row
+must contains ranks from 1 to the number of PEPs minus the number
+of NAs in the row.
+
+When \code{usecache=TRUE}, the ranked matrix is permanently stored
+in HDF5 format, and subsequent calls to \code{CondSEA} will load
+from the disk the necessary ranks (not the whole matrix). The
+correct cached data is identified by the alphabetically sorted set
+\code{union(pgset, bgset)}, by the collection name, and by the
+ranking function. Additional alls to CondSEA with variations of
+these inputs will create additional cache. Cached data is hidden in
+the repository by default and can be printed with
+\code{rp_peps$print(all=TRUE)}, and cleared with
+\code{clearCache(rp_peps)}.
 }
 \examples{
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)
@@ -70,7 +94,11 @@ buildPEPs(rp, geps)
 pgset <- c("(+)_chelidonine", "(+/_)_catechin")
 psea <- CondSEA(rp, pgset)
 
-getResults(psea, "c3_TFT")
+res <- getResults(psea, "c3_TFT")
+
+## getting the names of the top pathways
+
+setId2setName(loadCollection(rp, "c3_TFT"), rownames(res))
 
 unlink(repo_path, TRUE)
 
@@ -81,5 +109,5 @@ unlink(repo_path, TRUE)
     32, 235-241 (2016).
 }
 \seealso{
-getResults, getDetails
+getResults, getDetails, clearCache
 }

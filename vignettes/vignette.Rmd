@@ -72,19 +72,19 @@ suppressMessages(library(GSEABase))
 The [MSigDB](http://software.broadinstitute.org/gsea/msigdb) is a
 curated database of gene set collections. The entire database can be
 downloaded as a single XML file and used by `gep2pep`. The following
-commented code would import the database once downloaded:
+commented code would import the database once downloaded (gep2pep uses
+a slight variation of the `BroadCollection` type used by MSigDB, named
+`CategorizedCollection`, thus a conversion is necessary):
 
 ```{r}
 ## db <- importMSigDB.xml("msigdb_v6.1.xml")
+## db <- as.CategorizedCollection(db)
 ```
 
-However, for this vignette a small excerpt will be used. Gep2pep uses
-a slight variation of the `BroadCollection` type used by MSigDB,
-named `CategorizedCollection`. Thus a conversion is necessary:
+However, for this vignette a small excerpt will be used. 
 
 ```{r}
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 ```
 
 The database is in `GSEABase::GeneSetCollection` format and

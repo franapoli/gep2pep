@@ -8,8 +8,8 @@ CategorizedCollection(category = "uncategorized",
   subCategory = "uncategorized")
 }
 \arguments{
-\item{category}{A character defining the main category that the gene
-set belongs to.}
+\item{category}{A character defining the main category that the
+gene set belongs to.}
 
 \item{subCategory}{A character defining the secondary category that
 the gene set belongs to.}

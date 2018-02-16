@@ -23,7 +23,6 @@ together with additional gene set information for the CondSEA.
 \examples{
 
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)

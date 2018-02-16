@@ -18,7 +18,6 @@ the \code{repo} package) and specific gep2pep data consistency.
 }
 \examples{
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)

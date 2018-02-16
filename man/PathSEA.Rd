@@ -5,7 +5,7 @@
 \title{Performs Pathway Set Enrichment Analysis (PSEA)}
 \usage{
 PathSEA(rp_peps, pathways, bgsets = "all", collections = "all",
-  details = TRUE)
+  details = TRUE, rankingFun = rankPEPsByCols.SPV)
 }
 \arguments{
 \item{rp_peps}{A repository created with
@@ -27,6 +27,10 @@ collections in \code{rp} will be used.}
 
 \item{details}{If TRUE (default) details will be reported for each
 condition in \code{pgset}.}
+
+\item{rankingFun}{The function used to rank PEPs column-wise. By
+default \code{rankPEPsByCols.ES} is used, which uses gene
+set enrichment scores (see details).}
 }
 \value{
 A list of 2, by names "PathSEA" and "details". The
@@ -58,12 +62,18 @@ For each condition, all pathways are ranked by how much
     \code{gene2pathways} to perform gene2drug [1] analysis, which
     predicts which drugs may target a gene of interest (or mimick
     such effect).
+
+The \code{rankingFun} must take in input PEPs like those loaded
+from the repository and return a matrix of column-wise ranks. Each
+column must contain ranks from 1 to the number of gene sets minus
+the number of NAs in the column.
+
+#' @seealso getResults, getDetails
 }
 \examples{
 library(GSEABase)
 
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)
@@ -101,7 +111,4 @@ unlink(repo_path, TRUE)
 [1] Napolitano F. et al, gene2drug: a Computational
     Tool for Pathway-based Rational Drug Repositioning, bioRxiv
     (2017) 192005; doi: https://doi.org/10.1101/192005
-}
-\seealso{
-getResults, getDetails
 }

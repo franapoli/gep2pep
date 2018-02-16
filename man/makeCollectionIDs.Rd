@@ -21,7 +21,6 @@ collection from a database.
 }
 \examples{
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 ids <- makeCollectionIDs(db)
 
 unique(ids)

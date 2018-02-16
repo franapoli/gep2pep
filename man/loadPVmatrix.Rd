@@ -25,7 +25,6 @@ Loads the matrix of p-values for a collection
 \examples{
 
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)

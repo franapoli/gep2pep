@@ -4,9 +4,9 @@
 \alias{buildPEPs}
 \title{Build PEPs from GEPs and stores them in the repository.}
 \usage{
-buildPEPs(rp, geps, parallel = FALSE, collections = "all",
-  replace_existing = FALSE, progress_bar = TRUE, rawmode_id = NULL,
-  rawmode_outdir = file.path(rp$root(), "raw"))
+buildPEPs(rp, geps, min_size = 3, max_size = 500, parallel = FALSE,
+  collections = "all", replace_existing = FALSE, progress_bar = TRUE,
+  rawmode_id = NULL, rawmode_outdir = file.path(rp$root(), "raw"))
 }
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
@@ -17,6 +17,14 @@ ranks from 1 to the number of rows. Row and column names must
 be defined. Row names will be matched against gene identifiers
 in the pathways collections, and unrecognized gene names will
 not be used.}
+
+\item{min_size}{An integer representing the minimum number of genes
+that must be included in a set before the KS statistic is
+computed. Smaller gene sets will get ES=NA and p=NA. Default is 3.}
+
+\item{max_size}{An integer representing the maximum number of genes
+that must be included in a set before the KS statistic is
+computed. Larger gene sets will get ES=NA and p=NA. Default is 500.}
 
 \item{parallel}{If TRUE, gene sets will be processed in
 parallel. Requires a parallel backend.}
@@ -66,7 +74,6 @@ By deault, output is written to the repository as new
 }
 \examples{
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)

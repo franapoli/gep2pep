@@ -28,7 +28,6 @@ This function only calls the \code{repo_open} function
 \examples{
 
 db <- loadSamplePWS()
-db <- as.CategorizedCollection(db)
 repo_path <- file.path(tempdir(), "gep2pepTemp")
 
 rp <- createRepository(repo_path, db)

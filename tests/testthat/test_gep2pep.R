@@ -6,7 +6,7 @@
 ## library(testthat)
 ## load_all()
 
-loadPEPs <- gep2pep::.loadPEPs
+loadPEPs <- gep2pep:::.loadPEPs
 
 dbfolder <- file.path(tempdir(), "gep2pepDB")
 
@@ -22,14 +22,12 @@ create_test_repo <- function(suffix=NULL) {
     return(
         suppressMessages(
             createRepository(folder, testpws)
-            )
-        )    
+        )
+    )    
 }
 
 testgep <- loadSampleGEP()
-testpws <- as.CategorizedCollection(
-    loadSamplePWS()
-)
+testpws <- loadSamplePWS()
 testpws_old <- gep2pep:::convertFromGSetClass(testpws)
 
 rp <- create_test_repo()
@@ -37,7 +35,7 @@ dbs <- makeCollectionIDs(testpws)
 expected_dbs <- c("c3_TFT", "c3_MIR", "c4_CGN")
 
 
-context("gep format checks")
+context("gep2pep: gep format checks")
 
 randmat <- matrix(runif(9), 3)
 nm_randmat <- randmat
@@ -53,7 +51,7 @@ test_that("check geps", {
     expect_silent(checkGEPsFormat(okmat))
 })
 
-context("creation of newdb")
+context("gep2pep: creation of newdb")
 
 
 test_that("new db creation", {
@@ -76,66 +74,66 @@ test_that("new db creation", {
     expect_error(loadPVmatrix(rp, "c3_TFT"))
 })
 
-context("creation of peps")
+context("gep2pep: creation of peps")
 
 suppressMessages(buildPEPs(rp, testgep, progress_bar=FALSE,
                            min_size=3))
 
 test_that("build first PEPs", {
-  expect_equal(length(rp$entries()), 8)
-  expect_equal(length(dbs), length(testpws))
-  expect_true(rp$has(expected_dbs[1]))
-  expect_true(rp$has(expected_dbs[2]))
-  expect_true(rp$has(expected_dbs[3]))
-  expect_equal(names(rp$get(expected_dbs[1])), c("ES", "PV"))
-  expect_equal(names(rp$get(expected_dbs[3])), c("ES", "PV"))
-  expect_equal(nrow(rp$get(expected_dbs[1])[[1]]), 10)
-  expect_equal(nrow(rp$get(expected_dbs[1])[[2]]), 10)
-  expect_equal(nrow(rp$get(expected_dbs[3])[[1]]), 10)
-  expect_equal(nrow(rp$get(expected_dbs[3])[[2]]), 10)
-  expect_equal(ncol(rp$get(expected_dbs[1])[[1]]), ncol(testgep))
-  expect_equal(ncol(rp$get(expected_dbs[1])[[2]]), ncol(testgep))
-  expect_equal(ncol(rp$get(expected_dbs[3])[[1]]), ncol(testgep))
-  expect_equal(ncol(rp$get(expected_dbs[3])[[2]]), ncol(testgep))
-  expect_failure(expect_warning(suppressMessages(checkRepository(rp))))
-  expect_error(loadESmatrix(rp, "random name"))
-  expect_equal(loadESmatrix(rp, "c3_TFT"), rp$get("c3_TFT")$ES)
-  expect_error(loadPVmatrix(rp, "random name"))
-  expect_equal(loadPVmatrix(rp, "c3_TFT"), rp$get("c3_TFT")$PV)
+    expect_equal(length(rp$entries()), 8)
+    expect_equal(length(dbs), length(testpws))
+    expect_true(rp$has(expected_dbs[1]))
+    expect_true(rp$has(expected_dbs[2]))
+    expect_true(rp$has(expected_dbs[3]))
+    expect_equal(names(rp$get(expected_dbs[1])), c("ES", "PV"))
+    expect_equal(names(rp$get(expected_dbs[3])), c("ES", "PV"))
+    expect_equal(nrow(rp$get(expected_dbs[1])[[1]]), 10)
+    expect_equal(nrow(rp$get(expected_dbs[1])[[2]]), 10)
+    expect_equal(nrow(rp$get(expected_dbs[3])[[1]]), 10)
+    expect_equal(nrow(rp$get(expected_dbs[3])[[2]]), 10)
+    expect_equal(ncol(rp$get(expected_dbs[1])[[1]]), ncol(testgep))
+    expect_equal(ncol(rp$get(expected_dbs[1])[[2]]), ncol(testgep))
+    expect_equal(ncol(rp$get(expected_dbs[3])[[1]]), ncol(testgep))
+    expect_equal(ncol(rp$get(expected_dbs[3])[[2]]), ncol(testgep))
+    expect_failure(expect_warning(suppressMessages(checkRepository(rp))))
+    expect_error(loadESmatrix(rp, "random name"))
+    expect_equal(loadESmatrix(rp, "c3_TFT"), rp$get("c3_TFT")$ES)
+    expect_error(loadPVmatrix(rp, "random name"))
+    expect_equal(loadPVmatrix(rp, "c3_TFT"), rp$get("c3_TFT")$PV)
 })
 
 
 
 res <- list()
 for(i in 1:3) {
-  testi <- sample(1:length(testpws),1)
-  testj <- sample(1:ncol(testgep),1)
-  set <- testpws_old[[testi]]$set
-  id <- testpws_old[[testi]]$id
-  tomatch <- intersect(rownames(testgep), set)
-  inset <- testgep[match(tomatch, rownames(testgep)), testj]
-  if(length(tomatch) >= 3) {
-      ks <- ks.test.2(inset, (1:nrow(testgep))[-inset], maxCombSize=10^10)
-  } else ks <- list(ES=as.numeric(NA), p.value=as.numeric(NA))
-  dbi <- dbs[testi]
-  res[[i]] <- list(id=id, testj=testj, ks=ks, dbi=dbi)
+    testi <- sample(1:length(testpws),1)
+    testj <- sample(1:ncol(testgep),1)
+    set <- testpws_old[[testi]]$set
+    id <- testpws_old[[testi]]$id
+    tomatch <- intersect(rownames(testgep), set)
+    inset <- testgep[match(tomatch, rownames(testgep)), testj]
+    if(length(tomatch) >= 3) {
+        ks <- ks.test.2(inset, (1:nrow(testgep))[-inset], maxCombSize=10^10)
+    } else ks <- list(ES=as.numeric(NA), p.value=as.numeric(NA))
+    dbi <- dbs[testi]
+    res[[i]] <- list(id=id, testj=testj, ks=ks, dbi=dbi)
 }
 test_that("KS statistics", {
-  i <- 1
-  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(loadPEPs(rp, dbi)$ES[id, testj], ks$ES)
-  expect_equal(loadPEPs(rp, dbi)$PV[id, testj], ks$p.value)
-  i <- 2
-  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(loadPEPs(rp, dbi)$ES[id, testj], ks$ES)
-  expect_equal(loadPEPs(rp, dbi)$PV[id, testj], ks$p.value)
-  i <- 3
-  id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
-  expect_equal(loadPEPs(rp, dbi)$ES[id, testj], ks$ES)
-  expect_equal(loadPEPs(rp, dbi)$PV[id, testj], ks$p.value)
+    i <- 1
+    id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
+    expect_equal(loadPEPs(rp, dbi)$ES[id, testj], ks$ES)
+    expect_equal(loadPEPs(rp, dbi)$PV[id, testj], ks$p.value)
+    i <- 2
+    id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
+    expect_equal(loadPEPs(rp, dbi)$ES[id, testj], ks$ES)
+    expect_equal(loadPEPs(rp, dbi)$PV[id, testj], ks$p.value)
+    i <- 3
+    id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
+    expect_equal(loadPEPs(rp, dbi)$ES[id, testj], ks$ES)
+    expect_equal(loadPEPs(rp, dbi)$PV[id, testj], ks$p.value)
 })
 
-context("adding existing peps")
+context("gep2pep: adding existing peps")
 
 oldTFT <- loadPEPs(rp, "c3_TFT")
 test_that("Adding PEPs", {
@@ -158,7 +156,7 @@ rebuiltTFT <- loadPEPs(rp, "c3_TFT")
 test_that("Adding PEPs", {
     expect_warning(
         suppressMessages(buildPEPs(rp, testgep[, 1:3], progress_bar=FALSE))
-        )
+    )
     expect_equal(untouchedTFT, oldTFT)
     expect_equal(rebuiltTFT$ES, oldTFT$ES[,colnames(rebuiltTFT$ES)])
     expect_equal(rebuiltTFT$PV, oldTFT$PV[,colnames(rebuiltTFT$PV)])
@@ -168,7 +166,7 @@ test_that("Adding PEPs", {
 rp$set("c3_TFT", oldTFT)
 
 
-context("adding peps one by one")
+context("gep2pep: adding peps one by one")
 
 rp2 <- create_test_repo("2")
 for(i in 1:ncol(testgep))
@@ -176,14 +174,21 @@ for(i in 1:ncol(testgep))
         buildPEPs(rp2, testgep[,i,drop=F], progress_bar=FALSE)
     )
 
+rptft <- rp$get("c3_TFT")
+rptft2 <- rp2$get("c3_TFT")
+eseq <- rptft$ES == rptft2$ES
+pveq <- rptft$PV == rptft2$PV
 test_that("adding one by one", {
-    ##expect_true(identical(rp2$get("c3_TFT"), rp$get("c3_TFT")))
+    expect_true(all(eseq[!is.na(eseq)]))
+    expect_true(all(pveq[!is.na(pveq)]))
+    expect_true(all(colnames(rptft) == colnames(rptft2)))
+    expect_true(all(rownames(rptft) == rownames(rptft2)))    
     expect_failure(expect_warning(suppressMessages(checkRepository(rp2))))
 })
 
 
 
-context("Row and Col ranking")
+context("gep2pep: Row and Col ranking")
 
 peps1 <- rp$get(expected_dbs[1])
 peps3 <- rp$get(expected_dbs[3])
@@ -203,6 +208,7 @@ test_that("Row ranking", {
     expect_equal(RowRanked3[5,4], 5)
     expect_equal(RowRanked3[8,3], 1)
 })
+
 
 ColRanked1 <- rankPEPsByCols.SPV(peps1)
 ColRanked3 <- rankPEPsByCols.SPV(peps3)
@@ -238,13 +244,15 @@ test_that("Column ranking with NES", {
 })
 
 
-context("CondSEA")
+context("gep2pep: CondSEA")
 pgset <- c("(+)_chelidonine",  "(+/_)_catechin")
-res <- suppressMessages(CondSEA(rp, pgset))
+suppressMessages(
+    res <- CondSEA(rp, pgset)
+)
 randi <- sample(1:length(testpws), 1)
 pwsid <- testpws_old[[randi]]$id
 randDB <- dbs[randi]
-ranked <- rankPEPsByRows.ES(rp$get(randDB))
+ranked <- rankPEPsByRows.ES(loadPEPs(rp, randDB))
 inset <- ranked[pwsid, pgset]
 outset <- ranked[pwsid, setdiff(colnames(ranked), pgset)]
 if(length(inset[!is.na(inset)])>0 &&
@@ -256,14 +264,14 @@ if(length(inset[!is.na(inset)])>0 &&
 test_that("CondSEA", {
     expect_equal(getDetails(res, "c3_TFT"), res$details[["c3_TFT"]])   
     expect_equal(getResults(res, "c3_TFT"), res$CondSEA[["c3_TFT"]])
-    expect_equal(unname(res[["CondSEA"]][[randDB]][pwsid, "ES"]),
+    expect_equal(unname(res$CondSEA[[randDB]][pwsid, "ES"]),
                  ks$ES)
-    expect_equal(unname(res[["CondSEA"]][[randDB]][pwsid, "PV"]),
+    expect_equal(unname(res$CondSEA[[randDB]][pwsid, "PV"]),
                  ks$p.value)
 })
 
 
-context("PathSEA")
+context("gep2pep: PathSEA")
 
 db1 <- expected_dbs[1]
 db3 <- expected_dbs[3]
@@ -332,58 +340,58 @@ test_that("gene2pathways", {
 })
 
 
-context("Merging")
 
-peps <- loadPEPs(rp, "c3_MIR")
+context("gep2pep: missing pathway points")
 
-pgA <- sample(colnames(peps$ES), sample(1:5, 1))
-pgB <- sample(colnames(peps$ES), sample(1:5, 1))
-pgC <- sample(colnames(peps$ES), sample(1:5, 1))
+oldpeps <- rp$get("c3_TFT")
 
-bgX <- sample(colnames(peps$ES), sample(1:5, 1))
-bgY <- sample(colnames(peps$ES), sample(1:5, 1))
+peps <- oldpeps
+nas <- sample(1:length(peps$ES), 5)
+peps$ES[nas] <- peps$PV[nas] <- NA
+rp$set("c3_TFT", obj=peps)
 
-pgset <- list(A=pgA, B=pgB, C=pgC)
-bgset <- list(X=bgX, Y=bgY)
-allset <- c(pgset, bgset)
+pgset <- sample(colnames(ranked), 2)
+bgset <- sample(setdiff(colnames(ranked), pgset), 2)
 
-mergedPEPs <- .mergePEPs(peps, pgset, bgset)
+ranked <- t(apply(-peps$ES[,c(pgset,bgset)], 1,
+                        rank, na.last="keep"))
 
-manualMergedES <- matrix(NA, 10, 5)
-manualMergedPV <- matrix(NA, 10, 5)
-for(i in 1:5) {
-    manualMergedES[,i] <- apply(peps$ES[,allset[[i]],drop=F], 1, mean)
-    manualMergedPV[,i] <- apply(peps$PV[,allset[[i]],drop=F], 1, mean)
+suppressMessages(
+    rankedByFunc <- .getPEPRanks(rp, "c3_TFT", c(pgset,bgset),
+                                 subcols=c(pgset,bgset),
+                                 usecache=F,
+                                 rankingFun=rankPEPsByRows.ES)
+)
+
+tests <- rankedByFunc==ranked
+test_that("ranking with random missing points", {
+    expect_true(all(tests[!is.na(tests)]))
+})
+
+ksES <- ksPV <- vector("numeric")
+for(i in 1:nrow(ranked)) {
+    inset <- ranked[i, pgset]
+    inset <- inset[!is.na(inset)]
+    outset <- ranked[i, bgset]
+    outset <- outset[!is.na(outset)]
+    if(length(inset)>0 &&
+       length(outset)>0) {
+        ks <- ks.test.2(inset, outset, maxCombSize=10^10)
+    } else {
+        ks <- list(ES=as.numeric(NA), p.value=as.numeric(NA))
     }
-colnames(manualMergedES) <-
-    colnames(manualMergedPV) <-
-    c("A", "B", "C", "X", "Y")
-rownames(manualMergedES) <-
-    rownames(manualMergedPV) <-
-    rownames(peps$ES)
+    ksES[[i]] <- ks$ES
+    ksPV[[i]] <- ks$p.value
+}
 
-test_that("merging ok", {
-    expect_equal(colnames(mergedPEPs$ES), c("A", "B", "C", "X", "Y"))
-    expect_equal(colnames(mergedPEPs$PV), c("A", "B", "C", "X", "Y"))
-    for(i in 1:5) {
-        expect_equal(mergedPEPs$ES[,i], manualMergedES[,i])
-        expect_equal(mergedPEPs$PV[,i], manualMergedPV[,i])
-    }
+suppressMessages(
+    csea <- CondSEA(rp, pgset, bgset,
+                    "c3_TFT", sortoutput=F)$CondSEA$c3_TFT
+)
+
+test_that("condsea with missing pathways", {
+    expect_equal(ksES, csea$ES)
+    expect_equal(ksPV, csea$PV)
 })
 
-cond <- CondSEA(rp, pgset, bgset, collections="c3_MIR")
-mergedRanked <- rankPEPsByRows.ES(mergedPEPs)[
-    rownames(cond$details$c3_MIR),]
-
-test_that("merged CondSEA ok", {
-    expect_equal(mergedRanked[,c("A","B","C")],
-                 cond$details$c3_MIR)
-})
-
-
-dig <- digest(list(pgset=pgset, bgset=bgset))
-test_that("Cached merging", {
-    expect_message(.cachedMergePEPs(rp, peps, pgset, bgset), ".*Caching.*")
-    expect_true(rp$has(dig))
-    expect_message(.cachedMergePEPs(rp, peps, pgset, bgset), ".*Loading.*")
-})
+rp$set("c3_TFT", obj=oldpeps)
