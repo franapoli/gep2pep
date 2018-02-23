@@ -103,33 +103,33 @@ test_that("merged repository", {
 
 if(file.exists(newroot))
     unlink(newroot, T)
-suppressMessages(
+## suppressMessages(
 
-    createMergedRepository(rp$root(), newroot, mergestr,
-                           progressBar=FALSE,
-                           mergeFunc="CondSEA",
-                           collections="c3_MIR")
+##     createMergedRepository(rp$root(), newroot, mergestr,
+##                            progressBar=FALSE,
+##                            mergeFunc="CondSEA",
+##                            collections="c3_MIR")
 
-)
+## )
 
-suppressMessages({
-    unmerged <- rankPEPsByRows.ES(loadPEPs(rp, "c3_MIR"))
-    merged <- loadPEPs(openRepository(newroot), "c3_MIR")
-})
+## suppressMessages({
+##     unmerged <- rankPEPsByRows.ES(loadPEPs(rp, "c3_MIR"))
+##     merged <- loadPEPs(openRepository(newroot), "c3_MIR")
+## })
 
-wrow <- sample(nrow(unmerged), 1)
-wmer <- sample(1:length(mergestr), 1)
-pgset <- mergestr[[wmer]]
-inset <- unmerged[wrow, pgset]
-inset <- inset[!is.na(inset)]
-outset <- (1:5)[-inset]
-if(length(inset)>0 && length(outset)>0) {
-    ks <- ks.test.2(inset, outset)
-    } else ks <- list(ES=as.numeric(NA), p.value=as.numeric(NA))
-test_that("CondSEA merging", {
-    expect_equal(length(rp$entries()), length(rpM$entries())-1)
-    expect_equal(colnames(merged$ES), c("B", "A", "C"))
-    expect_equal(colnames(merged$PV), c("B", "A", "C"))
-    expect_equal(ks$ES, merged$ES[wrow, wmer])
-    expect_equal(ks$p.value, merged$PV[wrow, wmer])
-})
+## wrow <- sample(nrow(unmerged), 1)
+## wmer <- sample(1:length(mergestr), 1)
+## pgset <- mergestr[[wmer]]
+## inset <- unmerged[wrow, pgset]
+## inset <- inset[!is.na(inset)]
+## outset <- (1:5)[-inset]
+## if(length(inset)>0 && length(outset)>0) {
+##     ks <- ks.test.2(inset, outset)
+##     } else ks <- list(ES=as.numeric(NA), p.value=as.numeric(NA))
+## test_that("CondSEA merging", {
+##     expect_equal(length(rp$entries()), length(rpM$entries())-1)
+##     expect_equal(colnames(merged$ES), c("B", "A", "C"))
+##     expect_equal(colnames(merged$PV), c("B", "A", "C"))
+##     expect_equal(ks$ES, merged$ES[wrow, wmer])
+##     expect_equal(ks$p.value, merged$PV[wrow, wmer])
+## })
