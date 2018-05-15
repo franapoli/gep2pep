@@ -71,12 +71,15 @@
 #' [1] Subramanian A. et al. Gene set enrichment analysis: A
 #'     knowledge-based approach for interpreting genome-wide
 #'     expression profiles. PNAS 102, 15545-15550 (2005).
+#'
 #' [2] Napolitano F. et al, Drug-set enrichment analysis: a novel tool
 #'     to investigate drug mode of action. Bioinformatics 32, 235-241
 #'     (2016).
-#' [3] Napolitano F. et al, gene2drug: a Computational Tool for
-#'     Pathway-based Rational Drug Repositioning, bioRxiv (2017)
-#'     192005; doi: https://doi.org/10.1101/192005
+#' 
+#' [3] Napolitano, F. et al. gene2drug: a computational tool for
+#'     pathway-based rational drug repositioning. Bioinformatics
+#'     (2017). https://doi.org/10.1093/bioinformatics/btx800
+#' 
 #' [4] Lamb, J. et al. The Connectivity Map: Using Gene-Expression
 #'     Signatures to Connect Small Molecules, Genes, and Disease. Science
 #'     313, 1929-1935 (2006).
@@ -311,6 +314,8 @@ as.CategorizedCollection <- function(GScollection,
 setId2setName <- function(sets, ids) {
     allids <- sapply(sets, setIdentifier)
     snm <- sapply(sets, setName)
+    if(missing(ids))
+        return(snm)
     return(snm[match(ids, allids)])
 }
 
@@ -378,30 +383,21 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
     
     allfiles <- list.files(path)
     say(paste0("Found ", length(allfiles), " raw files."))
-    ids <- as.numeric(gsub(".+#|[.]RDS", "", allfiles))
-    say(paste0("Found ", length(unique(ids)), " unique IDs."))
     dbs <- gsub("#.+[.]RDS", "", allfiles)
     say(paste0("Found ", length(unique(dbs)), " collection names."))
     
-    ## extracting chunk size
-    fname <- paste0(dbs[1], "#", min(ids), ".RDS")
-    Nchunk <- ncol(readRDS(file.path(path, fname))$ES)
-    fname <- paste0(dbs[1], "#", max(ids), ".RDS")
-    NlastChunk <- ncol(readRDS(file.path(path, fname))$ES)
-    Ncol <- Nchunk*(length(unique(ids))-1) + NlastChunk
-    say(paste0("Expected profiles: ", Ncol, " in chunks of size: ", Nchunk))
-
     ## real collection names (not stored in filenames)
     collnames <- getCollections(rp)
     cleanedcollnames <- gsub("[^[:alnum:]]", "_", collnames)
     
     for(i in 1:length(unique(dbs))) {
         dbi <- unique(dbs)[i]
+        
         collname <- collnames[match(dbi, cleanedcollnames)]
 
         if(!(length(collections==1) && collections=="all")) {
             if(! collname %in% collections) {
-                say(paste0("Collection: ", collname,
+                say(paste0("Collection ", collname,
                            " was not selected and will be skipped."))
                 next
             }
@@ -414,7 +410,19 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
             next
         }
         
-        say(paste0("Working on collection: ", collname))
+        say(paste0("Working on collection: ", collname))        
+        
+        subfiles <- allfiles[grep(dbi, allfiles)]
+        ids <- as.numeric(gsub(".+#|[.]RDS", "", subfiles))
+        say(paste0("Found ", length(unique(ids)), " unique IDs."))
+
+        ## extracting chunk size
+        fname <- paste0(dbi, "#", min(ids), ".RDS")
+        Nchunk <- ncol(readRDS(file.path(path, fname))$ES)
+        fname <- paste0(dbi, "#", max(ids), ".RDS")
+        NlastChunk <- ncol(readRDS(file.path(path, fname))$ES)
+        Ncol <- Nchunk*(length(unique(ids))-1) + NlastChunk
+        say(paste0("Expected profiles: ", Ncol, " in chunks of size: ", Nchunk))
 
         say(paste0("Creating a repository entry."))
         fl <- tempfile()
@@ -594,7 +602,7 @@ importMSigDB.xml <- function(fname, organism="Homo Sapiens") {
 #'     \code{getCollections}.
 #' @return Nothing
 #' @keywords internal
-dummyFunction <- function(rp, rp_peps, collections) {}
+dummyFunction <- function(rp, rp_peps, collections, collection) {}
 
 
 #' Check an existyng repository for consistency
@@ -1475,7 +1483,8 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
         thedetails <- list() else thedetails <- NULL
     
     res <- list()
-    for(i in seq_along(dbs)) {        
+    
+    for(i in seq_along(dbs)) {
         say(paste0("Working on collection: ", dbs[i]))
 
         allperts <- .loadPerts(rp_peps, dbs[i])
@@ -1489,17 +1498,16 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
                     "error")
         }
 
-        if(length(intersect(pgset, bgset))>0) {
-            bgset <- setdiff(bgset, pgset)
-            say("Common conditions removed from bgset")
-        }
-
-
         checkMissingPerts(pgset, allperts)
         if(length(bgset) == 1 && bgset=="all") {
             bgset <- allperts
         }
         checkMissingPerts(bgset, allperts)                
+
+        if(length(intersect(pgset, bgset))>0) {
+            bgset <- setdiff(bgset, pgset)
+            say("Common conditions removed from bgset")
+        }
         
         rankingset <- union(bgset, pgset)
         
@@ -1661,16 +1669,18 @@ clearCache <- function(rp_peps)
 #'     statistical background for each database. If set to "all" (the
 #'     default), all pathways that are in the repository and not in
 #'     \code{pathways} will be used.
+#' @param subset Character vector including PEP names to be
+#'     considered (all by default, which may take time).
 #' @param details If TRUE (default) details will be reported for each
 #'     condition in \code{pgset}.
 #' @param rankingFun The function used to rank PEPs column-wise. By
-#' default \code{rankPEPsByCols.ES} is used, which uses gene
-#' set enrichment scores (see details).
+#'     default \code{rankPEPsByCols.ES} is used, which uses gene set
+#'     enrichment scores (see details).
 #' @return A list of 2, by names "PathSEA" and "details". The
 #'     "PathSEA" entry is a 2-columns matrix including ESs and
-#'     p-values for each collection and condition. The "details"
-#'     entry reports the rank of each pathway in \code{pathways} for
-#'     each condition.
+#'     p-values for each collection and condition. The "details" entry
+#'     reports the rank of each pathway in \code{pathways} for each
+#'     condition.
 #' @details For each condition, all pathways are ranked by how much
 #'     they are dysregulated by it (from the most UP-regulated to the
 #'     most DOWN-regulatied, according to the corresponding
@@ -1688,15 +1698,16 @@ clearCache <- function(rp_peps)
 #'     predicts which drugs may target a gene of interest (or mimick
 #'     such effect).
 #' 
-#' The \code{rankingFun} must take in input PEPs like those loaded
-#' from the repository and return a matrix of column-wise ranks. Each
-#' column must contain ranks from 1 to the number of gene sets minus
-#' the number of NAs in the column.
+#'     The \code{rankingFun} must take in input PEPs like those loaded
+#'     from the repository and return a matrix of column-wise
+#'     ranks. Each column must contain ranks from 1 to the number of
+#'     gene sets minus the number of NAs in the column.
 #'
-#' #' @seealso getResults, getDetails
-#' @references [1] Napolitano F. et al, gene2drug: a Computational
-#'     Tool for Pathway-based Rational Drug Repositioning, bioRxiv
-#'     (2017) 192005; doi: https://doi.org/10.1101/192005
+#' @seealso getResults, getDetails
+#' @references
+#'     [1] Napolitano, F. et al. gene2drug: a computational tool for
+#'         pathway-based rational drug repositioning. Bioinformatics
+#'         (2017). https://doi.org/10.1093/bioinformatics/btx800
 #' @examples
 #' library(GSEABase)
 #'
@@ -1734,8 +1745,9 @@ clearCache <- function(rp_peps)
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
-                    details=TRUE, rankingFun=rankPEPsByCols.SPV)
+PathSEA <- function(rp_peps, pathways, bgsets="all",
+                    collections="all", subset="all", details=TRUE,
+                    rankingFun=rankPEPsByCols.SPV)
 {
     checkSets(rp_peps, pathways)
     
@@ -1747,6 +1759,7 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
         checkSets(bgsets)
         bgsets <- pwList2pwStruct(bgsets)
     }
+
     
     if(!(length(collections) == 1 && collections=="all")) {
 
@@ -1793,7 +1806,11 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
             say("Common pathway sets removed from bgset")
         }
         rankingset <- c(gmd, bgset)
-        peps <- .loadPEPs(rp_peps, collections[i])
+        
+        if(length(subset)==1 && subset == "all") {
+            peps <- .loadPEPs(rp_peps, collections[i])
+        } else peps <- .loadPEPs(rp_peps, collections[i], subset)
+
         notok <- rankingset[rankingset %in% rownames(peps)]
         if(length(notok)>0)
             say(paste0("Pathway set ids not found in ", collections[i], ": ",
@@ -1801,8 +1818,8 @@ PathSEA <- function(rp_peps, pathways, bgsets="all", collections="all",
 
         say(paste0("Column-ranking collection"))
         ranked <- rankingFun(peps, rankingset)
-        say(paste0("Computing enrichments"))
 
+        say(paste0("Computing enrichments"))
         ks <- apply(ranked, 2, function(col) {
             inset <- col[gmd]
             inset <- inset[!is.na(inset)]
@@ -2321,24 +2338,35 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
   mergeFunc <- "mean"
   parallel <- FALSE
 
-    if(!is.list(mergestr)) {
+    if(!missing(mergestr)) {
+      if(!is.list(mergestr)) {
         say(
             paste("mergestr parameter must be a list of character",
                   "(column names) or numbers (column indices)"),
           "error"
           )
+      }        
+        if(is.null(names(mergestr)) || any(duplicated(names(mergestr)))) {
+            say(paste("mergestr entries must be uniquely named"), "error")
+        }
     }
 
     ## if(any(duplicated(unlist(mergestr)))) {
     ##     say("mergestr includes duplicated entries", "error")
     ## }
 
-    if(is.null(names(mergestr)) || any(duplicated(names(mergestr)))) {
-        say(paste("mergestr entries must be uniquely named"), "error")
-    }
     
     rpin <- openRepository(rpIn_path)
-    rpout <- createRepository(rpOut_path, NULL)
+    if(!file.exists(rpOut_path)) {
+        rpout <- createRepository(rpOut_path, NULL)
+    } else {
+        say("Output repository already exists")
+        rpout <- openRepository(rpOut_path)
+        if(missing(mergestr)) {
+            say("Loading merge structure from the repository")
+            mergestr <- rpout$get("merging structure")
+        }
+    }
 
     colls <- getCollections(rpin)
     if(length(collections)==1 && collections!="all") {
@@ -2356,8 +2384,14 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
             say("Merged PEPs stored")
         }
         say("Storing merging structure")
-        rpout$put(mergestr, "merging structure",
-                  "list of single PEPs used to make each merged PEP")
+        
+        if(rpout$has("merging structure")) {
+                say("Existing merging structure will not be overwritten", "warning")
+            } else {
+                rpout$put(mergestr, "merging structure",
+                          "list of single PEPs used to make each merged PEP")
+            }
+        
         say("Done.")
     } else say("None of the specified collections is available", "warning")
 }
@@ -2458,6 +2492,41 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
     return(outpeps)
 }
 
+
+.buildGene2SetIndex <- function(rp, collection_name)
+{
+    collection <- loadCollection(rp, collection_name)
+    allsets <- sapply(collection, geneIds)
+    setids <- sapply(collection, setIdentifier)
+    allgenes <- unique(unlist(allsets))
+    
+    res <- list()
+    pb <- txtProgressBar()
+    for(i in 1:length(allgenes)) {
+        setTxtProgressBar(pb, i/length(allgenes))
+        w <- sapply(allsets, `%in%`, x=allgenes[i])
+        res[[i]] <- c(
+            gene = allgenes[i],
+            sets = paste(setids[w], collapse="; ")
+        )
+    }
+    return(res)
+}
+
+.exportCollectionsInfo <- function(rp, outfile) {
+    colls <- getCollections(rp)
+
+    dbs <- ids <- names <- vector("character")
+    for(i in 1:length(colls)) {
+        coll <- loadCollection(rp, colls[i])
+        dbs <- c(dbs, rep(colls[i], length(coll)))
+        ids <- c(ids, sapply(coll, setIdentifier))
+        ## names <- c(names, paste0("[", colls[i], "] ", sapply(coll, setName)))
+        names <- c(names, sapply(coll, setName))
+    }
+
+    return(cbind(dbs, ids, names))
+}
 
 ## This function is copy-pasted from the utils packages, as it was not
 ## exported and the check command would complain about using the `:::`

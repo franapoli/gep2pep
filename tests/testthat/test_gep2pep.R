@@ -321,6 +321,13 @@ test_that("PathSEA", {
                  ks3$p.value)
 })
 
+subset <- c("(+)_isoprenaline", "(_)_atenolol")
+res2 <- suppressMessages(PathSEA(rp, testpws[c(pws1, pws3)],
+                                 subset=subset))
+test_that("PathSEA on subset of PEPs", {
+    expect_equal(getDetails(res, "c3_TFT")[,subset],
+                 getDetails(res2, "c3_TFT")[,subset])
+})
 
 ## A gene that is found in at least 3 pathways:
 gene <- intersect(intersect(geneIds(testpws[[3]]), geneIds(testpws[[4]])),
