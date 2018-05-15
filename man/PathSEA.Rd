@@ -5,7 +5,7 @@
 \title{Performs Pathway Set Enrichment Analysis (PSEA)}
 \usage{
 PathSEA(rp_peps, pathways, bgsets = "all", collections = "all",
-  details = TRUE, rankingFun = rankPEPsByCols.SPV)
+  subset = "all", details = TRUE, rankingFun = rankPEPsByCols.SPV)
 }
 \arguments{
 \item{rp_peps}{A repository created with
@@ -25,19 +25,22 @@ default), all pathways that are in the repository and not in
 \code{getCollections}. If set to "all" (default), all the
 collections in \code{rp} will be used.}
 
+\item{subset}{Character vector including PEP names to be
+considered (all by default, which may take time).}
+
 \item{details}{If TRUE (default) details will be reported for each
 condition in \code{pgset}.}
 
 \item{rankingFun}{The function used to rank PEPs column-wise. By
-default \code{rankPEPsByCols.ES} is used, which uses gene
-set enrichment scores (see details).}
+default \code{rankPEPsByCols.ES} is used, which uses gene set
+enrichment scores (see details).}
 }
 \value{
 A list of 2, by names "PathSEA" and "details". The
     "PathSEA" entry is a 2-columns matrix including ESs and
-    p-values for each collection and condition. The "details"
-    entry reports the rank of each pathway in \code{pathways} for
-    each condition.
+    p-values for each collection and condition. The "details" entry
+    reports the rank of each pathway in \code{pathways} for each
+    condition.
 }
 \description{
 PathSEA is analogous to the Gene Set Enrichment Analysis (GSEA),
@@ -63,12 +66,10 @@ For each condition, all pathways are ranked by how much
     predicts which drugs may target a gene of interest (or mimick
     such effect).
 
-The \code{rankingFun} must take in input PEPs like those loaded
-from the repository and return a matrix of column-wise ranks. Each
-column must contain ranks from 1 to the number of gene sets minus
-the number of NAs in the column.
-
-#' @seealso getResults, getDetails
+    The \code{rankingFun} must take in input PEPs like those loaded
+    from the repository and return a matrix of column-wise
+    ranks. Each column must contain ranks from 1 to the number of
+    gene sets minus the number of NAs in the column.
 }
 \examples{
 library(GSEABase)
@@ -108,7 +109,10 @@ unlink(repo_path, TRUE)
 
 }
 \references{
-[1] Napolitano F. et al, gene2drug: a Computational
-    Tool for Pathway-based Rational Drug Repositioning, bioRxiv
-    (2017) 192005; doi: https://doi.org/10.1101/192005
+[1] Napolitano, F. et al. gene2drug: a computational tool for
+        pathway-based rational drug repositioning. Bioinformatics
+        (2017). https://doi.org/10.1093/bioinformatics/btx800
+}
+\seealso{
+getResults, getDetails
 }

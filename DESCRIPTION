@@ -1,8 +1,8 @@
 Package: gep2pep
 Type: Package
 Title: Creation and Analysis of Pathway Expression Profiles (PEPs)
-Version: 0.99.3
-Date: 2017-09-11
+Version: 1.1.1
+Date: 2018-05-15
 Author: Francesco Napolitano <franapoli@gmail.com>
 Maintainer: Francesco Napolitano <franapoli@gmail.com>
 Description: Pathway Expression Profiles (PEPs) are based on the

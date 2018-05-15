@@ -77,12 +77,15 @@ Naming conventions:
 [1] Subramanian A. et al. Gene set enrichment analysis: A
     knowledge-based approach for interpreting genome-wide
     expression profiles. PNAS 102, 15545-15550 (2005).
+
 [2] Napolitano F. et al, Drug-set enrichment analysis: a novel tool
     to investigate drug mode of action. Bioinformatics 32, 235-241
     (2016).
-[3] Napolitano F. et al, gene2drug: a Computational Tool for
-    Pathway-based Rational Drug Repositioning, bioRxiv (2017)
-    192005; doi: https://doi.org/10.1101/192005
+
+[3] Napolitano, F. et al. gene2drug: a computational tool for
+    pathway-based rational drug repositioning. Bioinformatics
+    (2017). https://doi.org/10.1093/bioinformatics/btx800
+
 [4] Lamb, J. et al. The Connectivity Map: Using Gene-Expression
     Signatures to Connect Small Molecules, Genes, and Disease. Science
     313, 1929-1935 (2006).

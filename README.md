@@ -31,3 +31,16 @@ Gep2pep can then be installed from the downloaded sources as follows:
 
     > install.packages("path-to-downloaded-source", repos=NULL)
 
+## News
+
+### v1.1.1
+
+- added support to deal with MsigDB release 6.1, which contains
+  unconventional set categories ("ARCHIVED")
+
+- added raw-mode to deal with large datasets. Raw mode stores PEPs to
+  separate files during conversion, thus can be easily parallelized
+  
+- added "organism" parameter to importMSigDB to select sets
+
+- added hdf5 support for large collection of PEPs
