@@ -1190,7 +1190,10 @@ buildPEPs <- function(rp, geps, min_size=3, max_size=500,
 #' Export CondSEA or PathSEA results to XLS format
 #'
 #' The XLS output includes the full CondSEA or PathSEA results,
-#' together with additional gene set information for the CondSEA.
+#' together with additional gene set information for the CondSEA. If
+#' the PathSEA or CondSEA analysis was performed with
+#' \code{details=TRUE}, details will be reported in the XLS file. This
+#' function requires the WriteXLS library.
 #'
 #' @inheritParams dummyFunction
 #' @param results The output of \code{CondSEA} or \code{PathSEA}.
@@ -2145,9 +2148,12 @@ attachInfo <- function(rp, results)
             newres[[i]] <- cbind(
                 Pathway = sapply(db[modIDs], get, x="name"),
                 Description = sapply(db[modIDs], get, x="desc"),
-                results[[type]][[i]],
-                results[["details"]][[i]]
+                results[[type]][[i]]
             )
+            if(!is.null(results[["details"]]))
+                newres[[i]] <- cbind(newres[[i]],
+                                     results[["details"]][[i]])
+
         } else {
             res <- cbind(
                 Condition = rownames(results[[type]][[i]]),

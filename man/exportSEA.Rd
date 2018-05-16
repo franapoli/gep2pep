@@ -18,7 +18,10 @@ Nothing.
 }
 \description{
 The XLS output includes the full CondSEA or PathSEA results,
-together with additional gene set information for the CondSEA.
+together with additional gene set information for the CondSEA. If
+the PathSEA or CondSEA analysis was performed with
+\code{details=TRUE}, details will be reported in the XLS file. This
+function requires the WriteXLS library.
 }
 \examples{
 

@@ -402,3 +402,21 @@ test_that("condsea with missing pathways", {
 })
 
 rp$set("c3_TFT", obj=oldpeps)
+
+
+
+
+context("gep2pep: XLS export")
+
+pgset <- c("(+)_isoprenaline", "(_)_atenolol")
+res1 <- suppressMessages(CondSEA(rp, pgset, details=F))
+res2 <- suppressMessages(CondSEA(rp, pgset, details=F))
+out1 <- tempfile()
+out2 <- tempfile()
+exportSEA(rp, res1, out1)
+exportSEA(rp, res2, out2)
+
+test_that("excel files produced", {
+    expect_true(file.exists(out1))
+    expect_true(file.exists(out2))
+})
