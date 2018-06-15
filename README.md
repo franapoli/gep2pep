@@ -38,10 +38,12 @@ Gep2pep is maintained by Francesco Napolitano [![alt text][1.2]][1]
 ## Download and Installation
 
 The latest stable release can be downloaded from Bioconductor at
-[https://bioconductor.org/packages/release/bioc/html/gep2pep.html](https://bioconductor.org/packages/release/bioc/html/gep2pep.html). Further
+[https://bioconductor.org/packages/release/bioc/html/gep2pep.html](https://bioconductor.org/packages/release/bioc/html/gep2pep.html). The
+latest development versions is at
+[https://bioconductor.org/packages/devel/bioc/html/gep2pep.html](https://bioconductor.org/packages/devel/bioc/html/gep2pep.htmlFurther). Installation
 instructions ar provided there.
 
-Latest non-stable versions can be found on Github at
+Additional in progress versions can be found on Github at
 [https://github.com/franapoli/gep2pep](https://www.github.com/franapoli/gep2pep),
 downloaded and then installed as follows:
 
@@ -76,6 +78,6 @@ In progress version.
 
 - added hdf5 support for large collections of PEPs
 
-### v1
+### v1.0.0
 
-- first release
+- First release
