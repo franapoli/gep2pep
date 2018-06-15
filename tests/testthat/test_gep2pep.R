@@ -1,10 +1,10 @@
 
 
-## ## Workflow:
-## library(GSEABase)
-## library(devtools)
-## library(testthat)
-## load_all()
+## Workflow:
+library(GSEABase)
+library(devtools)
+library(testthat)
+load_all()
 
 loadPEPs <- gep2pep:::.loadPEPs
 
@@ -74,13 +74,22 @@ test_that("new db creation", {
     expect_error(loadPVmatrix(rp, "c3_TFT"))
 })
 
+context("gep2pep: creation of SGE db")
+
+addSingleGeneSets(rp, rownames(testgep))
+test_that("SGE were created", {
+    expect_true("SGE_sets" %in% names(rp$entries()))
+})
+
 context("gep2pep: creation of peps")
 
-suppressMessages(buildPEPs(rp, testgep, progress_bar=FALSE,
-                           min_size=3))
+suppressMessages(
+    buildPEPs(rp, testgep, progress_bar=FALSE,
+              min_size=3)
+)
 
 test_that("build first PEPs", {
-    expect_equal(length(rp$entries()), 8)
+    expect_equal(length(rp$entries()), 10)
     expect_equal(length(dbs), length(testpws))
     expect_true(rp$has(expected_dbs[1]))
     expect_true(rp$has(expected_dbs[2]))
@@ -118,6 +127,11 @@ for(i in 1:3) {
     dbi <- dbs[testi]
     res[[i]] <- list(id=id, testj=testj, ks=ks, dbi=dbi)
 }
+
+s <- sample(1:ncol(testgep), 1)
+g <- sample(1:nrow(testgep), 1)
+ksSGE <- ks.test.2(testgep[g,s], (1:nrow(testgep))[-testgep[g,s]])
+
 test_that("KS statistics", {
     i <- 1
     id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
@@ -131,6 +145,8 @@ test_that("KS statistics", {
     id <- res[[i]]$id; testj <- res[[i]]$testj; ks <- res[[i]]$ks; dbi <- res[[i]]$dbi
     expect_equal(loadPEPs(rp, dbi)$ES[id, testj], ks$ES)
     expect_equal(loadPEPs(rp, dbi)$PV[id, testj], ks$p.value)
+    expect_equal(ksSGE$ES, loadESmatrix(rp, "SGE")[g,s])
+    expect_equal(ksSGE$p.value, loadPVmatrix(rp, "SGE")[g,s])
 })
 
 context("gep2pep: adding existing peps")

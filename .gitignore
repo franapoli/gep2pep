@@ -1,3 +1,9 @@
 .Rhistory
 inst/doc
 readme_example.md
+.tramp_history
+\#*#
+vignettes/vignette.md
+vignettes/vignette.R
+vignettes/.build.timestamp
+man/dummyFunction.Rd

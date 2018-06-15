@@ -20,11 +20,13 @@ not be used.}
 
 \item{min_size}{An integer representing the minimum number of genes
 that must be included in a set before the KS statistic is
-computed. Smaller gene sets will get ES=NA and p=NA. Default is 3.}
+computed. Smaller gene sets will get ES=NA and p=NA. Default is
+3. Ignored for SGE mode (see \code{addSingleGeneSets}).}
 
 \item{max_size}{An integer representing the maximum number of genes
 that must be included in a set before the KS statistic is
-computed. Larger gene sets will get ES=NA and p=NA. Default is 500.}
+computed. Larger gene sets will get ES=NA and p=NA. Default is
+500.}
 
 \item{parallel}{If TRUE, gene sets will be processed in
 parallel. Requires a parallel backend.}

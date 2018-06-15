@@ -1054,11 +1054,13 @@ makeCollectionIDs <- function(sets) {
 #'     in the pathways collections, and unrecognized gene names will
 #'     not be used.
 #' @param min_size An integer representing the minimum number of genes
-#' that must be included in a set before the KS statistic is
-#' computed. Smaller gene sets will get ES=NA and p=NA. Default is 3.
+#'     that must be included in a set before the KS statistic is
+#'     computed. Smaller gene sets will get ES=NA and p=NA. Default is
+#'     3. Ignored for SGE mode (see \code{addSingleGeneSets}).
 #' @param max_size An integer representing the maximum number of genes
-#' that must be included in a set before the KS statistic is
-#' computed. Larger gene sets will get ES=NA and p=NA. Default is 500.
+#'     that must be included in a set before the KS statistic is
+#'     computed. Larger gene sets will get ES=NA and p=NA. Default is
+#'     500.
 #' @param parallel If TRUE, gene sets will be processed in
 #'     parallel. Requires a parallel backend.
 #' @param replace_existing What to do if PEPs, identified by column
@@ -1177,8 +1179,17 @@ buildPEPs <- function(rp, geps, min_size=3, max_size=500,
         if(length(newpeps) > 0) {
             gepsi <- geps[, newpeps, drop=FALSE]
             thisdb <- .loadCollection(rp, dbs[i])
-            peps <- gep2pep(gepsi, thisdb, min_size, max_size,
-                            parallel, progress_bar)
+
+            SGEmode <- "SGE" %in% rp$tags(paste0(dbs[i], "_sets"))
+            if(SGEmode) {
+                say("Running in Single Gene mode")
+                peps <- gep2pep(gepsi, thisdb, min_size=1, max_size,
+                                parallel, progress_bar, SGEmode=TRUE)
+            } else {
+                peps <- gep2pep(gepsi, thisdb, min_size, max_size,
+                                parallel, progress_bar, SGEmode=FALSE)
+            }
+            
             storePEPs(rp, dbs[i], peps, rawmode_id,
                       rawmode_outdir)
         }
@@ -1859,8 +1870,11 @@ PathSEA <- function(rp_peps, pathways, bgsets="all",
 #' pathways for the \code{\link{PathSEA}}.
 #'
 #' @inheritParams dummyFunction
-#' @param gene A gene identifier of the same type as that used to
-#'     create the repository.
+#' @param genes A vector of gene identifiers of the same type as that
+#'     used to create the repository.
+#' @param and If set to TRUE (default), will return sets containing
+#'     all of \code{genes}. Otherwise will return the sets containing
+#'     any of \code{genes}.
 #' @return A database of pathways suitable as input to
 #'     \code{\link{PathSEA}}.
 #' @seealso createRepository, PathSEA
@@ -1878,13 +1892,15 @@ PathSEA <- function(rp_peps, pathways, bgsets="all",
 #' unlink(repo_path, TRUE)
 #'
 #' @export
-gene2pathways <- function(rp, gene)
+gene2pathways <- function(rp, genes, and=TRUE)
 {
     dbs <- getCollections(rp)
     mods <- list()
     for(i in seq_along(dbs)) {
         db <- loadCollection(rp, dbs[i])
-        w <- sapply(db, function(s) gene %in% geneIds(s))
+        if(and) {
+            w <- sapply(db, function(s) all(genes %in% geneIds(s)))
+        } else w <- sapply(db, function(s) any(genes %in% geneIds(s)))
         mods <- GeneSetCollection(c(mods, db[w]))
     }
 
@@ -1920,8 +1936,8 @@ gene2pathways <- function(rp, gene)
 ## }
 
 gep2pep <- function(geps, sets, min_size, max_size, parallel=FALSE,
-                    pbar=TRUE) {
-    
+                    pbar=TRUE, SGEmode=FALSE) {
+
     pathw <- sets
     genemat <- geps
     genes <- rownames(genemat)
@@ -1929,40 +1945,58 @@ gep2pep <- function(geps, sets, min_size, max_size, parallel=FALSE,
     x <- list()
     sets <- sapply(unname(pathw), get, x="set")
 
+    ES <- matrix(NA, length(pathw), ncol(genemat))
+    PV <- matrix(NA, length(pathw), ncol(genemat))
+
     if(pbar)
         pb <- txtProgressBar()
+    
     for(j in seq_len(ncol(genemat)))
     {
         if(pbar)
             setTxtProgressBar(pb, (j-1)/ncol(genemat))
         genematj <- genemat[,j]
 
-        '%dobest%' <- if (parallel) get('%dopar%') else get('%do%')
-        set <- NULL ## to cope with R CMD check NOTE
-        gres <- foreach(set = sets,
-                        .export=c("gsea","ks.test.2")) %dobest%
-        {
-            where <- match(set, genes)
-            where <- where[!is.na(where)]
-            gsea(where, genematj, min_size, max_size)
+        if(!SGEmode) {
+            '%dobest%' <- if (parallel) get('%dopar%') else get('%do%')
+            set <- NULL ## to cope with R CMD check NOTE
+            gres <- foreach(set = sets,
+                            .export=c("gsea","ks.test.2")) %dobest%
+                {
+                    where <- match(set, genes)
+                    where <- where[!is.na(where)]
+                    gsea(where, genematj, min_size, max_size)
+                }
+
+            x[[j]] <- gres
+            
+            if(all(is.na(sapply(gres, "get", x="ES"))))
+                say(paste0("All NAs in PEP for profile: ",
+                           colnames(genemat)[j]), "warning")
+
+        } else { ## SGE mode
+            nona <- genematj[!is.na(genematj)]
+            pv <- .fastKSp(nona)
+            es <- .fastKSES(nona)
+
+            if(all(is.na(pv)) || all(is.na(es)))
+                say(paste0("All NAs in PEP for profile: ",
+                           colnames(genemat)[j]), "warning")
+            PV[,j] <- pv
+            ES[,j] <- es
         }
-        if(all(is.na(sapply(gres, "get", x="ES"))))
-            say(paste0("All NAs in PEP for profile: ",
-                       colnames(genemat)[j]), "warning")
-        x[[j]] <- gres
     }
+        
     if(pbar) {
         setTxtProgressBar(pb, 1)
         close(pb)
     }
 
-    ES <- matrix(NA, length(pathw), ncol(genemat))
-    PV <- matrix(NA, length(pathw), ncol(genemat))
-    
-    for(i in seq_len(ncol(genemat))){
-        PV[,i] <- sapply(x[[i]], "get", x="p")
-        ES[,i] <- sapply(x[[i]], "get", x="ES")
-    }
+    if(!SGEmode)
+        for(i in seq_len(ncol(genemat))){
+            PV[,i] <- sapply(x[[i]], "get", x="p")
+            ES[,i] <- sapply(x[[i]], "get", x="ES")
+        }
 
     rownames(ES) <- rownames(PV) <-
         sapply(pathw, "get", x="id")
@@ -2392,11 +2426,12 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
         say("Storing merging structure")
         
         if(rpout$has("merging structure")) {
-                say("Existing merging structure will not be overwritten", "warning")
-            } else {
-                rpout$put(mergestr, "merging structure",
-                          "list of single PEPs used to make each merged PEP")
-            }
+            say("Existing merging structure will not be overwritten",
+                "warning")
+        } else {
+            rpout$put(mergestr, "merging structure",
+                      "list of single PEPs used to make each merged PEP")
+        }
         
         say("Done.")
     } else say("None of the specified collections is available", "warning")
@@ -2579,4 +2614,85 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
     if (power == 0 && standard == "legacy") 
         unit <- "bytes"
     paste(round(x/base^power, digits = digits), unit)
+}
+
+#' Adds a collection of single-gene psuedo-sets.
+#'
+#' This function can be used to add single-gene (as opposed to
+#' pathway) -based collections. Sets including a single gene don't need
+#' to go through normal Kolmogorov-Smirnov statistic computation and
+#' are treated differently for performance.
+#'  
+#' @inheritParams dummyFunction
+#' @param organism Character vector used to annotate the created
+#'     sets. "Homo Sapiens" by default.
+#' @return Nothing, used for side effects.
+#' @seealso buildPEPs
+#' @details
+#'
+#' Enrichment Scores and p-values for sets including a single gene are
+#' computed with dedicated (fast) routines. Although a statistic based
+#' on a single gene is not efficient per se, it is useful to have data
+#' in the same format as pathway-based profiles. \code{buildPEPs}
+#' internally calls single gene dedicated routines whenever a gene set
+#' collection is tagged (see repo function \code{tag}) with "SGE"
+#' ("Single Gene Expression"), which is done automatically by
+#' \code{addSingleGeneSets}. In that case, the \code{min_size}
+#' parameter is ignored.
+#' 
+#' @export
+#' @examples
+#' 
+#' db <- loadSamplePWS()
+#' repo_path <- file.path(tempdir(), "gep2pepTemp")
+#'
+#' rp <- createRepository(repo_path, db)
+#'
+#' ## The following will create PEPs in 2 separate files
+#' geps <- loadSampleGEP()
+#' addSingleGeneSets(rp, rownames(geps))
+#'
+#' unlink(repo_path, TRUE)
+#' 
+addSingleGeneSets <- function(rp, genes, organism = "Homo Sapiens")
+{
+gs <- list()
+descr <- "Pseudo-gene-set containing only gene "
+for(i in 1:length(genes)) {
+    g <- genes[i]
+    gs[[i]] <- GeneSet(g,
+                       shortDescription = paste0(descr, g),
+                       longDescription = paste0(descr, g),
+                       setName = g,
+                       setIdentifier = paste0("SGE-", g),
+                       organism = organism,
+                       collectionType = CategorizedCollection(
+                           category="SGE",
+                           subCategory="SGE"
+                       ))
+    }
+sge <- GeneSetCollection(gs)
+rp$put(sge, "SGE_sets", "Pathway information for collection SGE",
+       tags=c("gep2pep", "sets", "SGE"))
+    
+}
+
+.fastKSp <- function(v) {
+    ## converts a vector of ranks to corresponding KS p-values
+    ## used for single-gene sets
+    n <- length(v)-sum(is.na(v))
+    up <- seq(1, floor(n/2))/(n/2)
+    if(length(v)%%2==1)
+        ret <- c(up, 1, rev(up)) else ret <- c(up, rev(up))
+    return(ret[v])
+}
+
+.fastKSES <- function(v) {
+    ## converts a vector of ranks to corresponding KS Enrichment
+    ## Scores. Used for single-gene sets
+    n <- length(v)
+    up <- -1/(n-1)*(1:ceiling(n/2)-1) + 1
+    if(length(v)%%2==1)
+        ret <- c(up[-length(up)], -rev(up)) else ret <- c(up, -rev(up))
+    return(ret[v])
 }

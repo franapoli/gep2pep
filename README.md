@@ -49,6 +49,21 @@ downloaded and then installed as follows:
 
 ## News
 
+### v1.1.1.1
+
+In progress version.
+
+- Added "SGE mode", including the function `addSingleGeneSets`. This
+  is to support fast computation of Kolmogorov-Smirnov statistics for
+  large collections of gene sets including a single gene, which is
+  useful to support gene-centric (as opposed to pathway-centric)
+  analysis.
+  
+- `gene2pathways` now accepts a list of genes and returns all the
+  pathways including either ALL of them or ANY of them according to
+  the new `and` paramater.
+  
+
 ### v1.1.1
 
 - added support to deal with MsigDB release 6.1, which contains
@@ -57,9 +72,9 @@ downloaded and then installed as follows:
 - added raw-mode to deal with large datasets. Raw mode stores PEPs to
   separate files during conversion, thus can be easily parallelized
   
-- added "organism" parameter to importMSigDB to select sets
+- added "organism" parameter to `importMSigDB` to select sets
 
-- added hdf5 support for large collection of PEPs
+- added hdf5 support for large collections of PEPs
 
 ### v1
 

@@ -4,13 +4,17 @@
 \alias{gene2pathways}
 \title{Finds pathways including a given gene.}
 \usage{
-gene2pathways(rp, gene)
+gene2pathways(rp, genes, and = TRUE)
 }
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
 
-\item{gene}{A gene identifier of the same type as that used to
-create the repository.}
+\item{genes}{A vector of gene identifiers of the same type as that
+used to create the repository.}
+
+\item{and}{If set to TRUE (default), will return sets containing
+all of \code{genes}. Otherwise will return the sets containing
+any of \code{genes}.}
 }
 \value{
 A database of pathways suitable as input to

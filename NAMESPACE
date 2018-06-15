@@ -3,6 +3,7 @@
 export(CategorizedCollection)
 export(CondSEA)
 export(PathSEA)
+export(addSingleGeneSets)
 export(as.CategorizedCollection)
 export(buildPEPs)
 export(checkRepository)
