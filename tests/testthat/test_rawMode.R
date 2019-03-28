@@ -247,3 +247,32 @@ test_that("Column ranking with NES in raw mode", {
 })
 
 
+
+## context("gep2pep: adding peps one by one")
+
+## rp2 <- create_test_repo("2")
+## for(i in 1:2)
+##     suppressMessages(
+##         buildPEPs(rp2, testgep[,i,drop=F], progress_bar=FALSE,
+##                   rawmode_id = i)
+##     )
+## importFromRawMode(rp2)
+
+## for(i in 3:5)
+##     suppressMessages(
+##         buildPEPs(rp2, testgep[,i,drop=F], progress_bar=FALSE,
+##                   rawmode_id = i)
+##     )
+## importFromRawMode(rp2)
+
+## rptft <- rp$get("c3_TFT")
+## rptft2 <- rp2$get("c3_TFT")
+## eseq <- rptft$ES == rptft2$ES
+## pveq <- rptft$PV == rptft2$PV
+## test_that("adding one by one in raw mode", {
+##     expect_true(all(eseq[!is.na(eseq)]))
+##     expect_true(all(pveq[!is.na(pveq)]))
+##     expect_true(all(colnames(rptft) == colnames(rptft2)))
+##     expect_true(all(rownames(rptft) == rownames(rptft2)))    
+##     expect_failure(expect_warning(suppressMessages(checkRepository(rp2))))
+## })

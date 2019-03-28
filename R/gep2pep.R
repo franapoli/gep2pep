@@ -403,12 +403,12 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
             }
         }      
 
-        if(rp$has(collname)) {
-            say(paste0("A collection named ", collname,
-                       " is already in the repository ",
-                       "and will be skipped in raw mode"), "warning")
-            next
-        }
+        ## if(rp$has(collname)) {
+        ##     say(paste0("A collection named ", collname,
+        ##                " is already in the repository ",
+        ##                "and will be skipped in raw mode"), "warning")
+        ##     next
+        ## }
         
         say(paste0("Working on collection: ", collname))        
         
@@ -443,11 +443,19 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
         Nrow <- nrow(x)
         say(paste0("Creating 2 HDF5 dataset of size: ", Nrow, "x", Ncol))
 
-        h5createDataset(fl, "ES", c(Nrow, Ncol), chunk=c(Nrow, Nchunk))
-        h5createDataset(fl, "PV", c(Nrow, Ncol), chunk=c(Nrow, Nchunk))
-        h5createDataset(fl, "rownames", Nrow, storage.mode="character",
+        h5createDataset(fl, "ES", c(Nrow, Ncol),
+                        maxdims=c(Nrow*10, Ncol*10),
+                        chunk=c(Nrow, Nchunk))
+        h5createDataset(fl, "PV", c(Nrow, Ncol),
+                        maxdims=c(Nrow*10, Ncol*10),                        
+                        chunk=c(Nrow, Nchunk))
+        h5createDataset(fl, "rownames", Nrow,
+                        maxdims=c(Nrow*10),
+                        storage.mode="character",
                         size=256, chunk=Nrow)
-        h5createDataset(fl, "colnames", Ncol, storage.mode="character",
+        h5createDataset(fl, "colnames", Ncol,
+                        maxdims=c(Ncol*10),
+                        storage.mode="character",
                         size=256, chunk=Nchunk)
         h5write(rownames(x), fl, "rownames")      
         
@@ -1132,7 +1140,8 @@ makeCollectionIDs <- function(sets) {
 #' @export
 buildPEPs <- function(rp, geps, min_size=3, max_size=500,
                       parallel=FALSE, collections="all",
-                      replace_existing=FALSE, progress_bar=TRUE,
+                      replace_existing=FALSE, donotstore=FALSE,
+                      progress_bar=TRUE,
                       rawmode_id=NULL,
                       rawmode_outdir=file.path(rp$root(), "raw"))
 {
@@ -1140,6 +1149,14 @@ buildPEPs <- function(rp, geps, min_size=3, max_size=500,
     perts <- rp$get("conditions")
     rawmode <- !is.null(rawmode_id)
 
+    if(replace_existing && donotstore)
+        say("either replace_existing or donotstore can be true",
+            type="error")
+
+    ## the following is to force recomputing existing PEPs
+    if(donotstore)
+        replace <- existing <- TRUE 
+    
     if(rawmode && rawmode_id %% 1 != 0)
         say("rawmode_id must be an integer number", type="error")
     
@@ -1147,6 +1164,9 @@ buildPEPs <- function(rp, geps, min_size=3, max_size=500,
         dbs <- getCollections(rp)
     } else dbs <- collections
 
+    if(donotstore)
+        res <- list()
+    
     for(i in seq_along(dbs))
     {
         say(paste0("Working on collection: ", dbs[i],
@@ -1189,11 +1209,17 @@ buildPEPs <- function(rp, geps, min_size=3, max_size=500,
                 peps <- gep2pep(gepsi, thisdb, min_size, max_size,
                                 parallel, progress_bar, SGEmode=FALSE)
             }
-            
-            storePEPs(rp, dbs[i], peps, rawmode_id,
-                      rawmode_outdir)
+
+            if(donotstore) {
+                res[[dbs[i]]] <- peps
+            } else {
+                storePEPs(rp, dbs[i], peps, rawmode_id,
+                          rawmode_outdir)
+            }
         }
     }
+    if(donotstore)
+        return(res)
 }
 
 
@@ -1232,6 +1258,7 @@ buildPEPs <- function(rp, geps, min_size=3, max_size=500,
 #' @export
 exportSEA <- function(rp, results, outname=NULL)
 {
+    
     type <- names(results)[[1]]
     if(! tolower(type) %in% c("condsea", "pathsea"))
         say("type must be on of: CondSEA, PathSEA", "error")
@@ -1614,8 +1641,12 @@ clearCache <- function(rp_peps)
     Nrow <- nrow(ranks)
     Ncol <- ncol(ranks)
     ranks[is.na(ranks)] <- -1
-    h5createDataset(fl, "ranks", c(Nrow, Ncol), chunk=c(Nrow, Ncol))
-    h5createDataset(fl, "nas", length(attr(ranks, "nas")),
+    h5createDataset(fl, "ranks", c(Nrow, Ncol),
+                    maxdims=c(Nrow*10, Ncol*10),
+                    chunk=c(Nrow, Ncol))
+    l <- length(attr(ranks, "nas"))
+    h5createDataset(fl, "nas", l,
+                    maxdims=l*10,
                     chunk=length(attr(ranks, "nas")))
     h5write(ranks, fl, "ranks")
     h5write(attr(ranks, "nas"), fl, "nas")
@@ -2409,7 +2440,7 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
     }
 
     colls <- getCollections(rpin)
-    if(length(collections)==1 && collections!="all") {
+    if(!(length(collections)==1 && collections=="all")) {
         colls <- intersect(colls, collections)
     }
 
@@ -2695,4 +2726,96 @@ rp$put(sge, "SGE_sets", "Pathway information for collection SGE",
     if(length(v)%%2==1)
         ret <- c(up[-length(up)], -rev(up)) else ret <- c(up, -rev(up))
     return(ret[v])
+}
+
+
+exportPEPs <- function(rp, PEPname, outfile=paste0(PEPname, ".xls"),
+                       collections="all")
+{
+    colls <- getCollections(rp)
+
+    if(!(length(collections)==1 && collections=="all"))
+        colls <- intersect(collections, colls)
+
+    newres <- list()
+    
+    for(i in 1:length(colls)) {
+        db <- .loadCollection(rp, colls[i])
+        PEPs <- .loadPEPs(rp, colls[i], PEPname)
+        ord <- order(PEPs$PV)
+        PEPs$ES <- PEPs$ES[ord,,drop=F]
+        PEPs$PV <- PEPs$PV[ord,,drop=F]
+        
+        modIDs <- rownames(PEPs$ES)
+
+        newres[[i]] <- data.frame(
+            Pathway = sapply(db[modIDs], get, x="name"),
+            Description = sapply(db[modIDs], get, x="desc"),
+            ES = PEPs$ES[,PEPname],
+            p.value = PEPs$PV[,PEPname],
+            FDR = p.adjust(PEPs$PV, "fdr", n=sum(!is.na(PEPs$PV))),
+            check.names = FALSE
+        )
+    }
+    names(newres) <- gsub(":", "_", colls)
+
+    WriteXLS(newres, outfile, BoldHeaderRow = TRUE, FreezeRow = 1,
+             AutoFilter = TRUE)
+}
+
+
+
+do_and_show_gsea <- function(gep, set) {
+    setgenes <- geneIds(set)    
+    
+    x <- gep[setgenes]
+    x <- x[!is.na(x)]
+    y <- setdiff((1:sum(!is.na(gep))), x)
+    n.x <- as.double(length(x))
+    n.y <- length(y)
+    w <- c(x, y)        
+    z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
+
+    m <- which.max(abs(z))
+    s <- sign(z[m])    
+
+    ks <- ks.test.2(x, y, maxCombSize=10^10)
+    ES <- unname(s*ks$statistic)
+    p <- ks$p.value
+
+    if(s > 0) {
+        leadset <- x[x <= m]
+    } else leadset <- x[x >= m]
+
+    fname <- paste(drug, dbi, pwi, sep="_")
+
+    say("Creating PNG device")
+    pngf <- paste0(outdir, "/", fname, ".png")
+    library(Cairo)
+    CairoPNG(pngf, 480*2, 480)
+    ##png(pngf, 480*2, 480)
+
+    say("Creating plot")
+    plot(z, type="l", ylab="ES", xlab="Ranks",
+         main=paste0(drugname, "\n", G_allsubdbs[dbi], " - ", pwname),
+         lwd=1.5, col="gray")
+    points(m, z[m], pch=21, cex=2)
+    points(x, z[x], cex=.5)
+    if(s>0) {
+        points(x[x <= m], z[x[x <= m]], bg="green", col="green", pch=21)
+    } else {
+        points(x[x >= m], z[x[x >= m]], bg="red", col="red", pch=21)
+    }    
+    dev.off()
+
+
+    ## say("Creating table")
+    ## tabf <- paste0(outdir, "/", fname, ".txt")
+    ## tab <- cbind(profile[set,,drop=F], lead=F)
+    ## tab[names(leadset), 2] <- T
+    ## tab <- tab[order(tab[,1]),]
+    ## tab <- rbind(stats = c(ES,p), tab)
+    ## say("Saving table")
+    ## write.table(tab, tabf, quote=F, col.names=F)
+    ## say("Table saved")
 }

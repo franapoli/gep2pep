@@ -5,8 +5,9 @@
 \title{Build PEPs from GEPs and stores them in the repository.}
 \usage{
 buildPEPs(rp, geps, min_size = 3, max_size = 500, parallel = FALSE,
-  collections = "all", replace_existing = FALSE, progress_bar = TRUE,
-  rawmode_id = NULL, rawmode_outdir = file.path(rp$root(), "raw"))
+  collections = "all", replace_existing = FALSE, donotstore = FALSE,
+  progress_bar = TRUE, rawmode_id = NULL,
+  rawmode_outdir = file.path(rp$root(), "raw"))
 }
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}

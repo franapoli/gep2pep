@@ -1,10 +1,10 @@
 
 
 ## Workflow:
-library(GSEABase)
-library(devtools)
-library(testthat)
-load_all()
+## library(GSEABase)
+## library(devtools)
+## library(testthat)
+## load_all()
 
 loadPEPs <- gep2pep:::.loadPEPs
 
