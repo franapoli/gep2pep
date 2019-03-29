@@ -10,7 +10,7 @@ dbfolder <- file.path(tempdir(), "gep2pepDB")
 clear_test_repo <- function(suffix=NULL) {
     folder <- paste0(dbfolder, suffix)
     if(file.exists(folder))
-        unlink(folder, T)
+        unlink(folder, TRUE)
 }
 
 create_test_repo <- function(suffix=NULL) {
@@ -44,7 +44,7 @@ mergestr <- list(B=pgB, A=pgA, C=pgC)
 
 mergedPEPs <- suppressMessages(
     .mergePEPs(rp, "c3_MIR", mergestr,
-               progressBar=F)
+               progressBar=FALSE)
     )
 
 chis <- function(ps) {
@@ -56,8 +56,8 @@ chis <- function(ps) {
 manualMergedES <- matrix(NA, 10, 3)
 manualMergedPV <- matrix(NA, 10, 3)
 for(i in 1:length(mergestr)) {
-    manualMergedES[,i] <- apply(peps$ES[,mergestr[[i]],drop=F], 1, mean)
-    manualMergedPV[,i] <- apply(peps$PV[,mergestr[[i]],drop=F], 1, chis)
+    manualMergedES[,i] <- apply(peps$ES[,mergestr[[i]],drop=FALSE], 1, mean)
+    manualMergedPV[,i] <- apply(peps$PV[,mergestr[[i]],drop=FALSE], 1, chis)
     }
 colnames(manualMergedES) <-
     colnames(manualMergedPV) <-
@@ -79,7 +79,7 @@ test_that("merging function", {
 
 newroot <- file.path(tempdir(), "merged")
 if(file.exists(newroot))
-    unlink(newroot, T)
+    unlink(newroot, TRUE)
 suppressMessages(
     createMergedRepository(rp$root(), newroot, mergestr,
                            progressBar=FALSE)
@@ -102,7 +102,7 @@ test_that("merged repository", {
 
 
 if(file.exists(newroot))
-    unlink(newroot, T)
+    unlink(newroot, TRUE)
 ## suppressMessages(
 
 ##     createMergedRepository(rp$root(), newroot, mergestr,

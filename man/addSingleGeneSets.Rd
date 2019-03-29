@@ -9,6 +9,9 @@ addSingleGeneSets(rp, genes, organism = "Homo Sapiens")
 \arguments{
 \item{rp}{A repository created by \code{\link{createRepository}}.}
 
+\item{genes}{a character vector containing the gene names. For each
+og them a single-gene \code{GeneSet} will be created.}
+
 \item{organism}{Character vector used to annotate the created
 sets. "Homo Sapiens" by default.}
 }

@@ -390,7 +390,7 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
     collnames <- getCollections(rp)
     cleanedcollnames <- gsub("[^[:alnum:]]", "_", collnames)
     
-    for(i in 1:length(unique(dbs))) {
+    for(i in seq_along(unique(dbs))) {
         dbi <- unique(dbs)[i]
         
         collname <- collnames[match(dbi, cleanedcollnames)]
@@ -461,7 +461,7 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
         
         say("Adding chunks...")
         uids <- sort(unique(ids))
-        for(j in 1:length(uids)) {
+        for(j in seq_along(uids)) {
             fsize <- .format.object_size(file.size(fl), "auto")
             fname <- paste0(dbi, "#", uids[j], ".RDS")
             ifile <- file.path(path, fname)
@@ -1076,6 +1076,10 @@ makeCollectionIDs <- function(sets) {
 #'     set to TRUE, they will be replaced, otherwise they will be
 #'     skipped and only PEPs of new conditions will be computed and
 #'     added. Either ways, will throw a warning.
+#' @param donotstore Just compute and return the pathway-based
+#'     profiles without storing them in the repository. The repository
+#'     is still required to load pathway data, however it will not be
+#'     modified.
 #' @param progress_bar If set to TRUE (default) will show a progress
 #'     bar updated after coversion of each column of \code{geps}.
 #' @param rawmode_id An integer to be appended to files produced in
@@ -1590,7 +1594,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
                       innas <- is.na(row)
                       inset <- row[!innas]
                       maxr <- backgroundSize - nas
-                      outset <- (1:maxr)[-inset]
+                      outset <- seq_along(1:maxr)[-inset]
                       if(length(inset)>=1 && length(outset)>=1) {
                           res <- ks.test.2(inset, outset, maxCombSize=10^10)
                       } else res <- list(ES=NA, p.value=NA)
@@ -2495,7 +2499,7 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
         if(!ish5)
             allpeps <- .loadPEPs(rpin, coll)
 
-        for(i in 1:length(mergestr)) {
+        for(i in seq_along(mergestr)) {
             if(progressBar)
                 setTxtProgressBar(pb, i/length(mergestr))
 
@@ -2530,7 +2534,7 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
         }
 
     } else if(mergeFunc == "CondSEA") {
-        for(i in 1:length(mergestr)) {
+        for(i in seq_along(mergestr)) {
             if(progressBar)
                 setTxtProgressBar(pb, i/length(mergestr))
         
@@ -2574,7 +2578,7 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
     
     res <- list()
     pb <- txtProgressBar()
-    for(i in 1:length(allgenes)) {
+    for(i in seq_along(allgenes)) {
         setTxtProgressBar(pb, i/length(allgenes))
         w <- sapply(allsets, `%in%`, x=allgenes[i])
         res[[i]] <- c(
@@ -2589,7 +2593,7 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
     colls <- getCollections(rp)
 
     dbs <- ids <- names <- vector("character")
-    for(i in 1:length(colls)) {
+    for(i in seq_along(colls)) {
         coll <- loadCollection(rp, colls[i])
         dbs <- c(dbs, rep(colls[i], length(coll)))
         ids <- c(ids, sapply(coll, setIdentifier))
@@ -2655,6 +2659,8 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
 #' are treated differently for performance.
 #'  
 #' @inheritParams dummyFunction
+#' @param genes a character vector containing the gene names. For each
+#'     og them a single-gene \code{GeneSet} will be created.
 #' @param organism Character vector used to annotate the created
 #'     sets. "Homo Sapiens" by default.
 #' @return Nothing, used for side effects.
@@ -2689,7 +2695,7 @@ addSingleGeneSets <- function(rp, genes, organism = "Homo Sapiens")
 {
 gs <- list()
 descr <- "Pseudo-gene-set containing only gene "
-for(i in 1:length(genes)) {
+for(i in seq_along(genes)) {
     g <- genes[i]
     gs[[i]] <- GeneSet(g,
                        shortDescription = paste0(descr, g),
@@ -2729,93 +2735,96 @@ rp$put(sge, "SGE_sets", "Pathway information for collection SGE",
 }
 
 
-exportPEPs <- function(rp, PEPname, outfile=paste0(PEPname, ".xls"),
-                       collections="all")
-{
-    colls <- getCollections(rp)
 
-    if(!(length(collections)==1 && collections=="all"))
-        colls <- intersect(collections, colls)
+## Utilities removed from package
+##
+## exportPEPs <- function(rp, PEPname, outfile=paste0(PEPname, ".xls"),
+##                        collections="all")
+## {
+##     colls <- getCollections(rp)
 
-    newres <- list()
+##     if(!(length(collections)==1 && collections=="all"))
+##         colls <- intersect(collections, colls)
+
+##     newres <- list()
     
-    for(i in 1:length(colls)) {
-        db <- .loadCollection(rp, colls[i])
-        PEPs <- .loadPEPs(rp, colls[i], PEPname)
-        ord <- order(PEPs$PV)
-        PEPs$ES <- PEPs$ES[ord,,drop=F]
-        PEPs$PV <- PEPs$PV[ord,,drop=F]
+##     for(i in 1:length(colls)) {
+##         db <- .loadCollection(rp, colls[i])
+##         PEPs <- .loadPEPs(rp, colls[i], PEPname)
+##         ord <- order(PEPs$PV)
+##         PEPs$ES <- PEPs$ES[ord,,drop=F]
+##         PEPs$PV <- PEPs$PV[ord,,drop=F]
         
-        modIDs <- rownames(PEPs$ES)
+##         modIDs <- rownames(PEPs$ES)
 
-        newres[[i]] <- data.frame(
-            Pathway = sapply(db[modIDs], get, x="name"),
-            Description = sapply(db[modIDs], get, x="desc"),
-            ES = PEPs$ES[,PEPname],
-            p.value = PEPs$PV[,PEPname],
-            FDR = p.adjust(PEPs$PV, "fdr", n=sum(!is.na(PEPs$PV))),
-            check.names = FALSE
-        )
-    }
-    names(newres) <- gsub(":", "_", colls)
+##         newres[[i]] <- data.frame(
+##             Pathway = sapply(db[modIDs], get, x="name"),
+##             Description = sapply(db[modIDs], get, x="desc"),
+##             ES = PEPs$ES[,PEPname],
+##             p.value = PEPs$PV[,PEPname],
+##             FDR = p.adjust(PEPs$PV, "fdr", n=sum(!is.na(PEPs$PV))),
+##             check.names = FALSE
+##         )
+##     }
+##     names(newres) <- gsub(":", "_", colls)
 
-    WriteXLS(newres, outfile, BoldHeaderRow = TRUE, FreezeRow = 1,
-             AutoFilter = TRUE)
-}
+##     WriteXLS(newres, outfile, BoldHeaderRow = TRUE, FreezeRow = 1,
+##              AutoFilter = TRUE)
+## }
 
 
 
-do_and_show_gsea <- function(gep, set) {
-    setgenes <- geneIds(set)    
+## do_and_show_gsea <- function(gep, set) {
+##     setgenes <- geneIds(set)    
     
-    x <- gep[setgenes]
-    x <- x[!is.na(x)]
-    y <- setdiff((1:sum(!is.na(gep))), x)
-    n.x <- as.double(length(x))
-    n.y <- length(y)
-    w <- c(x, y)        
-    z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
+##     x <- gep[setgenes]
+##     x <- x[!is.na(x)]
+##     y <- setdiff((1:sum(!is.na(gep))), x)
+##     n.x <- as.double(length(x))
+##     n.y <- length(y)
+##     w <- c(x, y)        
+##     z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
 
-    m <- which.max(abs(z))
-    s <- sign(z[m])    
+##     m <- which.max(abs(z))
+##     s <- sign(z[m])    
 
-    ks <- ks.test.2(x, y, maxCombSize=10^10)
-    ES <- unname(s*ks$statistic)
-    p <- ks$p.value
+##     ks <- ks.test.2(x, y, maxCombSize=10^10)
+##     ES <- unname(s*ks$statistic)
+##     p <- ks$p.value
 
-    if(s > 0) {
-        leadset <- x[x <= m]
-    } else leadset <- x[x >= m]
+##     if(s > 0) {
+##         leadset <- x[x <= m]
+##     } else leadset <- x[x >= m]
 
-    fname <- paste(drug, dbi, pwi, sep="_")
+##     fname <- paste(drug, dbi, pwi, sep="_")
 
-    say("Creating PNG device")
-    pngf <- paste0(outdir, "/", fname, ".png")
-    library(Cairo)
-    CairoPNG(pngf, 480*2, 480)
-    ##png(pngf, 480*2, 480)
+##     say("Creating PNG device")
+##     pngf <- paste0(outdir, "/", fname, ".png")
+##     library(Cairo)
+##     CairoPNG(pngf, 480*2, 480)
+##     ##png(pngf, 480*2, 480)
 
-    say("Creating plot")
-    plot(z, type="l", ylab="ES", xlab="Ranks",
-         main=paste0(drugname, "\n", G_allsubdbs[dbi], " - ", pwname),
-         lwd=1.5, col="gray")
-    points(m, z[m], pch=21, cex=2)
-    points(x, z[x], cex=.5)
-    if(s>0) {
-        points(x[x <= m], z[x[x <= m]], bg="green", col="green", pch=21)
-    } else {
-        points(x[x >= m], z[x[x >= m]], bg="red", col="red", pch=21)
-    }    
-    dev.off()
+##     say("Creating plot")
+##     plot(z, type="l", ylab="ES", xlab="Ranks",
+##          main=paste0(drugname, "\n", G_allsubdbs[dbi], " - ", pwname),
+##          lwd=1.5, col="gray")
+##     points(m, z[m], pch=21, cex=2)
+##     points(x, z[x], cex=.5)
+##     if(s>0) {
+##         points(x[x <= m], z[x[x <= m]], bg="green", col="green", pch=21)
+##     } else {
+##         points(x[x >= m], z[x[x >= m]], bg="red", col="red", pch=21)
+##     }    
+##     dev.off()
 
 
-    ## say("Creating table")
-    ## tabf <- paste0(outdir, "/", fname, ".txt")
-    ## tab <- cbind(profile[set,,drop=F], lead=F)
-    ## tab[names(leadset), 2] <- T
-    ## tab <- tab[order(tab[,1]),]
-    ## tab <- rbind(stats = c(ES,p), tab)
-    ## say("Saving table")
-    ## write.table(tab, tabf, quote=F, col.names=F)
-    ## say("Table saved")
-}
+##     ## say("Creating table")
+##     ## tabf <- paste0(outdir, "/", fname, ".txt")
+##     ## tab <- cbind(profile[set,,drop=F], lead=F)
+##     ## tab[names(leadset), 2] <- T
+##     ## tab <- tab[order(tab[,1]),]
+##     ## tab <- rbind(stats = c(ES,p), tab)
+##     ## say("Saving table")
+##     ## write.table(tab, tabf, quote=F, col.names=F)
+##     ## say("Table saved")
+## }

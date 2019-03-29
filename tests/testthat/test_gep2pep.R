@@ -13,7 +13,7 @@ dbfolder <- file.path(tempdir(), "gep2pepDB")
 clear_test_repo <- function(suffix=NULL) {
     folder <- paste0(dbfolder, suffix)
     if(file.exists(folder))
-        unlink(folder, T)
+        unlink(folder, TRUE)
 }
 
 create_test_repo <- function(suffix=NULL) {
@@ -187,7 +187,7 @@ context("gep2pep: adding peps one by one")
 rp2 <- create_test_repo("2")
 for(i in 1:ncol(testgep))
     suppressMessages(
-        buildPEPs(rp2, testgep[,i,drop=F], progress_bar=FALSE)
+        buildPEPs(rp2, testgep[,i,drop=FALSE], progress_bar=FALSE)
     )
 
 rptft <- rp$get("c3_TFT")
@@ -382,7 +382,7 @@ ranked <- t(apply(-peps$ES[,c(pgset,bgset)], 1,
 suppressMessages(
     rankedByFunc <- .getPEPRanks(rp, "c3_TFT", c(pgset,bgset),
                                  subcols=c(pgset,bgset),
-                                 usecache=F,
+                                 usecache=FALSE,
                                  rankingFun=rankPEPsByRows.ES)
 )
 
@@ -409,7 +409,7 @@ for(i in 1:nrow(ranked)) {
 
 suppressMessages(
     csea <- CondSEA(rp, pgset, bgset,
-                    "c3_TFT", sortoutput=F)$CondSEA$c3_TFT
+                    "c3_TFT", sortoutput=FALSE)$CondSEA$c3_TFT
 )
 
 test_that("condsea with missing pathways", {
@@ -425,8 +425,8 @@ rp$set("c3_TFT", obj=oldpeps)
 context("gep2pep: XLS export")
 
 pgset <- c("(+)_isoprenaline", "(_)_atenolol")
-res1 <- suppressMessages(CondSEA(rp, pgset, details=F))
-res2 <- suppressMessages(CondSEA(rp, pgset, details=F))
+res1 <- suppressMessages(CondSEA(rp, pgset, details=FALSE))
+res2 <- suppressMessages(CondSEA(rp, pgset, details=FALSE))
 out1 <- tempfile()
 out2 <- tempfile()
 exportSEA(rp, res1, out1)

@@ -16,7 +16,7 @@ dbfolder <- file.path(tempdir(), "gep2pepDB")
 clear_test_repo <- function(suffix=NULL) {
     folder <- paste0(dbfolder, suffix)
     if(file.exists(folder))
-        unlink(folder, T)
+        unlink(folder, TRUE)
 }
 
 create_test_repo <- function(suffix=NULL) {
@@ -75,7 +75,7 @@ test_that("build hdf5 PEPs", {
 colls <- getCollections(rp)
 
 oldpep2 <- rp$get(colls[2])
-rp$rm(tags="pep", force=T)
+rp$rm(tags="pep", force=TRUE)
 suppressMessages(
     importFromRawMode(rp)
     )
@@ -101,7 +101,7 @@ context("rawMode: Merging in raw mode")
 
 newroot <- file.path(tempdir(), "mergedRAW")
 if(file.exists(newroot))
-    unlink(newroot, T)
+    unlink(newroot, TRUE)
 
 nms <- colnames(testgep)
 pgA <- sample(nms, sample(1:2, 1))
@@ -130,8 +130,8 @@ chis <- function(ps) {
 manualMergedES <- matrix(NA, 10, 3)
 manualMergedPV <- matrix(NA, 10, 3)
 for(i in 1:length(mergestr)) {
-    manualMergedES[,i] <- apply(peps$ES[,mergestr[[i]],drop=F], 1, mean)
-    manualMergedPV[,i] <- apply(peps$PV[,mergestr[[i]],drop=F], 1, chis)
+    manualMergedES[,i] <- apply(peps$ES[,mergestr[[i]],drop=FALSE], 1, mean)
+    manualMergedPV[,i] <- apply(peps$PV[,mergestr[[i]],drop=FALSE], 1, chis)
     }
 colnames(manualMergedES) <-
     colnames(manualMergedPV) <-
@@ -192,7 +192,7 @@ subrank <- suppressMessages(
                  nms[c(1,3,4)],
                  subcols=nms[c(1,4)],
                  rankingFun = rankPEPsByRows.ES,
-                 usecache=T)
+                 usecache=TRUE)
 )
 nas <- !is.na(subrank[,1])
 manualranks <- t(apply(-peps1$ES[, c(1,3,4)], 1,
@@ -206,7 +206,7 @@ test_that("Getting rank subsets", {
 })
 
 suppressMessages(
-    newCondSEA <- CondSEA(rp, nms[1:2], nms[1:4], usecache=T)
+    newCondSEA <- CondSEA(rp, nms[1:2], nms[1:4], usecache=TRUE)
 )
 test_that("CondSEA in raw mode", {
     identical(origCondSEA, newCondSEA)

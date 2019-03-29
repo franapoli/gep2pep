@@ -4,8 +4,8 @@
 \alias{createMergedRepository}
 \title{Merge multiple PEPs to build a repository of consensus PEPs}
 \usage{
-createMergedRepository(rpIn_path, rpOut_path, mergestr, progressBar = TRUE,
-  collections = "all")
+createMergedRepository(rpIn_path, rpOut_path, mergestr,
+  progressBar = TRUE, collections = "all")
 }
 \arguments{
 \item{rpIn_path}{path to existing gep2pep repository}

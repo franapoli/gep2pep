@@ -42,6 +42,11 @@ set to TRUE, they will be replaced, otherwise they will be
 skipped and only PEPs of new conditions will be computed and
 added. Either ways, will throw a warning.}
 
+\item{donotstore}{Just compute and return the pathway-based
+profiles without storing them in the repository. The repository
+is still required to load pathway data, however it will not be
+modified.}
+
 \item{progress_bar}{If set to TRUE (default) will show a progress
 bar updated after coversion of each column of \code{geps}.}
 
