@@ -76,6 +76,11 @@ colls <- getCollections(rp)
 
 oldpep2 <- rp$get(colls[2])
 rp$rm(tags="pep", force=TRUE)
+
+## DEBUG
+path <- file.path(rp$root(), "raw")
+collections <- "all"
+
 suppressMessages(
     importFromRawMode(rp)
     )

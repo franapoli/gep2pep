@@ -51,9 +51,9 @@ downloaded and then installed as follows:
 
 ## News
 
-### v1.1.1.1
+### v1.3.1
 
-In progress version.
+- Bug fixes, submitted to Bioconductor.
 
 - Added "SGE mode", including the function `addSingleGeneSets`. This
   is to support fast computation of Kolmogorov-Smirnov statistics for

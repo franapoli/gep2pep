@@ -392,7 +392,6 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
     
     for(i in seq_along(unique(dbs))) {
         dbi <- unique(dbs)[i]
-        
         collname <- collnames[match(dbi, cleanedcollnames)]
 
         if(!(length(collections==1) && collections=="all")) {
@@ -401,14 +400,14 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
                            " was not selected and will be skipped."))
                 next
             }
-        }      
+        }
 
-        ## if(rp$has(collname)) {
-        ##     say(paste0("A collection named ", collname,
-        ##                " is already in the repository ",
-        ##                "and will be skipped in raw mode"), "warning")
-        ##     next
-        ## }
+        if(rp$has(collname)) {
+            say(paste0("A collection named ", collname,
+                       " is already in the repository ",
+                       "and will be skipped in raw mode"), "warning")
+            next
+        }
         
         say(paste0("Working on collection: ", collname))        
         
@@ -428,6 +427,7 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
         fl <- tempfile()
         h5createFile(fl)
         rp$put(fl, collname, asattach=TRUE, tags=c("pep", "#hdf5"))
+        fl <- rp$get(collname)
 
         ## attachments are hidden by default, but unhiding them
         ## triggers a warning because of a bug in repo
@@ -435,8 +435,13 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
         options(warn=-1)
         rp$untag(collname, "hide")
         options(warn=curwarn)
+
+        ## fl <- tempfile()
+        ## h5createFile(fl)
+        ## rp$put(fl, dbi, asattach=T, tags=c("pep", "#hdf5"))
+        ## fl <- rp$get(dbi)
         
-        fl <- rp$get(collname)
+        ## fl <- rp$get(collname)
 
         fname <- paste0(dbi, "#", min(ids), ".RDS")
         x <- readRDS(file.path(path, fname))$ES
@@ -453,12 +458,15 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
                         maxdims=c(Nrow*10),
                         storage.mode="character",
                         size=256, chunk=Nrow)
-        h5createDataset(fl, "colnames", Ncol,
-                        maxdims=c(Ncol*10),
+        h5createDataset(fl, "colnames", c(Ncol, 1), ## necessary later
+                                                    ## to have h5write
+                                                    ## update all the
+                                                    ## col names of a
+                                                    ## chunk at once
+                        maxdims=c(Ncol*10, 1),
                         storage.mode="character",
-                        size=256, chunk=Nchunk)
+                        size=256, chunk=c(Nchunk,1))
         h5write(rownames(x), fl, "rownames")      
-        
         say("Adding chunks...")
         uids <- sort(unique(ids))
         for(j in seq_along(uids)) {
@@ -473,7 +481,7 @@ importFromRawMode <- function(rp, path=file.path(rp$root(), "raw"),
                     createnewfile=FALSE)
             h5write(x$PV, fl, "PV", start=c(1,startCol),
                     createnewfile=FALSE)
-            h5write(colnames(x$ES), fl, "colnames", start=startCol)
+            h5write(cbind(colnames(x$ES)), fl, "colnames", start=c(startCol,1))
 
             cat("Chunk ", j, " of ",
                 length(uids), ", ", ifsize,
@@ -1380,7 +1388,7 @@ getDetails <- function(analysis, collection)
     ish5 <- "#hdf5" %in% rp$tags(coll)
 
     if(ish5){
-        perts <- h5read(rp$get(coll), "colnames")
+        perts <- as.vector(h5read(rp$get(coll), "colnames"))
     } else perts <- colnames(rp$get(coll)$ES)
     return(perts)
 }
@@ -1390,7 +1398,7 @@ getDetails <- function(analysis, collection)
 
     if(ish5) {
         fname <- rp$get(coll)
-        hcolnames <- h5read(fname, "colnames")
+        hcolnames <- as.vector(h5read(fname, "colnames"))
         
         if(missing(subset))
             subset <- hcolnames
@@ -1594,7 +1602,7 @@ CondSEA <- function(rp_peps, pgset, bgset="all", collections="all",
                       innas <- is.na(row)
                       inset <- row[!innas]
                       maxr <- backgroundSize - nas
-                      outset <- seq_along(1:maxr)[-inset]
+                      outset <- seq_len(maxr)[-inset]
                       if(length(inset)>=1 && length(outset)>=1) {
                           res <- ks.test.2(inset, outset, maxCombSize=10^10)
                       } else res <- list(ES=NA, p.value=NA)
@@ -1678,7 +1686,7 @@ clearCache <- function(rp_peps)
             subrows <- match(subrows, rnames)
         }
         if(!is.null(subcols)) {
-            cnames <- h5read(rp_peps$get(md5), "colnames")
+            cnames <- as.vector(h5read(rp_peps$get(md5), "colnames"))
             subcols <- match(subcols, cnames)
         }
         ranked <- h5read(rp_peps$get(md5), "ranks",
@@ -2449,7 +2457,7 @@ createMergedRepository <- function(rpIn_path, rpOut_path, mergestr,
     }
 
     if(length(colls)>0) {
-        for(i in 1:length(colls)) {
+        for(i in seq_along(colls)) {
             say(paste0("Copying sets for collection: ", colls[i]))
             rpin$copy(rpout, paste0(colls[i], "_sets"))        
             say("Merging PEPs")
@@ -2728,7 +2736,7 @@ rp$put(sge, "SGE_sets", "Pathway information for collection SGE",
     ## converts a vector of ranks to corresponding KS Enrichment
     ## Scores. Used for single-gene sets
     n <- length(v)
-    up <- -1/(n-1)*(1:ceiling(n/2)-1) + 1
+    up <- -1/(n-1)*(seq_len(ceiling(n/2))-1) + 1
     if(length(v)%%2==1)
         ret <- c(up[-length(up)], -rev(up)) else ret <- c(up, -rev(up))
     return(ret[v])
